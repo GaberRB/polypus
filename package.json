@@ -1,0 +1,49 @@
+{
+  "name": "polypus",
+  "version": "0.1.0",
+  "description": "Agentic coding harness that makes any AI API (with or without native tool-calling) generate and apply code. OpenRouter, Ollama, and any OpenAI-compatible endpoint.",
+  "type": "module",
+  "bin": {
+    "polypus": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "node dist/cli/index.js"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "coding",
+    "openrouter",
+    "ollama",
+    "llm",
+    "cli",
+    "harness"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "commander": "^12.1.0",
+    "openai": "^4.67.0",
+    "picocolors": "^1.1.0",
+    "simple-git": "^3.27.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
