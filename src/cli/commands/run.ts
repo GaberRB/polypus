@@ -238,5 +238,9 @@ function renderEvents(spinner: Spinner): AgentEvents {
       spinner.stop();
       console.log(pc.yellow("  " + t("run.reprompt", { attempt })));
     },
+    onCorrection() {
+      spinner.stop();
+      console.log(pc.yellow("    ↻ " + t("run.autocorrect")));
+    },
   };
 }

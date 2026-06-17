@@ -5,6 +5,7 @@ import type { ResolvedAgent } from "../providers/registry.js";
 import type { ChatParams, Message, ToolCall } from "../providers/types.js";
 import { getTool, toolSpecs } from "../tools/registry.js";
 import type { ToolResult } from "../tools/types.js";
+import { buildCorrection, makeLLMEscalator } from "./correction.js";
 
 export interface Usage {
   promptTokens: number;
@@ -16,6 +17,8 @@ export interface AgentEvents {
   onToolCall?(call: ToolCall): void;
   onToolResult?(call: ToolCall, result: ToolResult): void;
   onReprompt?(attempt: number): void;
+  /** Fired when auto-correction enriches a failed tool result with guidance. */
+  onCorrection?(call: ToolCall, guidance: string): void;
   onStep?(step: number): void;
   /** Cumulative token usage so far this run. */
   onUsage?(usage: Usage): void;
@@ -32,6 +35,8 @@ export interface RunOptions {
   maxReprompts?: number;
   /** Stop after this many consecutive identical tool failures (default 3). */
   maxToolRetries?: number;
+  /** Enrich failed tool results with corrective guidance so the model can self-heal (default true). */
+  autoCorrect?: boolean;
   /** Abort the run (e.g. user pressed ESC). */
   signal?: AbortSignal;
   events?: AgentEvents;
@@ -89,6 +94,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   let lastFailSig = "";
   let failStreak = 0;
   const maxToolRetries = opts.maxToolRetries ?? 3;
+  const autoCorrect = opts.autoCorrect ?? true;
   const usage: Usage = { promptTokens: 0, completionTokens: 0 };
 
   for (let step = 1; step <= maxSteps; step++) {
@@ -146,14 +152,33 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         : { ok: false, output: `Unknown tool "${call.name}". Available: ${toolSpecs().map((t) => t.name).join(", ")}` };
 
       events?.onToolResult?.(call, result);
-      messages.push(driver.toolResultMessage(call, result.output));
+
+      const sig = `${call.name}:${JSON.stringify(call.arguments)}`;
+      let resultText = result.output;
+      // Auto-correction: on failure, enrich the raw error with its likely cause
+      // and the missing context so the model can fix its own call instead of
+      // looping on it until the stall guard trips.
+      if (!result.ok && autoCorrect) {
+        const guidance = await buildCorrection(call, result.output, {
+          workspace: opts.workspace,
+          allow: opts.promptContext.allow,
+          toolSpec: tool?.spec,
+          // Only spend a fixer-LLM call once the model has already repeated a
+          // failing call — the first failure gets deterministic help for free.
+          escalate: sig === lastFailSig ? makeLLMEscalator(agent.provider) : undefined,
+        });
+        if (guidance) {
+          resultText = `${result.output}\n\n${guidance}`;
+          events?.onCorrection?.(call, guidance);
+        }
+      }
+      messages.push(driver.toolResultMessage(call, resultText));
 
       // Break out of a loop where the same tool call keeps failing identically.
       if (result.ok) {
         failStreak = 0;
         lastFailSig = "";
       } else {
-        const sig = `${call.name}:${JSON.stringify(call.arguments)}`;
         failStreak = sig === lastFailSig ? failStreak + 1 : 1;
         lastFailSig = sig;
         if (failStreak >= maxToolRetries) {

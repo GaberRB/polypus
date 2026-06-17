@@ -136,6 +136,45 @@ describe("runAgent (emulated path)", () => {
     expect(result.steps).toBe(3); // default maxToolRetries
   });
 
+  it("appends auto-correction guidance to a failed tool result", async () => {
+    const ws = workspace();
+    // write_file with no 'content' arg → fails validation with arg guidance.
+    const agent = makeAgent([
+      `<polypus:tool name="write_file"><arg name="path">x.txt</arg></polypus:tool>`,
+    ]);
+
+    let corrections = 0;
+    const result = await runAgent({
+      task: "write x",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+      events: { onCorrection: () => corrections++ },
+    });
+
+    expect(corrections).toBeGreaterThan(0);
+    expect(result.messages.some((m) => m.content.includes("AUTO-CORRECTION"))).toBe(true);
+  });
+
+  it("leaves the raw error untouched when autoCorrect is disabled", async () => {
+    const ws = workspace();
+    const agent = makeAgent([
+      `<polypus:tool name="write_file"><arg name="path">x.txt</arg></polypus:tool>`,
+    ]);
+
+    const result = await runAgent({
+      task: "write x",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+      autoCorrect: false,
+    });
+
+    expect(result.messages.some((m) => m.content.includes("AUTO-CORRECTION"))).toBe(false);
+  });
+
   it("returns cancelled when the abort signal fires", async () => {
     const ws = workspace();
     const agent = makeAgent([`<polypus:tool name="finish"><arg name="summary">x</arg></polypus:tool>`]);
