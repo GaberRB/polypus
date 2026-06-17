@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import pc from "picocolors";
 import { generatePrd, type IssueInput } from "../../core/agent/prd.js";
 import { resolveFreeProvider, DEFAULT_PRD_MODEL, withRetry } from "../../core/agent/free-provider.js";
+import { numericRef, readStdin, stripBom } from "./cli-io.js";
 import { t } from "../../core/i18n/index.js";
 
 const exec = promisify(execFile);
@@ -36,7 +37,7 @@ async function loadIssue(issueRef: string, input?: string): Promise<IssueInput> 
     const raw = input === "-" ? await readStdin() : await readFile(input, "utf8");
     return normalize(JSON.parse(stripBom(raw)));
   }
-  const num = issueRef.replace(/^#/, "");
+  const num = numericRef(issueRef);
   const { stdout } = await exec("gh", ["issue", "view", num, "--json", "number,title,body,comments"]);
   const data = normalize(JSON.parse(stdout));
   data.number ??= Number(num);
@@ -58,13 +59,3 @@ function normalize(raw: {
   };
 }
 
-/** Drop a leading UTF-8 BOM that some shells/files prepend, which breaks JSON.parse. */
-function stripBom(s: string): string {
-  return s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
-}
-
-async function readStdin(): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-  return Buffer.concat(chunks).toString("utf8");
-}
