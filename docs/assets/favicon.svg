@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="h" cx="50%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#C7B0FD"/>
+      <stop offset="100%" stop-color="#7A4ADE"/>
+    </radialGradient>
+  </defs>
+  <g fill="#7A4ADE">
+    <path d="M16 40c-2 8-6 9-9 7 4 1 4-5 4-9z"/>
+    <path d="M24 44c-1 9-4 10-7 9 4 0 4-6 5-10z"/>
+    <path d="M48 40c2 8 6 9 9 7-4 1-4-5-4-9z"/>
+    <path d="M40 44c1 9 4 10 7 9-4 0-4-6-5-10z"/>
+    <path d="M32 46c0 9-2 10-4 10 3 0 5-3 6-10z"/>
+  </g>
+  <ellipse cx="32" cy="28" rx="22" ry="20" fill="url(#h)"/>
+  <circle cx="25" cy="26" r="7.5" fill="#fff" stroke="#5B2DB9" stroke-width="1.5"/>
+  <circle cx="39" cy="26" r="7.5" fill="#fff" stroke="#5B2DB9" stroke-width="1.5"/>
+  <circle cx="25.5" cy="27" r="3" fill="#5B2DB9"/>
+  <circle cx="38.5" cy="27" r="3" fill="#5B2DB9"/>
+  <ellipse cx="18" cy="33" rx="3.2" ry="2" fill="#FF8ABE" opacity=".75"/>
+  <ellipse cx="46" cy="33" rx="3.2" ry="2" fill="#FF8ABE" opacity=".75"/>
+  <path d="M28 36q4 4 8 0" fill="none" stroke="#3a2a6b" stroke-width="2" stroke-linecap="round"/>
+</svg>

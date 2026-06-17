@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus 🐙 — agentic coding harness</title>
+  <meta name="description" content="Polypus: harness agêntico que faz qualquer API de IA gerar e aplicar código — OpenRouter, Ollama e qualquer endpoint OpenAI-compatible." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <!-- ===================== HEADER ===================== -->
+  <header class="nav">
+    <a class="brand" href="#top">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#how" data-i18n="nav.how">Como funciona</a>
+      <a href="#demo" data-i18n="nav.demo">Demo</a>
+      <a href="#quickstart" data-i18n="nav.quickstart">Começar</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-ext" href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
+    </nav>
+    <div class="lang-toggle" role="group" aria-label="language">
+      <button data-lang="pt" class="active">PT</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ===================== HERO ===================== -->
+    <section class="hero">
+      <div class="hero-art">
+        <!-- Mascote: polvo roxo de óculos -->
+        <svg class="mascot" viewBox="0 0 260 260" aria-label="Polypus mascot">
+          <defs>
+            <radialGradient id="head" cx="50%" cy="36%" r="68%">
+              <stop offset="0%" stop-color="#D8C5FF" />
+              <stop offset="55%" stop-color="#AB8EFA" />
+              <stop offset="100%" stop-color="#7A4ADE" />
+            </radialGradient>
+          </defs>
+          <g class="mascot-float">
+            <!-- tentáculos -->
+            <g class="tentacles" fill="#7A4ADE">
+              <path class="t t1" d="M70 150 q-34 18 -42 54 q16 6 22 -10 q6 -20 22 -32 z" />
+              <path class="t t2" d="M95 168 q-16 28 -10 56 q14 0 16 -16 q2 -22 6 -36 z" />
+              <path class="t t3" d="M130 174 q-6 30 0 58 q12 -2 12 -18 q0 -22 0 -38 z" />
+              <path class="t t4" d="M165 168 q16 28 10 56 q-14 0 -16 -16 q-2 -22 -6 -36 z" />
+              <path class="t t5" d="M190 150 q34 18 42 54 q-16 6 -22 -10 q-6 -20 -22 -32 z" />
+            </g>
+            <!-- cabeça -->
+            <ellipse cx="130" cy="108" rx="86" ry="78" fill="url(#head)" />
+            <!-- bochechas -->
+            <ellipse cx="78" cy="128" rx="13" ry="8" fill="#FF8ABE" opacity=".7" />
+            <ellipse cx="182" cy="128" rx="13" ry="8" fill="#FF8ABE" opacity=".7" />
+            <!-- óculos -->
+            <g class="glasses">
+              <circle cx="103" cy="100" r="27" fill="#fff" stroke="#5B2DB9" stroke-width="5" />
+              <circle cx="157" cy="100" r="27" fill="#fff" stroke="#5B2DB9" stroke-width="5" />
+              <line x1="128" y1="98" x2="132" y2="98" stroke="#5B2DB9" stroke-width="5" />
+              <circle class="pupil" cx="104" cy="102" r="10" fill="#3a2a6b" />
+              <circle class="pupil" cx="156" cy="102" r="10" fill="#3a2a6b" />
+            </g>
+            <!-- sorriso -->
+            <path d="M112 138 q18 18 36 0" fill="none" stroke="#3a2a6b" stroke-width="5" stroke-linecap="round" />
+          </g>
+        </svg>
+      </div>
+      <div class="hero-copy">
+        <h1 class="hero-title">Polypus</h1>
+        <p class="hero-tag" data-i18n="hero.tag">
+          Harness agêntico que faz <b>qualquer</b> IA escrever e aplicar código — inclusive modelos
+          <b>sem function-calling</b>.
+        </p>
+        <div class="install">
+          <code id="installCmd">npm i -g @gaberrb/polypus</code>
+          <button class="copy" data-copy="npm i -g @gaberrb/polypus" aria-label="copy">⧉</button>
+        </div>
+        <div class="badges">
+          <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">
+            <img alt="npm" src="https://img.shields.io/npm/v/@gaberrb/polypus?color=9266F5&logo=npm" /></a>
+          <img alt="license" src="https://img.shields.io/badge/license-MIT-AB8EFA" />
+          <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A520-7A4ADE?logo=node.js" />
+        </div>
+        <div class="cta">
+          <a class="btn btn-primary" href="#how" data-i18n="hero.ctaHow">Ver como funciona</a>
+          <a class="btn" href="#demo" data-i18n="hero.ctaDemo">Assistir demo</a>
+          <a class="btn btn-ghost" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ORIGEM DO NOME ===================== -->
+    <section class="band">
+      <div class="origin">
+        <div class="origin-text">
+          <h2 data-i18n="origin.title">De onde vem o nome</h2>
+          <p data-i18n="origin.p1">
+            <b>Polypus</b> é “polvo” em <b>latim</b> — do grego <i>polýpous</i>, “muitos pés”.
+          </p>
+          <p data-i18n="origin.p2">
+            A metáfora é o coração do projeto: assim como o polvo tem muitos tentáculos agindo ao
+            mesmo tempo, o Polypus coordena <b>vários agentes de IA em paralelo</b>, cada um numa
+            <i>git worktree</i> isolada, para resolver partes diferentes da mesma tarefa.
+          </p>
+        </div>
+        <div class="origin-badge">🐙</div>
+      </div>
+    </section>
+
+    <!-- ===================== COMO FUNCIONA (DIAGRAMA) ===================== -->
+    <section id="how" class="section">
+      <h2 class="section-title" data-i18n="how.title">Do prompt ao código</h2>
+      <p class="section-sub" data-i18n="how.sub">
+        Clique em cada etapa do fluxo para entender o que acontece por baixo.
+      </p>
+
+      <div class="flow" id="flow">
+        <button class="node" data-stage="prompt"><span class="node-ic">⌨️</span><span data-i18n="st.prompt">Prompt</span></button>
+        <span class="arrow"></span>
+        <button class="node" data-stage="context"><span class="node-ic">🧩</span><span data-i18n="st.context">Contexto</span></button>
+        <span class="arrow"></span>
+        <div class="branch">
+          <button class="node alt" data-stage="native"><span class="node-ic">🔧</span>native</button>
+          <button class="node alt" data-stage="emulated"><span class="node-ic">📝</span>emulated</button>
+        </div>
+        <span class="arrow"></span>
+        <button class="node" data-stage="parser"><span class="node-ic">🔍</span><span data-i18n="st.parser">Parser</span></button>
+        <span class="arrow"></span>
+        <button class="node" data-stage="permissions"><span class="node-ic">🔐</span><span data-i18n="st.permissions">Permissões</span></button>
+        <span class="arrow"></span>
+        <button class="node" data-stage="tools"><span class="node-ic">🛠️</span><span data-i18n="st.tools">Tools</span></button>
+        <span class="arrow"></span>
+        <button class="node" data-stage="loop"><span class="node-ic">🔁</span><span data-i18n="st.loop">Loop ReAct</span></button>
+        <span class="arrow"></span>
+        <button class="node done" data-stage="code"><span class="node-ic">✓</span><span data-i18n="st.code">Código</span></button>
+      </div>
+
+      <div class="stage-detail" id="stageDetail" aria-live="polite">
+        <h3 id="stageTitle" data-i18n="how.hint">Selecione uma etapa</h3>
+        <p id="stageBody" data-i18n="how.hintBody">As explicações de cada etapa aparecem aqui.</p>
+        <pre id="stageCode" class="hidden"><code></code></pre>
+      </div>
+
+      <div class="swarm-note">
+        <h3 data-i18n="swarm.miniTitle">… e em paralelo: o Swarm</h3>
+        <div class="flow mini">
+          <span class="node sm" data-stage="orchestrator"><span class="node-ic">🧠</span><span data-i18n="st.orchestrator">Orquestrador</span></span>
+          <span class="arrow"></span>
+          <span class="node sm" data-stage="workers"><span class="node-ic">🐙</span><span data-i18n="st.workers">Workers (worktrees)</span></span>
+          <span class="arrow"></span>
+          <span class="node sm" data-stage="merge"><span class="node-ic">🔀</span><span data-i18n="st.merge">Merge</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== O TRUQUE (EMULADO) ===================== -->
+    <section class="section band">
+      <h2 class="section-title" data-i18n="trick.title">O truque: fazer qualquer modelo “codar”</h2>
+      <p class="section-sub" data-i18n="trick.sub">
+        Modelos com function-calling usam tools nativas. Os <b>sem</b> tools recebem um protocolo
+        XML no prompt e o Polypus parseia a saída — então até modelos locais escrevem arquivos.
+      </p>
+      <pre class="codeblock"><code>&lt;polypus:tool name="write_file"&gt;
+&lt;arg name="path"&gt;src/index.ts&lt;/arg&gt;
+&lt;arg name="content"&gt;console.log("olá");&lt;/arg&gt;
+&lt;/polypus:tool&gt;</code></pre>
+      <p class="muted" data-i18n="trick.note">
+        Se o modelo enrola (“não posso criar arquivos”), o harness reforça: “SIM, você pode — aja
+        agora”. Mas uma simples conversa não dispara isso; e <kbd>ESC</kbd> cancela quando quiser.
+      </p>
+    </section>
+
+    <!-- ===================== PERMISSÕES ===================== -->
+    <section class="section">
+      <h2 class="section-title" data-i18n="perm.title">Você no controle: 3 modos</h2>
+      <div class="cards">
+        <div class="card"><h3>🧭 plan</h3><p data-i18n="perm.plan">Somente leitura: investiga e propõe, sem tocar em arquivos.</p></div>
+        <div class="card"><h3>✋ review</h3><p data-i18n="perm.review">Confirma cada escrita/comando antes de executar.</p></div>
+        <div class="card"><h3>⚡ bypass</h3><p data-i18n="perm.bypass">Aprova tudo automaticamente — para quando você confia.</p></div>
+      </div>
+      <p class="muted center" data-i18n="perm.allow">
+        Em todos os modos, o acesso é restrito por uma <b>allow-list</b> de caminhos (globs).
+      </p>
+    </section>
+
+    <!-- ===================== DEMO ===================== -->
+    <section id="demo" class="section band">
+      <h2 class="section-title" data-i18n="demo.title">Demo</h2>
+      <p class="section-sub" data-i18n="demo.sub">Veja o Polypus em ação no terminal.</p>
+      <div class="video-wrap">
+        <video controls preload="metadata" playsinline>
+          <source src="assets/DemoPolypus.mp4" type="video/mp4" />
+        </video>
+      </div>
+    </section>
+
+    <!-- ===================== FEATURES ===================== -->
+    <section class="section">
+      <h2 class="section-title" data-i18n="feat.title">O que vem na caixa</h2>
+      <div class="cards grid4">
+        <div class="card"><h3>🔌 <span data-i18n="feat.f1t">Multi-provider</span></h3><p data-i18n="feat.f1">OpenRouter, Ollama e qualquer endpoint OpenAI-compatible + Anthropic nativo.</p></div>
+        <div class="card"><h3>🧩 <span data-i18n="feat.f2t">Tools p/ todos</span></h3><p data-i18n="feat.f2">Nativo quando há function-calling; protocolo XML emulado quando não há.</p></div>
+        <div class="card"><h3>🐝 <span data-i18n="feat.f3t">Swarm paralelo</span></h3><p data-i18n="feat.f3">Decompõe a tarefa e roda agentes em git worktrees isoladas.</p></div>
+        <div class="card"><h3>🌎 <span data-i18n="feat.f4t">Bilíngue</span></h3><p data-i18n="feat.f4">Interface em português (padrão) e inglês.</p></div>
+        <div class="card"><h3>🔎 <span data-i18n="feat.f5t">Descoberta de modelos</span></h3><p data-i18n="feat.f5">Detecta modelos do Ollama e navega o catálogo do OpenRouter por preço/tools.</p></div>
+        <div class="card"><h3>🧮 <span data-i18n="feat.f6t">Tokens & ESC</span></h3><p data-i18n="feat.f6">Mostra tokens gastos ao vivo e cancela o “pensando” com ESC.</p></div>
+        <div class="card"><h3>🔐 <span data-i18n="feat.f7t">Permissões</span></h3><p data-i18n="feat.f7">Modos plan/review/bypass + allow-list de caminhos.</p></div>
+        <div class="card"><h3>🪄 <span data-i18n="feat.f8t">Wizard</span></h3><p data-i18n="feat.f8">Onboarding interativo de chaves, modelos e permissões.</p></div>
+      </div>
+    </section>
+
+    <!-- ===================== QUICKSTART ===================== -->
+    <section id="quickstart" class="section band">
+      <h2 class="section-title" data-i18n="qs.title">Comece em 1 minuto</h2>
+      <div class="steps">
+        <div class="step"><span class="step-n">1</span><div><b data-i18n="qs.s1">Instale</b><pre class="codeblock"><code>npm i -g @gaberrb/polypus</code></pre></div></div>
+        <div class="step"><span class="step-n">2</span><div><b data-i18n="qs.s2">Configure</b><pre class="codeblock"><code>polypus setup</code></pre></div></div>
+        <div class="step"><span class="step-n">3</span><div><b data-i18n="qs.s3">Use</b><pre class="codeblock"><code>polypus run "crie um servidor HTTP em src/server.ts"</code></pre></div></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="openrouter">OpenRouter</button>
+        <button class="tab" data-tab="ollama">Ollama</button>
+      </div>
+      <div class="tab-panel" data-panel="openrouter">
+        <pre class="codeblock"><code>export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" --api-key '${OPENROUTER_API_KEY}'
+polypus models --tools --max-price 1   # explore modelos por preço/tools</code></pre>
+      </div>
+      <div class="tab-panel hidden" data-panel="ollama">
+        <pre class="codeblock"><code># ollama serve &amp;&amp; ollama pull qwen2.5-coder:7b
+polypus add-agent local --provider ollama --model qwen2.5-coder:7b
+polypus run "faça o jogo da cobrinha em snake.html"</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="footer">
+    <div class="footer-octo">🐙</div>
+    <p class="footer-by">
+      <span data-i18n="footer.by">Feito por</span>
+      <a href="https://github.com/GaberRB" target="_blank" rel="noopener">Gabriel Rios</a>
+    </p>
+    <p class="footer-links">
+      <a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a> ·
+      <a href="https://www.linkedin.com/in/gabriel-riosb/" target="_blank" rel="noopener">LinkedIn</a>
+    </p>
+    <p class="footer-lic">MIT © Gabriel Rios</p>
+  </footer>
+</body>
+</html>

@@ -1,5 +1,7 @@
 # Polypus 🐙
 
+**📖 Site:** https://gaberrb.github.io/polypus/ · **📦 npm:** [`@gaberrb/polypus`](https://www.npmjs.com/package/@gaberrb/polypus)
+
 An agentic coding harness that makes **any** AI API generate and apply code —
 even models **without** native tool-calling. Bring your own keys: OpenRouter,
 Ollama, Anthropic, or any OpenAI-compatible endpoint. Run one agent, or split a
