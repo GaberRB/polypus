@@ -1,5 +1,5 @@
 {
-  "name": "polypus",
+  "name": "@gaberrb/polypus",
   "version": "0.1.0",
   "description": "Agentic coding harness that makes any AI API (with or without native tool-calling) generate and apply code. OpenRouter, Ollama, and any OpenAI-compatible endpoint.",
   "type": "module",
@@ -33,6 +33,9 @@
     "harness"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Gabriel Rios (https://github.com/GaberRB)",
   "homepage": "https://github.com/GaberRB/polypus#readme",
   "repository": {
