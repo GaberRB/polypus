@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus 🐙 — tools vs. sem tools (passo a passo)</title>
+  <meta name="description" content="Como o Polypus interpreta um prompt com e sem function-calling — simulação passo a passo: 👤 você e 🐙 o que acontece por trás." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="index.html#top">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how" data-i18n="nav.how">Como funciona</a>
+      <a href="index.html#demo" data-i18n="nav.demo">Demo</a>
+      <a href="index.html#quickstart" data-i18n="nav.quickstart">Começar</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-ext" href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
+    </nav>
+    <div class="lang-toggle" role="group" aria-label="language">
+      <button data-lang="pt" class="active">PT</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="deep">
+      <a class="back-link" href="index.html" data-i18n="deep.back">← voltar</a>
+      <h1 class="deep-title" data-i18n="deep.title">Tools vs. sem tools — passo a passo</h1>
+      <p class="deep-intro" data-i18n="deep.intro">
+        Veja, etapa por etapa, o que acontece quando você manda um prompt. 👤 é você; 🐙 é o
+        Polypus nos bastidores. Escolha o modo e avance.
+      </p>
+
+      <div class="tabs">
+        <button class="tab active" data-mode="emulated" data-i18n="deep.modeEmulated">📝 Sem tools (emulado)</button>
+        <button class="tab" data-mode="native" data-i18n="deep.modeNative">🔧 Com tools (nativo)</button>
+      </div>
+
+      <div class="sim">
+        <div class="sim-feed" id="simFeed"></div>
+        <div class="sim-controls">
+          <button class="btn sm btn-ghost" id="simReset" data-i18n="deep.reset">↻ Reiniciar</button>
+          <span class="sim-progress" id="simProgress">0 / 0</span>
+          <button class="btn sm btn-primary" id="simNext" data-i18n="deep.next">Próximo ⏭</button>
+          <button class="btn sm" id="simAll" data-i18n="deep.all">▶ Tudo</button>
+        </div>
+      </div>
+
+      <h2 class="section-title" style="margin-top: 52px" data-i18n="deep.cmpTitle">Lado a lado</h2>
+      <div class="compare">
+        <div class="card">
+          <h3 data-i18n="deep.cmpEmulatedT">📝 Emulado (sem tools)</h3>
+          <ul data-i18n="deep.cmpEmulated">
+            <li><b>Como as ações nascem:</b> por um protocolo de tags XML no prompt → o modelo escreve texto e o Polypus parseia.</li>
+            <li><b>Resultado de volta:</b> como texto de usuário (<code>&lt;polypus:tool_result&gt;</code>).</li>
+            <li><b>Formato:</b> depende do modelo — com redes de segurança (re-prompt, parser tolerante).</li>
+            <li><b>Funciona com:</b> qualquer modelo, inclusive locais/base.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 data-i18n="deep.cmpNativeT">🔧 Nativo (com tools)</h3>
+          <ul data-i18n="deep.cmpNative">
+            <li><b>Como as ações nascem:</b> pelo campo <code>tools</code> da API → o modelo devolve uma <i>tool_call</i> estruturada.</li>
+            <li><b>Resultado de volta:</b> por uma mensagem estruturada (<code>role: tool</code>).</li>
+            <li><b>Formato:</b> garantido pela API.</li>
+            <li><b>Funciona com:</b> modelos que têm function-calling.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="compare-note" data-i18n="deep.cmpNote">
+        Em ambos, o <b>loop do agente</b> é idêntico — só muda <i>como</i> as tool calls nascem e voltam.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-octo">🐙</div>
+    <p class="footer-by">
+      <span data-i18n="footer.by">Feito por</span>
+      <a href="https://github.com/GaberRB" target="_blank" rel="noopener">Gabriel Rios</a>
+    </p>
+    <p class="footer-links">
+      <a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a> ·
+      <a href="https://www.linkedin.com/in/gabriel-riosb/" target="_blank" rel="noopener">LinkedIn</a>
+    </p>
+    <p class="footer-lic">MIT © Gabriel Rios</p>
+  </footer>
+</body>
+</html>

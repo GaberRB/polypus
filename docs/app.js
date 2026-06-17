@@ -238,3 +238,193 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+// ===========================================================================
+// Deep-dive page (fluxo.html): tools vs no-tools step-by-step simulator.
+// ===========================================================================
+Object.assign(I18N.pt, {
+  "how.deepCta": "🔬 Tools vs. sem tools — simulação passo a passo",
+  "deep.back": "← voltar",
+  "deep.title": "Tools vs. sem tools — passo a passo",
+  "deep.intro": "Veja, etapa por etapa, o que acontece quando você manda um prompt. 👤 é você; 🐙 é o Polypus nos bastidores. Escolha o modo e avance.",
+  "deep.modeNative": "🔧 Com tools (nativo)",
+  "deep.modeEmulated": "📝 Sem tools (emulado)",
+  "deep.empty": "Clique em “Próximo” para começar a simulação.",
+  "deep.next": "Próximo ⏭",
+  "deep.all": "▶ Tudo",
+  "deep.reset": "↻ Reiniciar",
+  "deep.cmpTitle": "Lado a lado",
+  "deep.cmpNativeT": "🔧 Nativo (com tools)",
+  "deep.cmpEmulatedT": "📝 Emulado (sem tools)",
+  "deep.cmpNative": "<li><b>Como as ações nascem:</b> pelo campo <code>tools</code> da API → o modelo devolve uma <i>tool_call</i> estruturada.</li><li><b>Resultado de volta:</b> por uma mensagem estruturada (<code>role: tool</code>).</li><li><b>Formato:</b> garantido pela API.</li><li><b>Funciona com:</b> modelos que têm function-calling.</li>",
+  "deep.cmpEmulated": "<li><b>Como as ações nascem:</b> por um protocolo de tags XML no prompt → o modelo escreve texto e o Polypus parseia.</li><li><b>Resultado de volta:</b> como texto de usuário (<code>&lt;polypus:tool_result&gt;</code>).</li><li><b>Formato:</b> depende do modelo — com redes de segurança (re-prompt, parser tolerante).</li><li><b>Funciona com:</b> qualquer modelo, inclusive locais/base.</li>",
+  "deep.cmpNote": "Em ambos, o <b>loop do agente</b> é idêntico — só muda <i>como</i> as tool calls nascem e voltam.",
+});
+Object.assign(I18N.en, {
+  "how.deepCta": "🔬 Tools vs. no-tools — step-by-step simulation",
+  "deep.back": "← back",
+  "deep.title": "Tools vs. no-tools — step by step",
+  "deep.intro": "See, step by step, what happens when you send a prompt. 👤 is you; 🐙 is Polypus behind the scenes. Pick a mode and advance.",
+  "deep.modeNative": "🔧 With tools (native)",
+  "deep.modeEmulated": "📝 Without tools (emulated)",
+  "deep.empty": "Click “Next” to start the simulation.",
+  "deep.next": "Next ⏭",
+  "deep.all": "▶ All",
+  "deep.reset": "↻ Reset",
+  "deep.cmpTitle": "Side by side",
+  "deep.cmpNativeT": "🔧 Native (with tools)",
+  "deep.cmpEmulatedT": "📝 Emulated (no tools)",
+  "deep.cmpNative": "<li><b>How actions are born:</b> via the API's <code>tools</code> field → the model returns a structured <i>tool_call</i>.</li><li><b>Result back:</b> through a structured message (<code>role: tool</code>).</li><li><b>Format:</b> guaranteed by the API.</li><li><b>Works with:</b> models that have function-calling.</li>",
+  "deep.cmpEmulated": "<li><b>How actions are born:</b> via an XML tag protocol in the prompt → the model writes text and Polypus parses it.</li><li><b>Result back:</b> as a user message (<code>&lt;polypus:tool_result&gt;</code>).</li><li><b>Format:</b> depends on the model — with safety nets (re-prompt, tolerant parser).</li><li><b>Works with:</b> any model, including local/base ones.</li>",
+  "deep.cmpNote": "In both, the <b>agent loop</b> is identical — only <i>how</i> tool calls are born and returned changes.",
+});
+
+const PROMPT_PT = "crie um arquivo hello.txt com a palavra olá";
+const PROMPT_EN = "create a file hello.txt with the word hi";
+
+// Each step: who ('user'|'octo'), bilingual tag + text, optional code block.
+const SIM = {
+  emulated: [
+    { who: "user", tagPt: "", tagEn: "", pt: PROMPT_PT, en: PROMPT_EN },
+    {
+      who: "octo", tagPt: "Contexto", tagEn: "Context",
+      pt: "Monto o system prompt e — atenção — <b>não envio tools pela API</b> (o modelo não tem). Em vez disso, ensino o protocolo dentro do texto:",
+      en: "I build the system prompt and — note — <b>send no tools via the API</b> (the model has none). Instead, I teach the protocol inside the text:",
+      code: 'Você está em C:\\projeto. SIM, você PODE criar arquivos.\nPara agir, escreva blocos:\n<polypus:tool name="write_file">\n  <arg name="path">…</arg>\n  <arg name="content">…</arg>\n</polypus:tool>\nAo terminar, chame finish.',
+    },
+    {
+      who: "octo", tagPt: "Modelo responde", tagEn: "Model replies",
+      pt: "O modelo devolve <b>texto puro</b> — sem nenhum canal estruturado:",
+      en: "The model returns <b>plain text</b> — no structured channel:",
+      code: 'Vou criar o arquivo.\n<polypus:tool name="write_file">\n<arg name="path">hello.txt</arg>\n<arg name="content">olá</arg>\n</polypus:tool>',
+    },
+    {
+      who: "octo", tagPt: "Parser", tagEn: "Parser",
+      pt: "Eu <b>varro o texto</b> e extraio a chamada: <code>write_file(path=\"hello.txt\", content=\"olá\")</code>. É leitura de string — nada de API.",
+      en: "I <b>scan the text</b> and extract the call: <code>write_file(path=\"hello.txt\", content=\"hi\")</code>. It's string parsing — no API involved.",
+    },
+    {
+      who: "octo", tagPt: "Permissões", tagEn: "Permissions",
+      pt: "Checo: <code>hello.txt</code> está na allow-list? O modo permite escrever? (em <i>review</i>, eu te pergunto antes.)",
+      en: "I check: is <code>hello.txt</code> in the allow-list? Does the mode allow writing? (in <i>review</i>, I ask you first.)",
+    },
+    {
+      who: "octo", tagPt: "Executa", tagEn: "Execute",
+      pt: "Escrevo o arquivo no disco e devolvo o resultado como <b>texto de usuário</b> (o modelo emulado não entende <code>role: tool</code>):",
+      en: "I write the file to disk and feed the result back as <b>user text</b> (the emulated model doesn't understand <code>role: tool</code>):",
+      code: "<polypus:tool_result name=\"write_file\">\nWrote hello.txt (1 linha)\n</polypus:tool_result>",
+    },
+    {
+      who: "octo", tagPt: "Modelo responde", tagEn: "Model replies",
+      pt: "O modelo vê que deu certo e sinaliza o fim:",
+      en: "The model sees it worked and signals completion:",
+      code: '<polypus:tool name="finish">\n<arg name="summary">criei hello.txt</arg>\n</polypus:tool>',
+    },
+    {
+      who: "octo", tagPt: "✓ Fim", tagEn: "✓ Done",
+      pt: "Vejo o <code>finish</code> → encerro. Arquivo criado. <b>Em nenhum momento a API soube que existiam tools.</b>",
+      en: "I see <code>finish</code> → stop. File created. <b>The API never knew tools existed.</b>",
+    },
+  ],
+  native: [
+    { who: "user", tagPt: "", tagEn: "", pt: PROMPT_PT, en: PROMPT_EN },
+    {
+      who: "octo", tagPt: "Contexto", tagEn: "Context",
+      pt: "Monto o contexto e <b>envio as tools pela própria API</b>, num campo estruturado:",
+      en: "I build the context and <b>send the tools via the API itself</b>, in a structured field:",
+      code: 'tools: [\n  { name: "write_file", parameters: { path, content } },\n  { name: "run_command", … }, …\n]',
+    },
+    {
+      who: "octo", tagPt: "Modelo responde", tagEn: "Model replies",
+      pt: "O modelo <b>não escreve texto livre</b> — ele retorna uma <i>tool_call</i> estruturada (a API garante o formato):",
+      en: "The model <b>doesn't write free text</b> — it returns a structured <i>tool_call</i> (the API guarantees the format):",
+      code: 'tool_call: write_file\narguments: { "path": "hello.txt", "content": "olá" }',
+    },
+    {
+      who: "octo", tagPt: "Sem parser", tagEn: "No parsing",
+      pt: "Já vem estruturado — <b>não preciso varrer texto</b>. Só valido os argumentos e checo permissão.",
+      en: "It's already structured — <b>no text to scan</b>. I just validate the arguments and check permissions.",
+    },
+    {
+      who: "octo", tagPt: "Executa", tagEn: "Execute",
+      pt: "Escrevo o arquivo e devolvo o resultado pelo <b>canal estruturado</b> da API:",
+      en: "I write the file and return the result through the API's <b>structured channel</b>:",
+      code: 'role: tool\ntool_call_id: call_1\ncontent: "Wrote hello.txt"',
+    },
+    {
+      who: "octo", tagPt: "Modelo responde", tagEn: "Model replies",
+      pt: "O modelo chama <code>finish</code> (também estruturado, pela API).",
+      en: "The model calls <code>finish</code> (also structured, via the API).",
+    },
+    {
+      who: "octo", tagPt: "✓ Fim", tagEn: "✓ Done",
+      pt: "Encerro. <b>Mesmo resultado</b> — mas o roteamento foi feito pela API, não pelo texto.",
+      en: "I stop. <b>Same result</b> — but the routing was done by the API, not by parsing text.",
+    },
+  ],
+};
+
+function initSimulator() {
+  const feed = document.getElementById("simFeed");
+  if (!feed) return; // not on the deep-dive page
+
+  let mode = "emulated";
+  let shown = 0;
+
+  const steps = () => SIM[mode];
+  const progress = document.getElementById("simProgress");
+  const btnNext = document.getElementById("simNext");
+
+  function bubble(step) {
+    const lang = currentLang;
+    const wrap = document.createElement("div");
+    wrap.className = "bubble " + step.who;
+    const tag = (lang === "pt" ? step.tagPt : step.tagEn);
+    const text = (lang === "pt" ? step.pt : step.en);
+    const code = step.code
+      ? `<pre><code>${step.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`
+      : "";
+    wrap.innerHTML =
+      `<div class="avatar">${step.who === "user" ? "👤" : "🐙"}</div>` +
+      `<div class="body">${tag ? `<span class="tag">${tag}</span>` : ""}<p class="txt">${text}</p>${code}</div>`;
+    return wrap;
+  }
+
+  function render() {
+    feed.innerHTML = "";
+    if (shown === 0) {
+      const e = document.createElement("p");
+      e.className = "sim-empty";
+      e.textContent = I18N[currentLang]["deep.empty"];
+      feed.appendChild(e);
+    }
+    steps().slice(0, shown).forEach((s) => feed.appendChild(bubble(s)));
+    progress.textContent = `${shown} / ${steps().length}`;
+    btnNext.disabled = shown >= steps().length;
+  }
+
+  function setMode(m) {
+    mode = m;
+    shown = 0;
+    document.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("active", b.dataset.mode === m));
+    render();
+  }
+
+  document.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  btnNext.addEventListener("click", () => { if (shown < steps().length) { shown++; render(); } });
+  document.getElementById("simReset").addEventListener("click", () => { shown = 0; render(); });
+  document.getElementById("simAll").addEventListener("click", () => {
+    shown = 0; render();
+    const tick = () => { if (shown < steps().length) { shown++; render(); setTimeout(tick, 650); } };
+    tick();
+  });
+
+  // Re-render bubbles when the language changes.
+  document.querySelectorAll(".lang-toggle button").forEach((b) =>
+    b.addEventListener("click", () => render()),
+  );
+
+  setMode("emulated");
+}
+
+document.addEventListener("DOMContentLoaded", initSimulator);
