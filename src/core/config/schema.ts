@@ -48,8 +48,13 @@ export const Permissions = z.object({
 });
 export type Permissions = z.infer<typeof Permissions>;
 
+export const Locale = z.enum(["pt-BR", "en"]);
+export type Locale = z.infer<typeof Locale>;
+
 export const PolypusConfig = z.object({
   version: z.literal(1).default(1),
+  /** Interface language. Defaults to pt-BR. */
+  locale: Locale.default("pt-BR"),
   defaultAgent: z.string().optional(),
   agents: z.array(AgentConfig).default([]),
   permissions: Permissions.default({}),

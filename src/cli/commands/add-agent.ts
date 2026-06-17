@@ -2,6 +2,7 @@ import pc from "picocolors";
 import { AgentConfig, ProviderKind, ToolMode } from "../../core/config/schema.js";
 import { findAgent, loadConfig, saveConfig } from "../../core/config/store.js";
 import { DEFAULT_BASE_URL, REQUIRES_API_KEY } from "../../core/providers/defaults.js";
+import { t } from "../../core/i18n/index.js";
 
 export interface AddAgentOptions {
   provider: string;
@@ -17,18 +18,16 @@ export async function addAgent(name: string, opts: AddAgentOptions): Promise<voi
   const config = await loadConfig();
 
   if (findAgent(config, name)) {
-    throw new Error(`An agent named "${name}" already exists. Use remove-agent first to replace it.`);
+    throw new Error(t("agent.exists", { name }));
   }
 
   const provider = ProviderKind.parse(opts.provider);
   const baseUrl = opts.baseUrl ?? DEFAULT_BASE_URL[provider];
   if (!baseUrl) {
-    throw new Error(`Provider "${provider}" requires --base-url.`);
+    throw new Error(t("agent.needBaseUrl", { provider }));
   }
   if (REQUIRES_API_KEY[provider] && !opts.apiKey) {
-    throw new Error(
-      `Provider "${provider}" requires an API key. Pass --api-key "\${ENV_VAR}" (recommended) or a literal value.`,
-    );
+    throw new Error(t("agent.needApiKey", { provider }));
   }
 
   const agent = AgentConfig.parse({
@@ -47,8 +46,8 @@ export async function addAgent(name: string, opts: AddAgentOptions): Promise<voi
   await saveConfig(config);
 
   console.log(
-    pc.green(`✓ Added agent ${pc.bold(name)}`) +
+    pc.green(t("agent.added", { name: pc.bold(name) })) +
       ` (${provider} · ${opts.model})` +
-      (config.defaultAgent === name ? pc.dim(" [default]") : ""),
+      (config.defaultAgent === name ? pc.dim(` [${t("common.default")}]`) : ""),
   );
 }

@@ -1,5 +1,6 @@
 import type { ToolSpec } from "../providers/types.js";
 import type { PermissionMode } from "../config/schema.js";
+import { getLocale, LOCALE_NAMES, t } from "../i18n/index.js";
 
 export interface PromptContext {
   workspace: string;
@@ -30,6 +31,7 @@ function basePreamble(ctx: PromptContext): string {
     "- YES, you ARE allowed to run shell commands (subject to the permission mode above).",
     "- Do not ask for permission and do not say you cannot edit files — you can. Just emit the tool calls.",
     "- Make the changes directly. When the task is fully done, call the `finish` tool with a short summary.",
+    t("prompt.language", { language: LOCALE_NAMES[getLocale()] }),
     ctx.briefing ? `\nYour assigned task:\n${ctx.briefing}` : "",
   ].join("\n");
 }

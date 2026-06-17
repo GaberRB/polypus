@@ -7,6 +7,7 @@ import {
   DEFAULT_CONFIG,
   PolypusConfig,
 } from "./schema.js";
+import { t } from "../i18n/index.js";
 
 /** Directory where Polypus keeps its config. Override with POLYPUS_HOME. */
 export function configDir(): string {
@@ -66,9 +67,10 @@ export function resolveAgent(
     const agent = findAgent(config, name);
     if (!agent) {
       throw new Error(
-        `No agent named "${name}". Known agents: ${
-          config.agents.map((a) => a.name).join(", ") || "(none)"
-        }`,
+        t("agent.noneKnown", {
+          name,
+          names: config.agents.map((a) => a.name).join(", ") || "(none)",
+        }),
       );
     }
     return agent;
@@ -79,12 +81,10 @@ export function resolveAgent(
   }
   if (config.agents.length === 1) return config.agents[0]!;
   if (config.agents.length === 0) {
-    throw new Error("No agents configured. Run `polypus setup` or `polypus add-agent` first.");
+    throw new Error(t("agent.noneConfigured"));
   }
   throw new Error(
-    `Multiple agents configured but no default set. Pass --agent <name> or set a default. Agents: ${config.agents
-      .map((a) => a.name)
-      .join(", ")}`,
+    t("agent.multipleNoDefault", { names: config.agents.map((a) => a.name).join(", ") }),
   );
 }
 
