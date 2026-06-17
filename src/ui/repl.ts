@@ -1,78 +1,172 @@
 import * as readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import pc from "picocolors";
-import type { PermissionMode } from "../core/config/schema.js";
 import type { SessionState } from "../cli/commands/run.js";
+import type { PermissionMode, PolypusConfig } from "../core/config/schema.js";
+import { findAgent, loadConfig, saveConfig } from "../core/config/store.js";
+import { addAgentInteractive } from "./wizard.js";
+import { t } from "../core/i18n/index.js";
+import { promptLabel } from "./banner.js";
 
-type TaskRunner = (task: string) => Promise<void>;
+export interface ReplContext {
+  session: SessionState;
+  /** Run a task with the currently active agent. */
+  runTask(task: string): Promise<void>;
+  /** Current in-memory config. */
+  getConfig(): PolypusConfig;
+  /** Re-read config from disk (after add/remove). */
+  reload(): Promise<void>;
+}
 
-const HELP = `
-${pc.bold("Slash commands:")}
-  /plan            switch to plan mode (read-only)
-  /review          switch to review mode (confirm each action)
-  /bypass          switch to bypass mode (auto-approve)
-  /allow <glob>    add a path glob to the allow-list
-  /allow           show the current allow-list and mode
-  /reset           clear the conversation history
-  /help            show this help
-  /exit            quit
-Anything else is sent to the agent as a task.
-`.trim();
+/**
+ * Interactive session loop. A fresh readline is opened only to read each line
+ * and closed before any work runs — tasks (review-mode confirmations) and the
+ * /add wizard use @clack/prompts, which needs sole control of stdin. Keeping a
+ * persistent readline open across those would corrupt stdin and drop the REPL.
+ */
+export async function startRepl(ctx: ReplContext): Promise<void> {
+  for (;;) {
+    const line = await readLine(promptLabel(ctx.session.mode));
+    if (line === null) break; // EOF / Ctrl+D
+    const trimmed = line.trim();
+    if (!trimmed) continue;
 
-/** Interactive session loop. Type tasks or slash commands. */
-export async function startRepl(runTask: TaskRunner, session: SessionState): Promise<void> {
-  const rl = readline.createInterface({ input: stdin, output: stdout });
-  console.log(pc.bold("\nPolypus interactive session.") + pc.dim(" Type /help for commands, /exit to quit.\n"));
-
-  try {
-    for (;;) {
-      const line = (await rl.question(pc.green(`polypus(${session.mode})› `))).trim();
-      if (!line) continue;
-
-      if (line.startsWith("/")) {
-        const done = handleCommandLine(line, session);
-        if (done) break;
-        continue;
-      }
-      await runTask(line);
+    if (!trimmed.startsWith("/")) {
+      await ctx.runTask(trimmed);
+      continue;
     }
+
+    const [cmd = "", ...rest] = trimmed.slice(1).split(/\s+/);
+    const arg = rest.join(" ").trim();
+
+    if (cmd === "exit" || cmd === "quit") break;
+
+    if (cmd === "add") {
+      const name = await addAgentInteractive().catch((e) => {
+        console.log(pc.red(`✗ ${(e as Error).message}`));
+        return undefined;
+      });
+      await ctx.reload();
+      if (name) {
+        ctx.session.agentName = name;
+        console.log(pc.green(t("repl.switchedTo", { name })));
+      }
+      continue;
+    }
+
+    await handleCommand(cmd, arg, ctx);
+  }
+}
+
+/** Read a single line with a transient readline; returns null on EOF. */
+async function readLine(prompt: string): Promise<string | null> {
+  const rl = readline.createInterface({ input: stdin, output: stdout });
+  try {
+    return await rl.question(prompt);
+  } catch {
+    return null; // stream closed
   } finally {
     rl.close();
   }
 }
 
-/** Returns true when the session should exit. */
-function handleCommandLine(line: string, session: SessionState): boolean {
-  const [cmd, ...rest] = line.slice(1).split(/\s+/);
-  const arg = rest.join(" ").trim();
+async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promise<void> {
+  const { session } = ctx;
 
   switch (cmd) {
-    case "exit":
-    case "quit":
-      return true;
     case "help":
-      console.log(HELP);
-      return false;
+      console.log(t("repl.help"));
+      return;
+
     case "plan":
     case "review":
     case "bypass":
       session.mode = cmd as PermissionMode;
-      console.log(pc.dim(`mode → ${cmd}`));
-      return false;
+      console.log(pc.dim(t("repl.modeChanged", { mode: cmd })));
+      return;
+
     case "allow":
       if (arg) {
         session.allow = [...session.allow, arg];
-        console.log(pc.dim(`allow-list += ${arg}`));
+        console.log(pc.dim(t("repl.allowAdded", { glob: arg })));
       } else {
-        console.log(pc.dim(`mode=${session.mode} allow=[${session.allow.join(", ")}]`));
+        console.log(pc.dim(t("repl.allowShow", { mode: session.mode, allow: session.allow.join(", ") })));
       }
-      return false;
+      return;
+
     case "reset":
       session.history = [];
-      console.log(pc.dim("history cleared"));
-      return false;
+      console.log(pc.dim(t("repl.historyCleared")));
+      return;
+
+    case "agents":
+      printAgents(ctx.getConfig(), session.agentName);
+      return;
+
+    case "agent": {
+      if (!arg) {
+        console.log(pc.yellow(t("repl.needName", { usage: "/agent <name>" })));
+        return;
+      }
+      if (!findAgent(ctx.getConfig(), arg)) {
+        console.log(pc.red(t("agent.notFound", { name: arg })));
+        return;
+      }
+      session.agentName = arg;
+      console.log(pc.green(t("repl.agentSwitched", { name: arg })));
+      return;
+    }
+
+    case "remove": {
+      if (!arg) {
+        console.log(pc.yellow(t("repl.needName", { usage: "/remove <name>" })));
+        return;
+      }
+      await removeAgent(arg, ctx);
+      return;
+    }
+
     default:
-      console.log(pc.yellow(`Unknown command /${cmd}. Type /help.`));
-      return false;
+      console.log(pc.yellow(t("repl.unknown", { cmd })));
+  }
+}
+
+function printAgents(config: PolypusConfig, activeName: string): void {
+  if (config.agents.length === 0) {
+    console.log(pc.yellow(t("agent.none")));
+    return;
+  }
+  console.log(pc.bold(t("agent.listHeader")));
+  for (const a of config.agents) {
+    const active = a.name === activeName;
+    console.log(
+      `  ${active ? pc.green("●") : pc.dim("○")} ${pc.bold(a.name)} ` +
+        pc.dim(`(${a.provider} · ${a.model} · ${a.toolMode})`) +
+        (config.defaultAgent === a.name ? pc.dim(` [${t("common.default")}]`) : ""),
+    );
+  }
+}
+
+async function removeAgent(name: string, ctx: ReplContext): Promise<void> {
+  const config = await loadConfig();
+  if (!findAgent(config, name)) {
+    console.log(pc.red(t("agent.notFound", { name })));
+    return;
+  }
+  config.agents = config.agents.filter((a) => a.name !== name);
+  if (config.defaultAgent === name) config.defaultAgent = config.agents[0]?.name;
+  await saveConfig(config);
+  await ctx.reload();
+  console.log(pc.green(t("agent.removed", { name })));
+
+  // If the active agent was removed, fall back to another one.
+  if (ctx.session.agentName === name) {
+    const next = config.defaultAgent ?? config.agents[0]?.name;
+    if (next) {
+      ctx.session.agentName = next;
+      console.log(pc.dim(t("repl.switchedTo", { name: next })));
+    } else {
+      console.log(pc.yellow(t("repl.noAgentsLeft")));
+    }
   }
 }
