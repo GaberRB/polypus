@@ -8,6 +8,7 @@ import { run } from "./commands/run.js";
 import { setup } from "./commands/setup.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
+import { prd } from "./commands/prd.js";
 import { join } from "node:path";
 import { configDir, loadConfig } from "../core/config/store.js";
 import { loadDotenv } from "../core/config/dotenv.js";
@@ -116,6 +117,15 @@ function buildProgram(): Command {
     .option("--limit <n>", t("cli.opt.limit"))
     .description(t("cli.cmd.models"))
     .action((opts) => models(opts));
+
+  program
+    .command("prd")
+    .argument("<issue>", t("cli.arg.prdIssue"))
+    .option("--out <file>", t("cli.opt.out"))
+    .option("--model <model>", t("cli.opt.model"))
+    .option("--input <file>", t("cli.opt.input"))
+    .description(t("cli.cmd.prd"))
+    .action((issue, opts) => prd(issue, opts));
 
   return program;
 }
