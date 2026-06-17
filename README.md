@@ -10,6 +10,7 @@ task across **several agents working in parallel** in isolated git worktrees.
 - 🔐 **Permission modes.** `plan` (read-only), `review` (confirm each action), `bypass` (auto-approve), with a path allow-list.
 - 🐝 **Parallel swarm.** A lead agent decomposes a task into subtasks; workers run concurrently in git worktrees and merge at the end.
 - 🪄 **Setup wizard.** Interactive onboarding for keys, models, and permissions.
+- 🌎 **Bilingual UI.** Portuguese (pt-BR, default) and English.
 - 🕵️ **No telemetry.** Nothing leaves your machine except calls to the providers you configure.
 
 > Status: early MVP. Expect rough edges.
@@ -61,11 +62,32 @@ Then run a task in the current directory:
 polypus run "create a Fastify server in src/server.ts with a /health route"
 ```
 
-Or start an interactive session:
+Or just launch the interactive experience (banner + REPL):
 
 ```bash
-polypus run
+polypus            # bare command → interactive; first run opens the setup wizard
+polypus run        # same interactive session
 ```
+
+> When you pick **Ollama** in the wizard, Polypus detects your running instance
+> and lists the models you already have installed — no need to remember exact
+> tags like `llama3.1:8b`. For **OpenRouter**, it pulls the live catalog so you
+> can filter by price, context and tool support and pick a model from a list.
+
+## Discovering models
+
+Browse the OpenRouter catalog from the terminal — price (USD per 1M tokens, in/out),
+context window, and whether the model supports native tool-calling:
+
+```bash
+polypus models --tools --max-price 1 --sort price   # cheap models that support tools
+polypus models --search claude --sort price-desc     # all Claude models, priciest first
+polypus models --free                                # free models only
+```
+
+The setup wizard uses the same data: choosing OpenRouter opens an interactive
+browser with search, filters (tools-only, free-only) and sorting, then a picker
+showing each model's price, tool badge and context.
 
 ## Commands
 
@@ -77,10 +99,15 @@ polypus run
 | `polypus list-agents` | List configured agents. |
 | `polypus run [task] [--agent <name>] [--mode plan\|review\|bypass] [--max-steps <n>]` | Run a task, or open a REPL if no task is given. |
 | `polypus swarm <task> [--agents a,b] [--max-subtasks <n>]` | Split a task across agents in parallel worktrees. |
+| `polypus models [--search x] [--tools] [--free] [--max-price <usd>] [--sort price\|price-desc\|context\|name] [--limit <n>]` | Browse the OpenRouter catalog (price, context, tool support). |
 
 ### Interactive slash commands (in `polypus run`)
 
 ```
+/agents          list configured agents
+/agent <name>    switch the active agent
+/add             add a new agent (wizard)
+/remove <name>   remove an agent
 /plan            read-only mode
 /review          confirm each write / command
 /bypass          auto-approve
@@ -111,6 +138,19 @@ the model calls the `finish` tool.
 Set the path per agent with `--tool-mode`: `auto` (native for hosted, emulated
 for Ollama), `native`, or `emulated`.
 
+## Language / Idioma
+
+The interface is bilingual: **pt-BR (default)** and **en**. Resolution order:
+`--lang` flag → `POLYPUS_LANG` env → `locale` in the config → pt-BR.
+
+```bash
+polypus --lang en run "create a CLI entrypoint"
+POLYPUS_LANG=en polypus list-agents
+```
+
+The setup wizard asks for the language first and saves it to the config. The
+agent is also instructed to talk back to you in the configured language.
+
 ## Permissions
 
 | Mode | File writes | Commands |
@@ -136,11 +176,23 @@ inspection rather than force-merged.
 ## Configuration
 
 Stored at `~/.polypus/config.json` (override the directory with `POLYPUS_HOME`).
-API keys may be inline or, preferably, an env reference:
+API keys may be inline or, preferably, an env reference.
+
+Polypus also loads a `.env` file from `~/.polypus/.env` (and the current
+directory) at startup, so you can keep secrets there without relying on the OS
+to propagate environment variables to your shell:
+
+```dotenv
+# ~/.polypus/.env
+OPENROUTER_API_KEY=sk-or-...
+```
+
+Real environment variables always win over `.env` values. Example config:
 
 ```json
 {
   "version": 1,
+  "locale": "pt-BR",
   "defaultAgent": "or",
   "agents": [
     {
@@ -169,6 +221,15 @@ npm run typecheck
 npm test           # vitest
 ```
 
+## Author
+
+**Gabriel Rios**
+
+[![GitHub](https://img.shields.io/badge/GitHub-GaberRB-181717?logo=github)](https://github.com/GaberRB)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-gabriel--riosb-0A66C2?logo=linkedin)](https://www.linkedin.com/in/gabriel-riosb/)
+
+Contributions, issues and feedback are welcome — open an issue or a PR.
+
 ## License
 
-MIT
+[MIT](LICENSE) © Gabriel Rios
