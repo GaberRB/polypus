@@ -37,6 +37,8 @@ export interface ChatRequest {
   /** Native-tool providers receive these; emulated path encodes them into the prompt instead. */
   tools?: ToolSpec[];
   params?: ChatParams;
+  /** Abort the in-flight request (e.g. user pressed ESC). */
+  signal?: AbortSignal;
 }
 
 export interface Usage {

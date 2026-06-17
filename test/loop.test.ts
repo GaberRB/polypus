@@ -97,6 +97,64 @@ describe("runAgent (emulated path)", () => {
     expect(result.finished).toBe(true);
   });
 
+  it("treats a conversational reply as a reply, without re-prompting", async () => {
+    const ws = workspace();
+    const agent = makeAgent(["Oi! Como posso ajudar você hoje?"]);
+
+    let reprompts = 0;
+    const result = await runAgent({
+      task: "oi",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+      events: { onReprompt: () => reprompts++ },
+    });
+
+    expect(reprompts).toBe(0);
+    expect(result.reason).toBe("reply");
+    expect(result.finished).toBe(false);
+  });
+
+  it("stops after repeated identical tool failures instead of looping", async () => {
+    const ws = workspace();
+    // write_file with no 'content' arg → always fails validation.
+    const agent = makeAgent([
+      `<polypus:tool name="write_file"><arg name="path">x.txt</arg></polypus:tool>`,
+    ]);
+
+    const result = await runAgent({
+      task: "write x",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+      maxSteps: 30,
+    });
+
+    expect(result.reason).toBe("stalled");
+    expect(result.steps).toBe(3); // default maxToolRetries
+  });
+
+  it("returns cancelled when the abort signal fires", async () => {
+    const ws = workspace();
+    const agent = makeAgent([`<polypus:tool name="finish"><arg name="summary">x</arg></polypus:tool>`]);
+    const ac = new AbortController();
+    ac.abort();
+
+    const result = await runAgent({
+      task: "do something",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+      signal: ac.signal,
+    });
+
+    expect(result.reason).toBe("cancelled");
+    expect(result.finished).toBe(false);
+  });
+
   it("blocks writes in plan mode", async () => {
     const ws = workspace();
     const agent = makeAgent([

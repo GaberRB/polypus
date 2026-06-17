@@ -50,7 +50,7 @@ export class AnthropicProvider implements Provider {
 
     const body = {
       model: this.model,
-      max_tokens: req.params?.maxTokens ?? 4096,
+      max_tokens: req.params?.maxTokens ?? 8192,
       temperature: req.params?.temperature,
       ...(system ? { system } : {}),
       messages,
@@ -67,6 +67,11 @@ export class AnthropicProvider implements Provider {
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    // Forward an external abort (e.g. user pressed ESC) to this request.
+    if (req.signal) {
+      if (req.signal.aborted) controller.abort();
+      else req.signal.addEventListener("abort", () => controller.abort(), { once: true });
+    }
     let res: Response;
     try {
       res = await fetch(`${this.baseURL}/v1/messages`, {

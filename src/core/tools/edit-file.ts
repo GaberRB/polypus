@@ -28,7 +28,12 @@ export const editFileTool: Tool = {
   async run(rawArgs, ctx) {
     const args = Args.safeParse(rawArgs);
     if (!args.success) {
-      return { ok: false, output: "Invalid args: 'path', 'search', and 'replace' are required." };
+      return {
+        ok: false,
+        output:
+          "edit_file needs three arguments: 'path', 'search' (exact text to find), and 'replace'. " +
+          "Resend the tool call with all three filled in.",
+      };
     }
 
     const abs = resolve(ctx.workspace, args.data.path);

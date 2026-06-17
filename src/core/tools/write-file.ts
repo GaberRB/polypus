@@ -21,7 +21,16 @@ export const writeFileTool: Tool = {
   },
   async run(rawArgs, ctx) {
     const args = Args.safeParse(rawArgs);
-    if (!args.success) return { ok: false, output: "Invalid args: 'path' and 'content' are required." };
+    if (!args.success) {
+      const got = Object.keys(rawArgs ?? {});
+      return {
+        ok: false,
+        output:
+          "write_file needs two arguments: 'path' (the file path) and 'content' (the complete file text). " +
+          `Received: [${got.join(", ") || "none"}]. Resend the tool call with BOTH arguments filled in, ` +
+          "and keep the file small enough to fit in one message.",
+      };
+    }
 
     const preview = previewContent(args.data.content);
     const decision = await ctx.permissions.authorizeWrite(args.data.path, preview);
