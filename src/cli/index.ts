@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { createRequire } from "node:module";
 import pc from "picocolors";
 import { addAgent } from "./commands/add-agent.js";
 import { removeAgent } from "./commands/remove-agent.js";
@@ -7,11 +8,18 @@ import { run } from "./commands/run.js";
 import { setup } from "./commands/setup.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
+import { prd } from "./commands/prd.js";
 import { join } from "node:path";
 import { configDir, loadConfig } from "../core/config/store.js";
 import { loadDotenv } from "../core/config/dotenv.js";
 import { pickLocale, setLocale, t } from "../core/i18n/index.js";
 import { banner } from "../ui/banner.js";
+
+// Single source of truth for the CLI version: read from package.json at runtime.
+// Resolved relative to the bundled dist/index.js, where package.json sits one level up.
+const { version: pkgVersion } = createRequire(import.meta.url)("../package.json") as {
+  version: string;
+};
 
 /** Entry point for bare `polypus`: onboard on first run, then start interactive mode. */
 async function launchInteractive(): Promise<void> {
@@ -48,7 +56,7 @@ function buildProgram(): Command {
   program
     .name("polypus")
     .description(t("cli.description"))
-    .version("0.1.0")
+    .version(pkgVersion)
     .option("--lang <locale>", t("cli.opt.lang"))
     // No subcommand → launch the interactive experience (Claude/Devin-style).
     .action(() => launchInteractive());
@@ -109,6 +117,15 @@ function buildProgram(): Command {
     .option("--limit <n>", t("cli.opt.limit"))
     .description(t("cli.cmd.models"))
     .action((opts) => models(opts));
+
+  program
+    .command("prd")
+    .argument("<issue>", t("cli.arg.prdIssue"))
+    .option("--out <file>", t("cli.opt.out"))
+    .option("--model <model>", t("cli.opt.model"))
+    .option("--input <file>", t("cli.opt.input"))
+    .description(t("cli.cmd.prd"))
+    .action((issue, opts) => prd(issue, opts));
 
   return program;
 }

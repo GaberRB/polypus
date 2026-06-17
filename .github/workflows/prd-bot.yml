@@ -1,0 +1,50 @@
+name: prd-bot
+
+# Generates a PRD from an issue and posts it as a comment. Runs when the
+# maintainer labels an issue `accepted` (the triage gate), or on demand.
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number"
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  prd:
+    name: generate PRD
+    # On the `labeled` event, only run for the `accepted` label.
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'accepted'
+    runs-on: ubuntu-latest
+    env:
+      ISSUE: ${{ github.event.issue.number || github.event.inputs.issue }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Generate PRD
+        run: node dist/index.js prd "$ISSUE" --out prd.md
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+      - name: Post PRD as a comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const body = fs.readFileSync("prd.md", "utf8");
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: Number(process.env.ISSUE),
+              body: `🧭 **PRD gerado automaticamente** (modelo gratuito via OpenRouter)\n\n${body}`,
+            });
