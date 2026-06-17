@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "node dist/cli/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "ai",
@@ -32,6 +33,15 @@
     "harness"
   ],
   "license": "MIT",
+  "author": "Gabriel Rios (https://github.com/GaberRB)",
+  "homepage": "https://github.com/GaberRB/polypus#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GaberRB/polypus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/GaberRB/polypus/issues"
+  },
   "dependencies": {
     "@clack/prompts": "^0.7.0",
     "commander": "^12.1.0",
