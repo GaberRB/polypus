@@ -1,0 +1,44 @@
+name: pr-review
+
+# Posts an automated first-pass code review (free OpenRouter model) when a PR
+# is opened or reopened. Note: PRs from forks get a read-only token with no
+# access to secrets, so the review only runs for branches in this repo.
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: AI review
+    runs-on: ubuntu-latest
+    env:
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Generate review
+        run: node dist/index.js review "$PR" --out review.md
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+      - name: Post review as a comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const body = fs.readFileSync("review.md", "utf8");
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: Number(process.env.PR),
+              body: `🤖 **Review automático** (modelo gratuito via OpenRouter) — primeira camada, não substitui revisão humana.\n\n${body}`,
+            });

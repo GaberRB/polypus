@@ -27,7 +27,7 @@ export function resolveFreeProvider(model: string): ResolvedAgent {
 
 /** Default free models per task; overridable via env then CLI `--model`. */
 export const DEFAULT_PRD_MODEL = process.env.POLYPUS_PRD_MODEL ?? "openai/gpt-oss-120b:free";
-export const DEFAULT_REVIEW_MODEL = process.env.POLYPUS_REVIEW_MODEL ?? "qwen/qwen3-coder:free";
+export const DEFAULT_REVIEW_MODEL = process.env.POLYPUS_REVIEW_MODEL ?? "openai/gpt-oss-120b:free";
 
 /**
  * Retry a flaky call with exponential backoff. Free OpenRouter models are
