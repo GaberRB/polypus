@@ -6,66 +6,119 @@ import { listAgents } from "./commands/list-agents.js";
 import { run } from "./commands/run.js";
 import { setup } from "./commands/setup.js";
 import { swarm } from "./commands/swarm.js";
+import { models } from "./commands/models.js";
+import { join } from "node:path";
+import { configDir, loadConfig } from "../core/config/store.js";
+import { loadDotenv } from "../core/config/dotenv.js";
+import { pickLocale, setLocale, t } from "../core/i18n/index.js";
+import { banner } from "../ui/banner.js";
 
-const program = new Command();
+/** Entry point for bare `polypus`: onboard on first run, then start interactive mode. */
+async function launchInteractive(): Promise<void> {
+  const config = await loadConfig();
+  if (config.agents.length === 0) {
+    console.log(banner());
+    console.log("  " + pc.yellow(t("welcome.firstRun")) + "\n");
+    await setup();
+  }
+  await run(undefined, {});
+}
 
-program
-  .name("polypus")
-  .description(
-    "Agentic coding harness that makes any AI API generate and apply code — " +
-      "OpenRouter, Ollama, and any OpenAI-compatible endpoint.",
-  )
-  .version("0.1.0");
+/** Read --lang from argv before commander parses, so help text is localized too. */
+function flagLocale(argv: string[]): string | undefined {
+  const i = argv.indexOf("--lang");
+  if (i !== -1 && argv[i + 1]) return argv[i + 1];
+  const eq = argv.find((a) => a.startsWith("--lang="));
+  return eq?.split("=")[1];
+}
 
-program
-  .command("setup")
-  .description("Interactive setup wizard (configure agents, keys, permissions)")
-  .action(() => setup());
+async function resolveLocale(): Promise<void> {
+  let configLocale: string | undefined;
+  try {
+    configLocale = (await loadConfig()).locale;
+  } catch {
+    /* ignore invalid/missing config for locale purposes */
+  }
+  setLocale(pickLocale({ flag: flagLocale(process.argv), config: configLocale }));
+}
 
-program
-  .command("add-agent")
-  .argument("<name>", "unique name for the agent")
-  .requiredOption("--provider <provider>", "openrouter | ollama | openai-compatible | anthropic")
-  .requiredOption("--model <model>", "model id, e.g. anthropic/claude-3.5-sonnet or llama3.1")
-  .option("--api-key <key>", 'API key or env reference like "${OPENROUTER_API_KEY}"')
-  .option("--base-url <url>", "override the provider base URL")
-  .option("--tool-mode <mode>", "auto | native | emulated", "auto")
-  .option("--set-default", "make this the default agent")
-  .description("Register a new agent (API key + model)")
-  .action((name, opts) => addAgent(name, opts));
+function buildProgram(): Command {
+  const program = new Command();
 
-program
-  .command("remove-agent")
-  .argument("<name>", "name of the agent to remove")
-  .description("Remove a configured agent")
-  .action((name) => removeAgent(name));
+  program
+    .name("polypus")
+    .description(t("cli.description"))
+    .version("0.1.0")
+    .option("--lang <locale>", t("cli.opt.lang"))
+    // No subcommand → launch the interactive experience (Claude/Devin-style).
+    .action(() => launchInteractive());
 
-program
-  .command("list-agents")
-  .alias("agents")
-  .description("List configured agents")
-  .action(() => listAgents());
+  program
+    .command("setup")
+    .description(t("cli.cmd.setup"))
+    .action(() => setup());
 
-program
-  .command("run")
-  .argument("[task]", "task for the agent; omit to start an interactive session")
-  .option("--agent <name>", "which configured agent to use")
-  .option("--mode <mode>", "plan | review | bypass (overrides config)")
-  .option("--max-steps <n>", "maximum agent steps")
-  .description("Run a coding task with an agent")
-  .action((task, opts) => run(task, opts));
+  program
+    .command("add-agent")
+    .argument("<name>", t("cli.arg.addAgentName"))
+    .requiredOption("--provider <provider>", t("cli.opt.provider"))
+    .requiredOption("--model <model>", t("cli.opt.model"))
+    .option("--api-key <key>", t("cli.opt.apiKey"))
+    .option("--base-url <url>", t("cli.opt.baseUrl"))
+    .option("--tool-mode <mode>", t("cli.opt.toolMode"), "auto")
+    .option("--set-default", t("cli.opt.setDefault"))
+    .description(t("cli.cmd.addAgent"))
+    .action((name, opts) => addAgent(name, opts));
 
-program
-  .command("swarm")
-  .argument("<task>", "high-level task to split across agents")
-  .option("--agents <names>", "comma-separated agent names (default: all configured)")
-  .option("--max-subtasks <n>", "maximum number of parallel subtasks")
-  .description("Split a task across multiple agents working in parallel git worktrees")
-  .action((task, opts) => swarm(task, opts));
+  program
+    .command("remove-agent")
+    .argument("<name>", t("cli.arg.removeAgentName"))
+    .description(t("cli.cmd.removeAgent"))
+    .action((name) => removeAgent(name));
+
+  program
+    .command("list-agents")
+    .alias("agents")
+    .description(t("cli.cmd.listAgents"))
+    .action(() => listAgents());
+
+  program
+    .command("run")
+    .argument("[task]", t("cli.arg.runTask"))
+    .option("--agent <name>", t("cli.opt.agent"))
+    .option("--mode <mode>", t("cli.opt.mode"))
+    .option("--max-steps <n>", t("cli.opt.maxSteps"))
+    .description(t("cli.cmd.run"))
+    .action((task, opts) => run(task, opts));
+
+  program
+    .command("swarm")
+    .argument("<task>", t("cli.arg.swarmTask"))
+    .option("--agents <names>", t("cli.opt.agents"))
+    .option("--max-subtasks <n>", t("cli.opt.maxSubtasks"))
+    .description(t("cli.cmd.swarm"))
+    .action((task, opts) => swarm(task, opts));
+
+  program
+    .command("models")
+    .option("--search <text>", t("cli.opt.search"))
+    .option("--tools", t("cli.opt.toolsOnly"))
+    .option("--free", t("cli.opt.free"))
+    .option("--max-price <usd>", t("cli.opt.maxPrice"))
+    .option("--sort <order>", t("cli.opt.sort"))
+    .option("--limit <n>", t("cli.opt.limit"))
+    .description(t("cli.cmd.models"))
+    .action((opts) => models(opts));
+
+  return program;
+}
 
 async function main() {
   try {
-    await program.parseAsync(process.argv);
+    // Pick up secrets from ~/.polypus/.env and ./.env (does not override real env).
+    loadDotenv([join(configDir(), ".env"), join(process.cwd(), ".env")]);
+    await resolveLocale();
+    await buildProgram().parseAsync(process.argv);
   } catch (err) {
     console.error(pc.red(`✗ ${(err as Error).message}`));
     process.exitCode = 1;
