@@ -6,8 +6,11 @@ export interface PrMeta {
   body: string;
 }
 
-/** Diffs above this many chars are truncated so they fit a free model's context. */
-export const MAX_DIFF_CHARS = 60_000;
+/**
+ * Diffs above this many chars are truncated so they fit a free model's context.
+ * Override with POLYPUS_MAX_DIFF_CHARS for models with a smaller window.
+ */
+export const MAX_DIFF_CHARS = Number(process.env.POLYPUS_MAX_DIFF_CHARS) || 60_000;
 
 const SYSTEM = [
   "You are a senior code reviewer. Review the pull request diff below and report",
