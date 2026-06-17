@@ -77,6 +77,7 @@ const en: Catalog = {
     "⚠ Stopped after {steps} steps without a finish signal. You can continue with another instruction.",
   "run.confirm": "Allow {summary}?",
   "run.reprompt": "↻ no tool call — reinforcing instructions (attempt {attempt})",
+  "run.autocorrect": "↻ tool failed — auto-correcting with extra context",
   "run.cancelled": "■ cancelled",
 
   // repl
@@ -281,6 +282,7 @@ const ptBR: Catalog = {
     "⚠ Parou após {steps} passos sem sinal de conclusão. Você pode continuar com outra instrução.",
   "run.confirm": "Permitir {summary}?",
   "run.reprompt": "↻ nenhuma chamada de tool — reforçando instruções (tentativa {attempt})",
+  "run.autocorrect": "↻ tool falhou — autocorrigindo com contexto extra",
   "run.cancelled": "■ cancelado",
 
   "repl.welcome": "Sessão interativa do Polypus.",
