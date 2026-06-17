@@ -243,6 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Deep-dive page (fluxo.html): tools vs no-tools step-by-step simulator.
 // ===========================================================================
 Object.assign(I18N.pt, {
+  "footer.pix": "💜 Apoie via PIX: gabrielriosbelmiro@gmail.com",
   "how.deepCta": "🔬 Tools vs. sem tools — simulação passo a passo",
   "deep.back": "← voltar",
   "deep.title": "Tools vs. sem tools — passo a passo",
@@ -261,6 +262,7 @@ Object.assign(I18N.pt, {
   "deep.cmpNote": "Em ambos, o <b>loop do agente</b> é idêntico — só muda <i>como</i> as tool calls nascem e voltam.",
 });
 Object.assign(I18N.en, {
+  "footer.pix": "💜 Support via PIX: gabrielriosbelmiro@gmail.com",
   "how.deepCta": "🔬 Tools vs. no-tools — step-by-step simulation",
   "deep.back": "← back",
   "deep.title": "Tools vs. no-tools — step by step",

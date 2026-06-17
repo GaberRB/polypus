@@ -1,5 +1,9 @@
 # Polypus 🐙
 
+[![CI](https://github.com/GaberRB/polypus/actions/workflows/ci.yml/badge.svg)](https://github.com/GaberRB/polypus/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@gaberrb/polypus?color=9266F5&logo=npm)](https://www.npmjs.com/package/@gaberrb/polypus)
+[![license](https://img.shields.io/badge/license-MIT-AB8EFA)](LICENSE)
+
 **📖 Site:** https://gaberrb.github.io/polypus/ · **📦 npm:** [`@gaberrb/polypus`](https://www.npmjs.com/package/@gaberrb/polypus)
 
 An agentic coding harness that makes **any** AI API generate and apply code —
@@ -222,6 +226,20 @@ npm run dev        # build in watch mode
 npm run typecheck
 npm test           # vitest
 ```
+
+## Contributing
+
+Contributions are welcome — but **open an issue first**. Issues are triaged and labeled
+`accepted` before any PR; PRs without a linked accepted issue don't pass CI. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the full flow (issue → `accepted` → branch → PR → review).
+
+## Apoie o projeto
+
+Se o Polypus te ajudou, você pode apoiar o desenvolvimento via **PIX** 💜
+
+> **Chave PIX (e-mail):** `gabrielriosbelmiro@gmail.com`
+
+Qualquer valor é muito bem-vindo e ajuda a manter o projeto vivo. Obrigado!
 
 ## Author
 
