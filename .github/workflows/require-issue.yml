@@ -1,0 +1,59 @@
+name: require-issue
+
+# Every PR must reference an issue that the maintainer has triaged and labeled
+# `accepted`. This keeps the tracker clean and blocks drive-by PRs.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  check:
+    name: linked accepted issue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const bypass = ["GaberRB", "dependabot[bot]"];
+            if (bypass.includes(author)) {
+              core.info(`Bypassing issue check for ${author}.`);
+              return;
+            }
+
+            const text = `${pr.title}\n\n${pr.body || ""}`;
+            const nums = [...new Set([...text.matchAll(/#(\d+)/g)].map((m) => Number(m[1])))];
+            if (nums.length === 0) {
+              core.setFailed(
+                'Este PR precisa referenciar uma issue (ex.: "Closes #123"). Veja o CONTRIBUTING.md.',
+              );
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            let accepted = false;
+            for (const n of nums) {
+              try {
+                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                if (issue.pull_request) continue; // referenced a PR, not an issue
+                const labels = issue.labels.map((l) => (typeof l === "string" ? l : l.name));
+                if (labels.includes("accepted")) { accepted = true; break; }
+              } catch (e) {
+                core.info(`#${n}: ${e.message}`);
+              }
+            }
+
+            if (!accepted) {
+              core.setFailed(
+                'A issue vinculada precisa estar com a label "accepted" (triagem do mantenedor) antes de abrir o PR.',
+              );
+            } else {
+              core.info("Issue aceita encontrada ✓");
+            }

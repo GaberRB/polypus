@@ -1,0 +1,36 @@
+name: ✨ Feature / melhoria
+description: Sugira uma funcionalidade ou melhoria / Suggest a feature or improvement
+labels: [enhancement, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Boas ideias começam com um bom "porquê". Quanto mais claro o problema e os
+        exemplos, mais rápido a issue pode ser marcada como `accepted`.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema / motivação
+      description: Que problema isso resolve? Por que é importante?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Melhoria proposta + exemplos
+      description: Como deveria funcionar? Dê exemplos concretos (comandos, telas, fluxo).
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmações
+      options:
+        - label: Procurei nas issues existentes e não encontrei duplicata
+          required: true
+        - label: Entendo que o PR só deve ser aberto após esta issue receber a label `accepted`
+          required: true

@@ -1,0 +1,58 @@
+name: 🐛 Bug report
+description: Reporte um comportamento incorreto / Report incorrect behavior
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por reportar! Preencha com detalhes para conseguirmos reproduzir.
+        _Thanks for reporting! Please be detailed so we can reproduce it._
+  - type: textarea
+    id: what
+    attributes:
+      label: O que aconteceu? / What happened?
+      description: Descreva o bug e por que é um problema (motivação).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir / Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado / Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versão do Polypus
+      description: saída de `polypus --version`
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Provider / modelo / SO
+      placeholder: "ex.: ollama qwen2.5-coder:7b · Windows 11"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / saída
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmações
+      options:
+        - label: Procurei nas issues existentes e não encontrei duplicata
+          required: true

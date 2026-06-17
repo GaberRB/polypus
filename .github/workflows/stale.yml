@@ -1,0 +1,27 @@
+name: stale
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 30
+          days-before-close: 7
+          stale-issue-label: stale
+          stale-pr-label: stale
+          exempt-issue-labels: "accepted,pinned,security,help wanted"
+          exempt-pr-labels: "accepted,pinned,security"
+          stale-issue-message: "Esta issue está parada há um tempo. Comente para mantê-la aberta; senão será fechada em 7 dias."
+          stale-pr-message: "Este PR está parado. Atualize-o para mantê-lo aberto; senão será fechado em 7 dias."
+          close-issue-message: "Fechando por inatividade — sinta-se à vontade para reabrir."
+          close-pr-message: "Fechando por inatividade — sinta-se à vontade para reabrir."
