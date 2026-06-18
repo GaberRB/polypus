@@ -7,6 +7,7 @@ import { PermissionEngine, type ConfirmRequest } from "../../core/permissions/mo
 import { runAgent, type AgentEvents } from "../../core/agent/loop.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
+import { runSwarmSession } from "./swarm.js";
 import { printWelcome } from "../../ui/banner.js";
 import { Spinner } from "../../ui/spinner.js";
 import { t } from "../../core/i18n/index.js";
@@ -71,6 +72,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   const ctx: ReplContext = {
     session,
     runTask,
+    runSwarm: (taskText) => runSwarmSession(taskText, config, { workspace }),
     getConfig: () => config,
     reload: async () => {
       config = await loadConfig();
