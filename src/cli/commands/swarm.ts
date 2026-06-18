@@ -4,6 +4,7 @@ import { createProvider, type ResolvedAgent } from "../../core/providers/registr
 import { runSwarm } from "../../core/agent/orchestrator.js";
 import { SwarmView, describeToolCall } from "../../ui/swarm-view.js";
 import { t } from "../../core/i18n/index.js";
+import type { PolypusConfig } from "../../core/config/schema.js";
 
 export interface SwarmCliOptions {
   agents?: string;
@@ -18,18 +19,31 @@ export function canSwarm(agentCount: number): boolean {
   return agentCount >= MIN_SWARM_AGENTS;
 }
 
-/** `polypus swarm <task>` — decompose and run a task across agents in parallel worktrees. */
-export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> {
-  const config = await loadConfig();
+export interface SwarmSessionOptions {
+  /** Subset of agent names to use; defaults to all configured agents. */
+  agents?: string[];
+  maxSubtasks?: number;
+  /** Workspace to run in; defaults to the current working directory. */
+  workspace?: string;
+}
 
+/**
+ * Decompose and run a task across agents in parallel worktrees, rendering the
+ * live dashboard and a final report. Shared by the `polypus swarm` CLI command
+ * and the REPL `/swarm` command. Enforces the 3+ agent gate.
+ */
+export async function runSwarmSession(
+  task: string,
+  config: PolypusConfig,
+  opts: SwarmSessionOptions = {},
+): Promise<void> {
   // Gate: swarm is for 3+ agents; with fewer it degenerates into a single-agent run.
   if (!canSwarm(config.agents.length)) {
     throw new Error(t("swarm.needsAgents", { min: MIN_SWARM_AGENTS, have: config.agents.length }));
   }
 
-  const selected = opts.agents
-    ? opts.agents.split(",").map((s) => s.trim()).filter(Boolean)
-    : config.agents.map((a) => a.name);
+  const workspace = opts.workspace ?? process.cwd();
+  const selected = opts.agents?.length ? opts.agents : config.agents.map((a) => a.name);
   if (selected.length === 0) {
     throw new Error(t("swarm.noAgents"));
   }
@@ -41,7 +55,7 @@ export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> 
   });
 
   console.log(
-    pc.dim(t("swarm.status", { agents: resolved.map((a) => a.config.name).join(", "), workspace: process.cwd() })),
+    pc.dim(t("swarm.status", { agents: resolved.map((a) => a.config.name).join(", "), workspace })),
   );
   console.log(pc.yellow(t("swarm.bypassNote") + "\n"));
 
@@ -51,11 +65,11 @@ export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> 
   try {
     result = await runSwarm({
       task,
-      workspace: process.cwd(),
+      workspace,
       agents: resolved,
       allow: config.permissions.allow,
       deny: config.permissions.deny,
-      maxSubtasks: opts.maxSubtasks ? Number(opts.maxSubtasks) : undefined,
+      maxSubtasks: opts.maxSubtasks,
       events: {
         onDecomposed: (subtasks) => view.setSubtasks(subtasks),
         onWorkerStart: (subtask, agentName) => view.workerStart(subtask.id, agentName),
@@ -88,4 +102,15 @@ export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> 
   } else {
     console.log(pc.green("\n" + t("swarm.allMerged")));
   }
+}
+
+/** `polypus swarm <task>` — load config, parse CLI options and run the session. */
+export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> {
+  const config = await loadConfig();
+  await runSwarmSession(task, config, {
+    agents: opts.agents
+      ? opts.agents.split(",").map((s) => s.trim()).filter(Boolean)
+      : undefined,
+    maxSubtasks: opts.maxSubtasks ? Number(opts.maxSubtasks) : undefined,
+  });
 }

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `/swarm <task>` slash command in the interactive REPL — runs a task as a
+  parallel swarm (same 3+ agent gate and live dashboard as `polypus swarm`),
+  so you no longer have to leave the session to use it. Shows in `/help`. (#41)
+
 ## [0.4.0] - 2026-06-18
 
 ### Added
