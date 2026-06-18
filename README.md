@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/@gaberrb/polypus?color=9266F5&logo=npm)](https://www.npmjs.com/package/@gaberrb/polypus)
 [![license](https://img.shields.io/badge/license-MIT-AB8EFA)](LICENSE)
 
-**📖 Site:** https://gaberrb.github.io/polypus/ · **📦 npm:** [`@gaberrb/polypus`](https://www.npmjs.com/package/@gaberrb/polypus) · **📝 Changelog:** [CHANGELOG.md](CHANGELOG.md)
+**📖 Site:** https://gaberrb.github.io/polypus/ · **📦 npm:** [`@gaberrb/polypus`](https://www.npmjs.com/package/@gaberrb/polypus) · **📝 Changelog:** [CHANGELOG.md](https://github.com/GaberRB/polypus/blob/main/CHANGELOG.md)
 
 An agentic coding harness that makes **any** AI API generate and apply code —
 even models **without** native tool-calling. Bring your own keys: OpenRouter,
