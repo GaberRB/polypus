@@ -23,6 +23,8 @@ const en: Catalog = {
     "Agentic coding harness that makes any AI API generate and apply code — OpenRouter, Ollama, and any OpenAI-compatible endpoint.",
   "cli.opt.lang": "interface language: pt-BR | en",
   "cli.cmd.setup": "Interactive setup wizard (configure agents, keys, permissions)",
+  "cli.cmd.init": "Scaffold a .poly/ workspace (agents.md, skills, SDD spec template, README)",
+  "cli.opt.force": "overwrite files that already exist",
   "cli.cmd.addAgent": "Register a new agent (API key + model)",
   "cli.cmd.removeAgent": "Remove a configured agent",
   "cli.cmd.listAgents": "List configured agents",
@@ -148,6 +150,13 @@ const en: Catalog = {
   "swarm.statusDone": "done",
   "swarm.statusIncomplete": "incomplete",
 
+  // init
+  "init.created": "✓ .poly scaffolded:",
+  "init.skipped": "Kept (already existed):",
+  "init.allExist": "Nothing to do — .poly already has these files:",
+  "init.forceHint": "Run `polypus init --force` to overwrite them.",
+  "init.tip": "Tip: edit .poly/agents.md — Polypus loads it into the agent's context automatically.",
+
   // wizard
   "wizard.title": " polypus setup ",
   "wizard.intro": [
@@ -249,6 +258,8 @@ const ptBR: Catalog = {
     "Harness agêntico que faz qualquer API de IA gerar e aplicar código — OpenRouter, Ollama e qualquer endpoint compatível com OpenAI.",
   "cli.opt.lang": "idioma da interface: pt-BR | en",
   "cli.cmd.setup": "Assistente de configuração interativo (agentes, chaves, permissões)",
+  "cli.cmd.init": "Cria um workspace .poly/ (agents.md, skills, template de spec SDD, README)",
+  "cli.opt.force": "sobrescreve arquivos que já existem",
   "cli.cmd.addAgent": "Cadastra um novo agente (chave de API + modelo)",
   "cli.cmd.removeAgent": "Remove um agente configurado",
   "cli.cmd.listAgents": "Lista os agentes configurados",
@@ -369,6 +380,13 @@ const ptBR: Catalog = {
   "swarm.conflictsHeader": "⚠ {n} branch(es) tiveram conflitos de merge (mantidos para inspeção):",
   "swarm.statusDone": "ok",
   "swarm.statusIncomplete": "incompleta",
+
+  // init
+  "init.created": "✓ .poly criado:",
+  "init.skipped": "Mantidos (já existiam):",
+  "init.allExist": "Nada a fazer — o .poly já tem estes arquivos:",
+  "init.forceHint": "Rode `polypus init --force` para sobrescrevê-los.",
+  "init.tip": "Dica: edite o .poly/agents.md — o Polypus carrega ele no contexto do agente automaticamente.",
 
   "wizard.title": " configuração do polypus ",
   "wizard.intro": [

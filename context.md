@@ -51,7 +51,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_49 módulos em `src/`._
+_52 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -59,6 +59,7 @@ _49 módulos em `src/`._
 ### `src/cli/commands`
 - `add-agent.ts`
 - `cli-io.ts`
+- `init.ts`
 - `list-agents.ts`
 - `models.ts`
 - `prd.ts`
@@ -107,6 +108,10 @@ _49 módulos em `src/`._
 - `openrouter.ts` — Discovery + filtering for OpenRouter's public model catalog.
 - `registry.ts`
 - `types.ts` — Unified chat/tool abstraction shared by every provider and both tool paths.
+
+### `src/core/scaffold`
+- `init.ts`
+- `templates.ts`
 
 ### `src/core/tools`
 - `edit-file.ts`

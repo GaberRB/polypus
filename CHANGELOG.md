@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `polypus init` — scaffold a `.poly/` workspace in the current directory with a
+  didactic starter set: `agents.md` (role + golden rules + skills index),
+  `skills/` (coding + spec-driven), a lean Spec-Driven Development template
+  (`templates/spec.md`) and a `README.md`. Idempotent (existing files are kept;
+  `--force` overwrites), with locale-aware content (en / pt-BR). Pairs with the
+  auto-loading of `.poly/agents.md` so a fresh project follows its conventions
+  out of the box. Docs and site updated. (#37)
+
 ## [0.3.0] - 2026-06-18
 
 ### Added

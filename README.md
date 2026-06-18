@@ -95,11 +95,34 @@ The setup wizard uses the same data: choosing OpenRouter opens an interactive
 browser with search, filters (tools-only, free-only) and sorting, then a picker
 showing each model's price, tool badge and context.
 
+## Project memory (`.poly/`)
+
+`.poly/` is a small, local workspace that teaches the agent how to work in your
+repository. Scaffold it with:
+
+```bash
+polypus init        # creates .poly/ if missing; --force overwrites
+```
+
+It writes a didactic starter set:
+
+- `agents.md` — role, golden rules and an index of skills. **Polypus loads this
+  file automatically** into the agent's system prompt on every run, so the agent
+  follows your conventions instead of guessing.
+- `skills/` — focused how-to guides the agent reads when relevant.
+- `templates/spec.md` — a lean Spec-Driven Development (SDD) template.
+- `README.md` — explains the workspace and how to extend it.
+
+Edit `agents.md` to encode your conventions and reference new skills from it.
+Gitignore `.poly/` to keep it personal, or commit it to standardize the workflow
+across your team.
+
 ## Commands
 
 | Command | Description |
 | --- | --- |
 | `polypus setup` | Interactive wizard (agents, keys, permissions). |
+| `polypus init [--force]` | Scaffold a `.poly/` workspace (agents.md, skills, SDD spec template, README). |
 | `polypus add-agent <name> --provider <p> --model <m> [--api-key ...] [--base-url ...] [--tool-mode auto\|native\|emulated] [--set-default]` | Register an agent. |
 | `polypus remove-agent <name>` | Remove an agent. |
 | `polypus list-agents` | List configured agents. |
