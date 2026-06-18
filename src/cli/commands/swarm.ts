@@ -2,7 +2,9 @@ import pc from "picocolors";
 import { loadConfig } from "../../core/config/store.js";
 import { createProvider, type ResolvedAgent } from "../../core/providers/registry.js";
 import { runSwarm } from "../../core/agent/orchestrator.js";
+import { recommendConcurrency, idleTimeoutMs } from "../../core/agent/concurrency.js";
 import { SwarmView, describeToolCall } from "../../ui/swarm-view.js";
+import { listenForCancel } from "../../ui/cancel.js";
 import { t } from "../../core/i18n/index.js";
 import type { PolypusConfig } from "../../core/config/schema.js";
 
@@ -59,6 +61,13 @@ export async function runSwarmSession(
   );
   console.log(pc.yellow(t("swarm.bypassNote") + "\n"));
 
+  // ESC / Ctrl+C cancels: committed workers still merge, the rest are aborted.
+  const controller = new AbortController();
+  const cancel = listenForCancel(controller);
+  controller.signal.addEventListener("abort", () => console.log(pc.dim("\n" + t("swarm.cancelling"))), {
+    once: true,
+  });
+
   const view = new SwarmView(resolved[0]!.config.name);
   view.start();
   let result;
@@ -70,6 +79,9 @@ export async function runSwarmSession(
       allow: config.permissions.allow,
       deny: config.permissions.deny,
       maxSubtasks: opts.maxSubtasks,
+      concurrency: recommendConcurrency(resolved),
+      idleTimeoutMs: idleTimeoutMs(),
+      signal: controller.signal,
       events: {
         onDecomposed: (subtasks) => view.setSubtasks(subtasks),
         onWorkerStart: (subtask, agentName) => view.workerStart(subtask.id, agentName),
@@ -83,6 +95,7 @@ export async function runSwarmSession(
     });
   } finally {
     view.stop();
+    cancel.dispose();
   }
   console.log("");
 

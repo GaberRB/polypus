@@ -168,6 +168,7 @@ const en: Catalog = {
   "swarm.status": "swarm agents=[{agents}] workspace={workspace}",
   "swarm.bypassNote":
     "Workers run in bypass mode inside isolated git worktrees; branches are merged at the end.",
+  "swarm.cancelling": "cancelling swarm — finishing in-flight workers, then merging what committed…",
   "swarm.decomposed": "Decomposed into {n} subtask(s):",
   "swarm.workerStart": "▶ {id} started by {agent}",
   "swarm.workerDone": "✓ {id} done",
@@ -453,6 +454,7 @@ const ptBR: Catalog = {
   "swarm.status": "swarm agentes=[{agents}] workspace={workspace}",
   "swarm.bypassNote":
     "Os workers rodam em modo bypass dentro de git worktrees isoladas; os branches são mesclados no final.",
+  "swarm.cancelling": "cancelando o swarm — encerrando os workers em andamento e mesclando o que commitou…",
   "swarm.decomposed": "Dividido em {n} subtarefa(s):",
   "swarm.workerStart": "▶ {id} iniciada por {agent}",
   "swarm.workerDone": "✓ {id} concluída",

@@ -17,6 +17,12 @@ export interface SwarmOptions {
   allow: string[];
   deny: string[];
   maxSubtasks?: number;
+  /** Max workers running at once. Defaults to the number of agents. */
+  concurrency?: number;
+  /** Abort a worker that makes no progress (no step) for this long. 0 disables. */
+  idleTimeoutMs?: number;
+  /** Cancel the whole swarm (e.g. user pressed ESC). */
+  signal?: AbortSignal;
   events?: SwarmEvents;
 }
 
@@ -36,44 +42,43 @@ export interface SwarmResult {
 
 /**
  * Decompose a task with the lead agent, run each subtask in a parallel worker
- * (each in its own git worktree), then merge the branches sequentially.
+ * (each in its own git worktree, bounded by `concurrency`), then merge the
+ * branches sequentially. Cancellable via `signal`; a worker that stalls past
+ * `idleTimeoutMs` is aborted without sinking the run. Workers never reject —
+ * a failed/aborted worker yields an unfinished outcome — so the committed ones
+ * still merge, even after cancellation.
  */
 export async function runSwarm(opts: SwarmOptions): Promise<SwarmResult> {
   const lead = opts.agents[0];
   if (!lead) throw new Error("Swarm requires at least one agent.");
 
   const maxSubtasks = opts.maxSubtasks ?? Math.max(opts.agents.length, 2);
+  const concurrency = Math.max(1, opts.concurrency ?? opts.agents.length);
+  const idleTimeoutMs = opts.idleTimeoutMs ?? 0;
   const git = await ensureRepo(opts.workspace);
 
-  const subtasks = await decompose(lead, opts.task, maxSubtasks);
+  const subtasks = await decompose(lead, opts.task, maxSubtasks, opts.signal);
   opts.events?.onDecomposed?.(subtasks);
 
   // Create worktrees sequentially (concurrent `git worktree add` can hit index
-  // locks), then run the workers in parallel (round-robin across agents).
+  // locks), then run the workers through a bounded pool.
   const worktrees: Worktree[] = [];
   for (const subtask of subtasks) {
     worktrees.push(await createWorktree(git, subtask.id));
   }
 
-  const outcomes: WorkerOutcome[] = await Promise.all(
-    subtasks.map(async (subtask, i) => {
-      const agent = opts.agents[i % opts.agents.length]!;
-      const wt = worktrees[i]!;
-      opts.events?.onWorkerStart?.(subtask, agent.config.name);
-      const outcome = await runWorker(
-        subtask,
-        agent,
-        wt,
-        opts.allow,
-        opts.deny,
-        opts.events?.workerEvents?.(subtask),
-      );
-      opts.events?.onWorkerDone?.(outcome);
-      return outcome;
-    }),
-  );
+  const runOne = (subtask: Subtask, i: number): Promise<WorkerOutcome> =>
+    guardedWorker(subtask, opts.agents[i % opts.agents.length]!, worktrees[i]!, {
+      allow: opts.allow,
+      deny: opts.deny,
+      idleTimeoutMs,
+      signal: opts.signal,
+      events: opts.events,
+    });
+  const outcomes = await runPool(subtasks, concurrency, runOne);
 
-  // Merge sequentially so conflicts are attributed to a specific branch.
+  // Merge sequentially so conflicts are attributed to a specific branch. Runs
+  // even after cancellation, so committed workers aren't thrown away.
   const merges: MergeResult[] = [];
   for (const outcome of outcomes) {
     if (!outcome.committed) continue;
@@ -95,6 +100,91 @@ export async function runSwarm(opts: SwarmOptions): Promise<SwarmResult> {
   return { subtasks, outcomes, merges };
 }
 
+interface GuardOptions {
+  allow: string[];
+  deny: string[];
+  idleTimeoutMs: number;
+  signal?: AbortSignal;
+  events?: SwarmEvents;
+}
+
+/**
+ * Run a single worker with its own abort controller, wired to the global signal
+ * and an idle-timeout watchdog (reset on each step). Never rejects: any error or
+ * abort yields an unfinished outcome.
+ */
+async function guardedWorker(
+  subtask: Subtask,
+  agent: ResolvedAgent,
+  wt: Worktree,
+  opts: GuardOptions,
+): Promise<WorkerOutcome> {
+  const ac = new AbortController();
+  const onAbort = (): void => ac.abort();
+  if (opts.signal) {
+    if (opts.signal.aborted) ac.abort();
+    else opts.signal.addEventListener("abort", onAbort, { once: true });
+  }
+
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  const resetIdle = (): void => {
+    if (opts.idleTimeoutMs <= 0) return;
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => ac.abort(), opts.idleTimeoutMs);
+    idleTimer.unref?.();
+  };
+
+  const base = opts.events?.workerEvents?.(subtask);
+  const events: AgentEvents = {
+    ...base,
+    onStep: (n) => {
+      resetIdle();
+      base?.onStep?.(n);
+    },
+  };
+
+  opts.events?.onWorkerStart?.(subtask, agent.config.name);
+  resetIdle();
+
+  let outcome: WorkerOutcome;
+  try {
+    outcome = await runWorker(subtask, agent, wt, opts.allow, opts.deny, events, ac.signal);
+  } catch {
+    outcome = {
+      subtask,
+      agentName: agent.config.name,
+      branch: wt.branch,
+      finished: false,
+      committed: false,
+      steps: 0,
+    };
+  } finally {
+    if (idleTimer) clearTimeout(idleTimer);
+    opts.signal?.removeEventListener("abort", onAbort);
+  }
+  opts.events?.onWorkerDone?.(outcome);
+  return outcome;
+}
+
+/** Run `fn` over `items` with at most `limit` in flight; preserves result order. */
+async function runPool<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i]!, i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 const DECOMPOSE_SYSTEM = [
   "You are a tech lead splitting a coding task into independent subtasks that can be done in parallel.",
   "Return ONLY a JSON array. Each item: {\"title\": string, \"brief\": string}.",
@@ -107,6 +197,7 @@ async function decompose(
   lead: ResolvedAgent,
   task: string,
   maxSubtasks: number,
+  signal?: AbortSignal,
 ): Promise<Subtask[]> {
   try {
     const res = await lead.provider.chat({
@@ -115,6 +206,7 @@ async function decompose(
         { role: "user", content: `Task:\n${task}\n\nReturn at most ${maxSubtasks} subtasks as a JSON array.` },
       ],
       params: { temperature: 0 },
+      signal,
     });
     const parsed = extractJsonArray(res.content);
     if (parsed && parsed.length > 0) {

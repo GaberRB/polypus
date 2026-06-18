@@ -30,6 +30,7 @@ export async function runWorker(
   allow: string[],
   deny: string[],
   events?: AgentEvents,
+  signal?: AbortSignal,
 ): Promise<WorkerOutcome> {
   const permissions = new PermissionEngine({
     mode: "bypass",
@@ -44,9 +45,15 @@ export async function runWorker(
     permissions,
     promptContext: { workspace: wt.path, mode: "bypass", allow, briefing: subtask.brief },
     events,
+    signal,
   });
 
-  const committed = await commitWorktree(wt, `polypus(${subtask.id}): ${subtask.title}`);
+  // Don't commit a worker that was cancelled/timed out mid-step — its worktree
+  // may hold half-applied changes we don't want to merge.
+  const committed =
+    result.reason === "cancelled"
+      ? false
+      : await commitWorktree(wt, `polypus(${subtask.id}): ${subtask.title}`);
 
   return {
     subtask,

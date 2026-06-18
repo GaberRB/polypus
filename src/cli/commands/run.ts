@@ -32,6 +32,7 @@ import { runSwarmSession } from "./swarm.js";
 import { printWelcome } from "../../ui/banner.js";
 import { Spinner } from "../../ui/spinner.js";
 import { t } from "../../core/i18n/index.js";
+import { listenForCancel } from "../../ui/cancel.js";
 
 export interface RunOptions {
   agent?: string;
@@ -322,46 +323,6 @@ async function executeTask(
 /** Compact token count, e.g. 1234 → "1.2k". */
 function fmtTokens(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
-}
-
-interface CancelListener {
-  pause(): void;
-  resume(): void;
-  dispose(): void;
-}
-
-/**
- * While a task runs, listen on raw stdin for ESC (0x1b) or Ctrl+C (0x03) and
- * abort the controller. pause()/resume() let a clack confirmation borrow stdin.
- * No-op when stdin is not a TTY.
- */
-function listenForCancel(controller: AbortController): CancelListener {
-  const stdin = process.stdin;
-  if (!stdin.isTTY) return { pause() {}, resume() {}, dispose() {} };
-
-  const onData = (buf: Buffer) => {
-    // Only a lone ESC / Ctrl+C — multi-byte sequences (arrow keys) are ignored.
-    if (buf.length === 1 && (buf[0] === 0x1b || buf[0] === 0x03)) controller.abort();
-  };
-
-  let active = false;
-  const attach = () => {
-    if (active) return;
-    stdin.setRawMode(true);
-    stdin.resume();
-    stdin.on("data", onData);
-    active = true;
-  };
-  const detach = () => {
-    if (!active) return;
-    stdin.off("data", onData);
-    stdin.setRawMode(false);
-    stdin.pause();
-    active = false;
-  };
-
-  attach();
-  return { pause: detach, resume: attach, dispose: detach };
 }
 
 async function confirmAction(req: ConfirmRequest): Promise<ConfirmResult> {
