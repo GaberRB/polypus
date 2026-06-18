@@ -9,6 +9,7 @@ import { setup } from "./commands/setup.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
 import { prd } from "./commands/prd.js";
+import { review } from "./commands/review.js";
 import { join } from "node:path";
 import { configDir, loadConfig } from "../core/config/store.js";
 import { loadDotenv } from "../core/config/dotenv.js";
@@ -126,6 +127,15 @@ function buildProgram(): Command {
     .option("--input <file>", t("cli.opt.input"))
     .description(t("cli.cmd.prd"))
     .action((issue, opts) => prd(issue, opts));
+
+  program
+    .command("review")
+    .argument("<pr>", t("cli.arg.reviewPr"))
+    .option("--out <file>", t("cli.opt.out"))
+    .option("--model <model>", t("cli.opt.model"))
+    .option("--input <file>", t("cli.opt.input"))
+    .description(t("cli.cmd.review"))
+    .action((pr, opts) => review(pr, opts));
 
   return program;
 }
