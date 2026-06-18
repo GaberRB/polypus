@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-18
+
 ### Added
 - Live swarm dashboard: `polypus swarm` now renders the orchestrator plus a row
   per worker with its status, current action and step count, redrawn in place
@@ -77,7 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/GaberRB/polypus/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/GaberRB/polypus/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/GaberRB/polypus/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/GaberRB/polypus/releases/tag/v0.2.0
