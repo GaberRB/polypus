@@ -1,5 +1,6 @@
 import pc from "picocolors";
 import { t } from "../core/i18n/index.js";
+import { VERSION } from "../core/version.js";
 
 const RESET = "\x1b[0m";
 const useColor =
@@ -100,7 +101,7 @@ function renderArtRow(rowIdx: number, line: string): string {
   return [...center(line)].map((ch) => colorChar(rowIdx, ch)).join("");
 }
 
-const tagline = (): string => c1(t("welcome.tagline")) + pc.dim("   v0.1.0");
+const tagline = (): string => c1(t("welcome.tagline")) + pc.dim(`   v${VERSION}`);
 
 function authorLine(): string {
   return (
