@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `polypus review <pr#>` — automated first-pass code review of a PR diff using a
   free OpenRouter model, plus a `pr-review` workflow that comments on opened and
   reopened PRs. (#15)
+- Docs site: an interactive CI/CD page (`docs/cicd.html`) with a clickable
+  pipeline diagram and YAML examples, plus Contributing and Changelog sections
+  and feature cards reflecting the auto-correction, PRD and review agents. (#23)
 
 ### Changed
 - Hardened the `prd`/`review` commands: numeric issue/PR ref validation, a

@@ -18,7 +18,8 @@
     </a>
     <nav class="nav-links">
       <a href="#how" data-i18n="nav.how">Como funciona</a>
-      <a href="#demo" data-i18n="nav.demo">Demo</a>
+      <a href="cicd.html" data-i18n="nav.cicd">CI/CD</a>
+      <a href="#contribute" data-i18n="nav.contribute">Contribuir</a>
       <a href="#quickstart" data-i18n="nav.quickstart">Começar</a>
       <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
       <a class="nav-ext" href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
@@ -214,6 +215,10 @@
         <div class="card"><h3>🧮 <span data-i18n="feat.f6t">Tokens & ESC</span></h3><p data-i18n="feat.f6">Mostra tokens gastos ao vivo e cancela o “pensando” com ESC.</p></div>
         <div class="card"><h3>🔐 <span data-i18n="feat.f7t">Permissões</span></h3><p data-i18n="feat.f7">Modos plan/review/bypass + allow-list de caminhos.</p></div>
         <div class="card"><h3>🪄 <span data-i18n="feat.f8t">Wizard</span></h3><p data-i18n="feat.f8">Onboarding interativo de chaves, modelos e permissões.</p></div>
+        <div class="card"><h3>🩹 <span data-i18n="feat.f9t">Autocorreção</span></h3><p data-i18n="feat.f9">Quando uma tool falha, o erro volta enriquecido com a causa e o contexto — o modelo se conserta sozinho em vez de entrar em loop.</p></div>
+        <div class="card"><h3>🧭 <span data-i18n="feat.f10t">PRD bot</span></h3><p data-i18n="feat.f10">Rotule uma issue como <code>accepted</code> e um agente gera um PRD estruturado, comentado na própria issue.</p></div>
+        <div class="card"><h3>🤖 <span data-i18n="feat.f11t">Review bot</span></h3><p data-i18n="feat.f11">Todo PR aberto recebe uma primeira camada de code review automática, com modelo gratuito do OpenRouter.</p></div>
+        <div class="card"><h3>⚙️ <span data-i18n="feat.f12t">CI/CD robusto</span></h3><p data-i18n="feat.f12">Build/test, PRs vinculados a issue, review automático e publish no npm — tudo no GitHub Actions.</p></div>
       </div>
     </section>
 
@@ -241,6 +246,35 @@ polypus models --tools --max-price 1   # explore modelos por preço/tools</code>
 polypus add-agent local --provider ollama --model qwen2.5-coder:7b
 polypus run "faça o jogo da cobrinha em snake.html"</code></pre>
       </div>
+    </section>
+
+    <!-- ===================== CONTRIBUIÇÃO ===================== -->
+    <section id="contribute" class="section">
+      <h2 class="section-title" data-i18n="contrib.title">Como contribuir</h2>
+      <p class="section-sub" data-i18n="contrib.sub">O fluxo é <b>issue-gated</b>: nada de PR sem uma issue triada.</p>
+      <div class="steps">
+        <div class="step"><span class="step-n">1</span><div><b data-i18n="contrib.s1">Abra uma issue</b><p class="muted" data-i18n="contrib.s1b" style="margin:0">Descreva o bug ou a ideia — há templates de bug e feature.</p></div></div>
+        <div class="step"><span class="step-n">2</span><div><b data-i18n="contrib.s2">Espere o <code>accepted</code></b><p class="muted" data-i18n="contrib.s2b" style="margin:0">O mantenedor tria e aplica a label <code>accepted</code> — o sinal verde.</p></div></div>
+        <div class="step"><span class="step-n">3</span><div><b data-i18n="contrib.s3">Branch + PR</b><p class="muted" data-i18n="contrib.s3b" style="margin:0">Crie a branch e abra o PR referenciando a issue com <code>Closes #N</code>.</p></div></div>
+        <div class="step"><span class="step-n">4</span><div><b data-i18n="contrib.s4">CI + review</b><p class="muted" data-i18n="contrib.s4b" style="margin:0">O CI roda build/test, o <i>require-issue</i> confere a label e o bot comenta um review.</p></div></div>
+        <div class="step"><span class="step-n">5</span><div><b data-i18n="contrib.s5">Merge</b><p class="muted" data-i18n="contrib.s5b" style="margin:0">Com tudo verde, o merge entra na <code>main</code> — e a issue fecha sozinha.</p></div></div>
+      </div>
+      <p class="center" style="margin-top: 26px">
+        <a class="btn btn-primary" href="cicd.html" data-i18n="contrib.cta">⚙️ Ver o pipeline de CI/CD em detalhe</a>
+      </p>
+    </section>
+
+    <!-- ===================== CHANGELOG ===================== -->
+    <section class="section band">
+      <h2 class="section-title" data-i18n="chg.title">Changelog</h2>
+      <p class="section-sub" data-i18n="chg.sub">Todas as mudanças relevantes, versão a versão.</p>
+      <p class="muted center" style="max-width:680px;margin:0 auto 24px" data-i18n="chg.body">
+        Seguimos o formato <b>Keep a Changelog</b> + SemVer. As adições mais recentes (autocorreção,
+        agentes de PRD e review, hardening) estão na seção <i>Unreleased</i>.
+      </p>
+      <p class="center">
+        <a class="btn" href="https://github.com/GaberRB/polypus/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-i18n="chg.cta">📝 Ler o CHANGELOG.md</a>
+      </p>
     </section>
   </main>
 
