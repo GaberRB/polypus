@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 import pc from "picocolors";
 import { reviewDiff, type PrMeta } from "../../core/agent/review.js";
 import { resolveFreeProvider, DEFAULT_REVIEW_MODEL, withRetry } from "../../core/agent/free-provider.js";
-import { numericRef, readStdin } from "./cli-io.js";
+import { numericRef, readStdin, readProjectGuide } from "./cli-io.js";
 import { t } from "../../core/i18n/index.js";
 
 const exec = promisify(execFile);
@@ -23,7 +23,9 @@ export async function review(prRef: string, opts: ReviewCliOptions): Promise<voi
   const meta = await loadMeta(num, opts.input);
   const { provider } = resolveFreeProvider(opts.model ?? DEFAULT_REVIEW_MODEL);
 
-  const markdown = await withRetry(() => reviewDiff(diff, meta, provider));
+  // Review against the project's conventions and summary when available.
+  const guide = readProjectGuide(["rules.md", "context.md"]);
+  const markdown = await withRetry(() => reviewDiff(diff, meta, provider, guide));
 
   if (opts.out) {
     await writeFile(opts.out, markdown + "\n", "utf8");

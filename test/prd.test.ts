@@ -47,4 +47,12 @@ describe("generatePrd", () => {
     const provider = new StubProvider("   ");
     await expect(generatePrd(issue, provider)).rejects.toThrow(/empty/i);
   });
+
+  it("injects the project context as an extra system message when provided", async () => {
+    const provider = new StubProvider("## Contexto");
+    await generatePrd(issue, provider, "POLYPUS is a coding harness.");
+    const systems = provider.last?.messages.filter((m) => m.role === "system") ?? [];
+    expect(systems.length).toBe(2);
+    expect(systems.some((m) => m.content.includes("POLYPUS is a coding harness."))).toBe(true);
+  });
 });

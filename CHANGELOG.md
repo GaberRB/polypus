@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `context.md` (living project summary with an auto-generated, CI-verified module
+  map) and `rules.md` (project conventions and what is/isn't expected). The PRD
+  and review bots now load them as grounding context to improve their output,
+  the docs site links them as essential reading, and `npm run context`
+  regenerates the module map. (#22)
+
 ## [0.2.2] - 2026-06-17
 
 ### Added

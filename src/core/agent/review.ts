@@ -1,4 +1,4 @@
-import type { Provider } from "../providers/types.js";
+import type { Message, Provider } from "../providers/types.js";
 
 export interface PrMeta {
   number?: number;
@@ -51,13 +51,23 @@ export function buildReviewPrompt(diff: string, meta: PrMeta): string {
  * Review a PR diff with a single (no-tool) chat call. Returns Markdown suitable
  * for posting as a PR comment.
  */
-export async function reviewDiff(diff: string, meta: PrMeta, provider: Provider): Promise<string> {
+export async function reviewDiff(
+  diff: string,
+  meta: PrMeta,
+  provider: Provider,
+  projectGuide?: string,
+): Promise<string> {
   if (!diff.trim()) return "_Sem alterações no diff para revisar._";
+  const messages: Message[] = [{ role: "system", content: SYSTEM }];
+  if (projectGuide) {
+    messages.push({
+      role: "system",
+      content: `Project context and conventions to review against:\n${projectGuide}`,
+    });
+  }
+  messages.push({ role: "user", content: buildReviewPrompt(diff, meta) });
   const res = await provider.chat({
-    messages: [
-      { role: "system", content: SYSTEM },
-      { role: "user", content: buildReviewPrompt(diff, meta) },
-    ],
+    messages,
     params: { maxTokens: 1500, temperature: 0.2 },
   });
   const text = res.content.trim();

@@ -17,6 +17,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
+    "context": "node scripts/update-context.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "start": "node dist/index.js",

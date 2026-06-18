@@ -23,6 +23,8 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
+      - name: context.md is up to date
+        run: npm run context && git diff --exit-code context.md
       - run: npm run typecheck
       - run: npm run build
       - run: npm test

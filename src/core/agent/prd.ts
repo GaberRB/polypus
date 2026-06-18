@@ -1,4 +1,4 @@
-import type { Provider } from "../providers/types.js";
+import type { Message, Provider } from "../providers/types.js";
 
 export interface IssueInput {
   number?: number;
@@ -44,12 +44,21 @@ export function buildPrdPrompt(issue: IssueInput): string {
  * Generate a PRD from an issue with a single (no-tool) chat call. Robust on the
  * small free OpenRouter models since input is one issue and output is a document.
  */
-export async function generatePrd(issue: IssueInput, provider: Provider): Promise<string> {
+export async function generatePrd(
+  issue: IssueInput,
+  provider: Provider,
+  projectContext?: string,
+): Promise<string> {
+  const messages: Message[] = [{ role: "system", content: SYSTEM }];
+  if (projectContext) {
+    messages.push({
+      role: "system",
+      content: `Project context (for grounding; do not restate verbatim):\n${projectContext}`,
+    });
+  }
+  messages.push({ role: "user", content: buildPrdPrompt(issue) });
   const res = await provider.chat({
-    messages: [
-      { role: "system", content: SYSTEM },
-      { role: "user", content: buildPrdPrompt(issue) },
-    ],
+    messages,
     params: { maxTokens: 2000, temperature: 0.2 },
   });
   const text = res.content.trim();
