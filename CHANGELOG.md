@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-18
+
 ### Added
 - `/swarm <task>` slash command in the interactive REPL — runs a task as a
   parallel swarm (same 3+ agent gate and live dashboard as `polypus swarm`),
@@ -114,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/GaberRB/polypus/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/GaberRB/polypus/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/GaberRB/polypus/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/GaberRB/polypus/compare/v0.2.1...v0.2.2
