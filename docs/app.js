@@ -461,6 +461,8 @@ Object.assign(I18N.pt, {
   "contrib.s5": "Merge",
   "contrib.s5b": "Com tudo verde, o merge entra na <code>main</code> — e a issue fecha sozinha.",
   "contrib.cta": "⚙️ Ver o pipeline de CI/CD em detalhe",
+  "contrib.filesT": "Arquivos essenciais (leia antes)",
+  "contrib.filesB": 'Principalmente se você usa <b>IA para codar</b>: leia o <a href="https://github.com/GaberRB/polypus/blob/main/context.md" target="_blank" rel="noopener"><code>context.md</code></a> (resumo do projeto, sempre atualizado) e o <a href="https://github.com/GaberRB/polypus/blob/main/rules.md" target="_blank" rel="noopener"><code>rules.md</code></a> (padrões e o que é/não é esperado). Eles são a fonte de verdade — e também alimentam os bots de PRD e de review.',
   // landing — changelog
   "chg.title": "Changelog",
   "chg.sub": "Todas as mudanças relevantes, versão a versão.",
@@ -501,6 +503,8 @@ Object.assign(I18N.en, {
   "contrib.s5": "Merge",
   "contrib.s5b": "Once everything is green, it merges into <code>main</code> — and the issue closes itself.",
   "contrib.cta": "⚙️ See the CI/CD pipeline in detail",
+  "contrib.filesT": "Essential files (read first)",
+  "contrib.filesB": 'Especially if you <b>code with AI</b>: read <a href="https://github.com/GaberRB/polypus/blob/main/context.md" target="_blank" rel="noopener"><code>context.md</code></a> (the always-updated project summary) and <a href="https://github.com/GaberRB/polypus/blob/main/rules.md" target="_blank" rel="noopener"><code>rules.md</code></a> (conventions and what is/ isn\'t expected). They are the source of truth — and also feed the PRD and review bots.',
   "chg.title": "Changelog",
   "chg.sub": "Every notable change, version by version.",
   "chg.body": "We follow the <b>Keep a Changelog</b> format + SemVer. The most recent additions (auto-correction, PRD and review agents, hardening) live in the <i>Unreleased</i> section.",

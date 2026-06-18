@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 import pc from "picocolors";
 import { generatePrd, type IssueInput } from "../../core/agent/prd.js";
 import { resolveFreeProvider, DEFAULT_PRD_MODEL, withRetry } from "../../core/agent/free-provider.js";
-import { numericRef, readStdin, stripBom } from "./cli-io.js";
+import { numericRef, readStdin, stripBom, readProjectGuide } from "./cli-io.js";
 import { t } from "../../core/i18n/index.js";
 
 const exec = promisify(execFile);
@@ -21,7 +21,9 @@ export async function prd(issueRef: string, opts: PrdCliOptions): Promise<void> 
   const issue = await loadIssue(issueRef, opts.input);
   const { provider } = resolveFreeProvider(opts.model ?? DEFAULT_PRD_MODEL);
 
-  const markdown = await withRetry(() => generatePrd(issue, provider));
+  // Ground the PRD in the project's living summary so output fits the codebase.
+  const guide = readProjectGuide(["context.md"]);
+  const markdown = await withRetry(() => generatePrd(issue, provider, guide));
 
   if (opts.out) {
     await writeFile(opts.out, markdown + "\n", "utf8");

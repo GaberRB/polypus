@@ -5,6 +5,19 @@ simples baseado em **issues**. Leia antes de abrir um PR — PRs sem issue aceit
 
 _(English summary at the bottom.)_
 
+## Arquivos essenciais (leitura obrigatória)
+
+Antes de codar — **principalmente se você usa IA para escrever código** — leia os dois
+arquivos de contexto na raiz. Eles são a fonte de verdade do projeto e alimentam também os
+bots de PRD e de code review:
+
+- **[`context.md`](context.md)** — resumo do projeto e mapa de módulos (o mapa é
+  auto-gerado por `npm run context` e o CI falha se estiver desatualizado).
+- **[`rules.md`](rules.md)** — premissas, decisões técnicas, padrões de codificação e o que
+  **é** e **não é** esperado numa contribuição.
+
+Seguir o `rules.md` faz parte dos critérios de aceite de qualquer PR.
+
 ## Fluxo de contribuição
 
 1. **Abra uma issue** usando um dos templates (🐛 Bug ou ✨ Feature). Issues em branco estão
@@ -37,9 +50,11 @@ Antes de abrir o PR, garanta que `typecheck`, `build` e `test` passam — é exa
 
 ## Estilo
 
+- Siga o **[`rules.md`](rules.md)** (padrões de codificação, testes, o que evitar).
 - TypeScript, Node ≥ 20, ESM.
 - Mensagens de UI são bilíngues (pt-BR/en) via `src/core/i18n/` — adicione as duas.
 - Mudanças de comportamento devem vir com testes (`test/*.test.ts`).
+- Se mexeu na estrutura de `src/`, rode `npm run context` (o CI valida o `context.md`).
 
 ## O que evita PRs desnecessários
 
@@ -51,7 +66,9 @@ Antes de abrir o PR, garanta que `typecheck`, `build` e `test` passam — é exa
 
 ## English (short)
 
-Open a structured **issue** first (blank issues are disabled). Wait for the maintainer to label it
-**`accepted`**. Then fork, branch (`feat|fix|docs|chore/<slug>`), use Conventional Commits, and open
-a PR with `Closes #N`. The `require-issue` check enforces a linked **accepted** issue; CI runs
-typecheck/build/test on Node 20 & 22; the owner squash-merges.
+First read **`context.md`** (project summary) and **`rules.md`** (conventions) at the repo root —
+they're the source of truth and also feed the PRD/review bots. Then open a structured **issue**
+(blank issues are disabled), wait for the maintainer to label it **`accepted`**, fork, branch
+(`feat|fix|docs|chore/<slug>`), use Conventional Commits, and open a PR with `Closes #N`. The
+`require-issue` check enforces a linked **accepted** issue; CI runs typecheck/build/test on Node
+20 & 22 (and verifies `context.md` is up to date); the owner squash-merges.

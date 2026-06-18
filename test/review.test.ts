@@ -53,4 +53,12 @@ describe("reviewDiff", () => {
     expect(provider.calls).toBe(0);
     expect(out).toMatch(/sem altera/i);
   });
+
+  it("injects the project guide as an extra system message when provided", async () => {
+    const provider = new StubProvider("ok");
+    await reviewDiff(diff, meta, provider, "Rule: no telemetry.");
+    const systems = provider.last?.messages.filter((m) => m.role === "system") ?? [];
+    expect(systems.length).toBe(2);
+    expect(systems.some((m) => m.content.includes("no telemetry"))).toBe(true);
+  });
 });

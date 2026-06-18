@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Live swarm dashboard: `polypus swarm` now renders the orchestrator plus a row
   per worker with its status, current action and step count, redrawn in place
   (with a plain-text fallback when output is piped). (#21)
+- `context.md` (living project summary with an auto-generated, CI-verified module
+  map) and `rules.md` (project conventions and what is/isn't expected). The PRD
+  and review bots now load them as grounding context to improve their output,
+  the docs site links them as essential reading, and `npm run context`
+  regenerates the module map. (#22)
 
 ## [0.2.2] - 2026-06-17
 
