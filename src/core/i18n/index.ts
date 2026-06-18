@@ -238,6 +238,8 @@ const en: Catalog = {
 
   // agent system prompt
   "prompt.language": "Communicate with the user in {language}.",
+  "prompt.projectInstructions":
+    "Project-specific operating instructions follow, loaded from `.poly/agents.md`. Treat them as authoritative for how to work in THIS repo. Paths they reference (e.g. skills/*.md, ../context.md, ../rules.md) are relative to the `.poly/` directory — read those files when relevant before acting:",
 };
 
 const ptBR: Catalog = {
@@ -432,6 +434,8 @@ const ptBR: Catalog = {
   "wizard.keyPrompt": "Chave de API (armazenada em texto puro no arquivo de config)",
 
   "prompt.language": "Comunique-se com o usuário em {language}.",
+  "prompt.projectInstructions":
+    "Seguem instruções operacionais específicas do projeto, carregadas de `.poly/agents.md`. Trate-as como autoritativas para trabalhar NESTE repositório. Os caminhos que elas citam (ex.: skills/*.md, ../context.md, ../rules.md) são relativos à pasta `.poly/` — leia esses arquivos quando relevante antes de agir:",
 
   "models.fetching": "Buscando modelos do OpenRouter…",
   "models.fetchError": "Não foi possível buscar modelos: {msg}",

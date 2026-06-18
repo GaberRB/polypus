@@ -6,6 +6,7 @@ import type { ChatParams, Message, ToolCall } from "../providers/types.js";
 import { getTool, toolSpecs } from "../tools/registry.js";
 import type { ToolResult } from "../tools/types.js";
 import { buildCorrection, makeLLMEscalator, truncationGuidance } from "./correction.js";
+import { loadProjectInstructions } from "./project-context.js";
 
 export interface Usage {
   promptTokens: number;
@@ -82,13 +83,21 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const driver = makeDriver(agent.toolMode, toolSpecs());
   const ctx = { workspace: opts.workspace, permissions };
 
-  const messages: Message[] =
-    opts.history && opts.history.length > 0
-      ? [...opts.history, { role: "user", content: opts.task }]
-      : [
-          { role: "system", content: driver.systemPrompt(opts.promptContext) },
-          { role: "user", content: opts.task },
-        ];
+  const seeding = !(opts.history && opts.history.length > 0);
+  // On a fresh conversation, auto-load project operating instructions
+  // (.poly/agents.md / AGENTS.md) into the system prompt unless the caller
+  // already supplied them. Continued sessions keep the original system message.
+  const promptContext =
+    seeding && opts.promptContext.projectInstructions === undefined
+      ? { ...opts.promptContext, projectInstructions: await loadProjectInstructions(opts.workspace) }
+      : opts.promptContext;
+
+  const messages: Message[] = seeding
+    ? [
+        { role: "system", content: driver.systemPrompt(promptContext) },
+        { role: "user", content: opts.task },
+      ]
+    : [...opts.history!, { role: "user", content: opts.task }];
 
   let consecutiveNoTool = 0;
   let lastFailSig = "";
