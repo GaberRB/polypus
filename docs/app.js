@@ -430,3 +430,163 @@ function initSimulator() {
 }
 
 document.addEventListener("DOMContentLoaded", initSimulator);
+
+// ===========================================================================
+// Shared strings for the new landing sections + CI/CD page.
+// ===========================================================================
+Object.assign(I18N.pt, {
+  "nav.cicd": "CI/CD",
+  "nav.contribute": "Contribuir",
+  "nav.changelog": "Changelog",
+  // landing — novos cards
+  "feat.f9t": "Autocorreção",
+  "feat.f9": "Quando uma tool falha, o erro volta enriquecido com a causa e o contexto — o modelo se conserta sozinho em vez de entrar em loop.",
+  "feat.f10t": "PRD bot",
+  "feat.f10": "Rotule uma issue como <code>accepted</code> e um agente gera um PRD estruturado, comentado na própria issue.",
+  "feat.f11t": "Review bot",
+  "feat.f11": "Todo PR aberto recebe uma primeira camada de code review automática, com modelo gratuito do OpenRouter.",
+  "feat.f12t": "CI/CD robusto",
+  "feat.f12": "Build/test, PRs vinculados a issue, review automático e publish no npm — tudo no GitHub Actions.",
+  // landing — contribuição
+  "contrib.title": "Como contribuir",
+  "contrib.sub": "O fluxo é <b>issue-gated</b>: nada de PR sem uma issue triada.",
+  "contrib.s1": "Abra uma issue",
+  "contrib.s1b": "Descreva o bug ou a ideia — há templates de bug e feature.",
+  "contrib.s2": "Espere o <code>accepted</code>",
+  "contrib.s2b": "O mantenedor tria e aplica a label <code>accepted</code> — o sinal verde.",
+  "contrib.s3": "Branch + PR",
+  "contrib.s3b": "Crie a branch e abra o PR referenciando a issue com <code>Closes #N</code>.",
+  "contrib.s4": "CI + review",
+  "contrib.s4b": "O CI roda build/test, o <i>require-issue</i> confere a label e o bot comenta um review.",
+  "contrib.s5": "Merge",
+  "contrib.s5b": "Com tudo verde, o merge entra na <code>main</code> — e a issue fecha sozinha.",
+  "contrib.cta": "⚙️ Ver o pipeline de CI/CD em detalhe",
+  // landing — changelog
+  "chg.title": "Changelog",
+  "chg.sub": "Todas as mudanças relevantes, versão a versão.",
+  "chg.body": "Seguimos o formato <b>Keep a Changelog</b> + SemVer. As adições mais recentes (autocorreção, agentes de PRD e review, hardening) estão na seção <i>Unreleased</i>.",
+  "chg.cta": "📝 Ler o CHANGELOG.md",
+  // página cicd
+  "cicd.back": "← voltar",
+  "cicd.title": "CI/CD do Polypus",
+  "cicd.intro": "O projeto roda inteiramente no GitHub Actions: build e testes, governança de PRs vinculados a issue, dois agentes de IA (PRD e review) e publish no npm. Clique em cada peça do pipeline.",
+  "cicd.hint": "Selecione uma etapa do pipeline",
+  "cicd.hintBody": "Os detalhes e o YAML de cada workflow aparecem aqui.",
+  "cicd.lifeTitle": "Ciclo de vida de uma mudança",
+  "cicd.secretsTitle": "Segredos usados",
+  "cicd.secrets": "<li><code>OPENROUTER_API_KEY</code> — modelos gratuitos para o PRD bot e o review bot.</li><li><code>NPM_TOKEN</code> — publish no npm (com provenance) ao publicar um Release.</li><li><code>GITHUB_TOKEN</code> — automático; comenta em issues/PRs.</li>",
+});
+Object.assign(I18N.en, {
+  "nav.cicd": "CI/CD",
+  "nav.contribute": "Contribute",
+  "nav.changelog": "Changelog",
+  "feat.f9t": "Auto-correction",
+  "feat.f9": "When a tool fails, the error is fed back enriched with its cause and context — the model self-heals instead of looping.",
+  "feat.f10t": "PRD bot",
+  "feat.f10": "Label an issue <code>accepted</code> and an agent generates a structured PRD, posted as a comment on the issue.",
+  "feat.f11t": "Review bot",
+  "feat.f11": "Every opened PR gets a first-pass automated code review, powered by a free OpenRouter model.",
+  "feat.f12t": "Solid CI/CD",
+  "feat.f12": "Build/test, issue-gated PRs, automated review and npm publish — all on GitHub Actions.",
+  "contrib.title": "How to contribute",
+  "contrib.sub": "The flow is <b>issue-gated</b>: no PR without a triaged issue.",
+  "contrib.s1": "Open an issue",
+  "contrib.s1b": "Describe the bug or idea — there are bug and feature templates.",
+  "contrib.s2": "Wait for <code>accepted</code>",
+  "contrib.s2b": "The maintainer triages and applies the <code>accepted</code> label — the green light.",
+  "contrib.s3": "Branch + PR",
+  "contrib.s3b": "Create the branch and open the PR referencing the issue with <code>Closes #N</code>.",
+  "contrib.s4": "CI + review",
+  "contrib.s4b": "CI runs build/test, <i>require-issue</i> checks the label, and the bot comments a review.",
+  "contrib.s5": "Merge",
+  "contrib.s5b": "Once everything is green, it merges into <code>main</code> — and the issue closes itself.",
+  "contrib.cta": "⚙️ See the CI/CD pipeline in detail",
+  "chg.title": "Changelog",
+  "chg.sub": "Every notable change, version by version.",
+  "chg.body": "We follow the <b>Keep a Changelog</b> format + SemVer. The most recent additions (auto-correction, PRD and review agents, hardening) live in the <i>Unreleased</i> section.",
+  "chg.cta": "📝 Read the CHANGELOG.md",
+  "cicd.back": "← back",
+  "cicd.title": "Polypus CI/CD",
+  "cicd.intro": "The project runs entirely on GitHub Actions: build and tests, issue-gated PR governance, two AI agents (PRD and review) and npm publishing. Click each piece of the pipeline.",
+  "cicd.hint": "Pick a pipeline stage",
+  "cicd.hintBody": "Each workflow's details and YAML show up here.",
+  "cicd.lifeTitle": "Lifecycle of a change",
+  "cicd.secretsTitle": "Secrets used",
+  "cicd.secrets": "<li><code>OPENROUTER_API_KEY</code> — free models for the PRD bot and the review bot.</li><li><code>NPM_TOKEN</code> — npm publish (with provenance) when a Release is published.</li><li><code>GITHUB_TOKEN</code> — automatic; comments on issues/PRs.</li>",
+});
+
+// CI/CD pipeline stages (bilingual + YAML excerpt). Mirrors the STAGES pattern.
+const CICD = {
+  trigger: {
+    pt: { title: "Gatilhos", body: "Cada workflow reage a um evento do GitHub: <b>push</b> na main, <b>pull_request</b>, <b>issues</b> rotuladas, <b>release</b> publicado e um <b>cron</b> diário." },
+    en: { title: "Triggers", body: "Each workflow reacts to a GitHub event: <b>push</b> to main, <b>pull_request</b>, labeled <b>issues</b>, published <b>release</b>, and a daily <b>cron</b>." },
+    code: 'on:\n  push: { branches: [main] }\n  pull_request:\n  issues: { types: [labeled] }\n  release: { types: [published] }\n  schedule: [{ cron: "30 2 * * *" }]',
+  },
+  ci: {
+    pt: { title: "ci.yml · build & test", body: "Em push na main e em todo PR: <b>typecheck</b>, <b>build</b> e <b>testes</b>, numa matriz de Node <b>20 e 22</b>. É o portão de qualidade." },
+    en: { title: "ci.yml · build & test", body: "On push to main and every PR: <b>typecheck</b>, <b>build</b> and <b>tests</b>, across a Node <b>20 and 22</b> matrix. The quality gate." },
+    code: '# ci.yml\nstrategy:\n  matrix: { node: [20, 22] }\nsteps:\n  - run: npm ci\n  - run: npm run typecheck\n  - run: npm run build\n  - run: npm test',
+  },
+  gate: {
+    pt: { title: "require-issue.yml · governança", body: "Todo PR precisa referenciar uma issue (<code>Closes #N</code>) que tenha a label <b>accepted</b>. Bloqueia PRs sem triagem — com bypass para o mantenedor e o Dependabot." },
+    en: { title: "require-issue.yml · governance", body: "Every PR must reference an issue (<code>Closes #N</code>) carrying the <b>accepted</b> label. It blocks untriaged PRs — with a bypass for the maintainer and Dependabot." },
+    code: '# require-issue.yml\non: { pull_request: { types: [opened, edited, synchronize, reopened] } }\n# Falha se nenhuma issue citada tiver a label `accepted`.\n# Bypass: GaberRB, dependabot[bot].',
+  },
+  review: {
+    pt: { title: "pr-review.yml · review por IA", body: "Em PR aberto/reaberto, um <b>modelo gratuito do OpenRouter</b> revisa o diff e posta um comentário-resumo. Primeira camada — não substitui a revisão humana." },
+    en: { title: "pr-review.yml · AI review", body: "On opened/reopened PRs, a <b>free OpenRouter model</b> reviews the diff and posts a summary comment. First pass — it doesn't replace human review." },
+    code: '# pr-review.yml\non: { pull_request: { types: [opened, reopened] } }\n- run: node dist/index.js review "$PR" --out review.md\n  env: { OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }} }\n# github-script posta review.md como comentário no PR',
+  },
+  prd: {
+    pt: { title: "prd-bot.yml · PRD por IA", body: "Ao rotular uma issue como <b>accepted</b> (ou rodar manualmente), um agente gera um <b>PRD estruturado</b> e o comenta na própria issue." },
+    en: { title: "prd-bot.yml · AI PRD", body: "When an issue is labeled <b>accepted</b> (or run manually), an agent generates a <b>structured PRD</b> and comments it on the issue." },
+    code: '# prd-bot.yml\non:\n  issues: { types: [labeled] }      # if label == accepted\n  workflow_dispatch: { inputs: { issue } }\n- run: node dist/index.js prd "$ISSUE" --out prd.md\n# comenta o PRD na própria issue',
+  },
+  release: {
+    pt: { title: "release.yml · publish no npm", body: "Ao publicar um Release no GitHub: confere que a versão do <code>package.json</code> bate com a tag, roda typecheck/test/build e faz <b>npm publish</b> com <i>provenance</i>." },
+    en: { title: "release.yml · npm publish", body: "When a GitHub Release is published: it verifies the <code>package.json</code> version matches the tag, runs typecheck/test/build and does <b>npm publish</b> with <i>provenance</i>." },
+    code: '# release.yml\non: { release: { types: [published] } }\n- run: npm run typecheck && npm test && npm run build\n- run: npm publish --provenance --access public\n  env: { NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} }',
+  },
+  housekeeping: {
+    pt: { title: "Dependabot + stale", body: "<b>Dependabot</b> abre PRs de atualização de dependências e actions. O <b>stale</b> marca e fecha issues/PRs inativos (30d → 7d), isentando os que têm <code>accepted</code>." },
+    en: { title: "Dependabot + stale", body: "<b>Dependabot</b> opens dependency/action update PRs. <b>stale</b> flags and closes inactive issues/PRs (30d → 7d), exempting those labeled <code>accepted</code>." },
+    code: '# stale.yml\nschedule: [{ cron: "30 2 * * *" }]\nwith:\n  days-before-stale: 30\n  days-before-close: 7\n  exempt-issue-labels: "accepted,pinned,security,help wanted"',
+  },
+};
+
+function initCicd() {
+  const detail = document.getElementById("cicdDetail");
+  if (!detail) return; // not on the cicd page
+  let stage = null;
+
+  function render(st, lang) {
+    const s = CICD[st];
+    if (!s) return;
+    document.getElementById("cicdTitle").innerHTML = s[lang].title;
+    document.getElementById("cicdBody").innerHTML = s[lang].body;
+    const codeWrap = document.getElementById("cicdCode");
+    if (s.code) {
+      codeWrap.querySelector("code").textContent = s.code;
+      codeWrap.classList.remove("hidden");
+    } else {
+      codeWrap.classList.add("hidden");
+    }
+    document.querySelectorAll("#cicdFlow .node[data-cstage]").forEach((n) => {
+      n.classList.toggle("active", n.dataset.cstage === st);
+    });
+  }
+
+  document.querySelectorAll("#cicdFlow .node[data-cstage]").forEach((n) => {
+    n.addEventListener("click", () => {
+      stage = n.dataset.cstage;
+      render(stage, currentLang);
+      detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  });
+  // Re-render the open stage when language changes (after setLang updates currentLang).
+  document.querySelectorAll(".lang-toggle button").forEach((b) =>
+    b.addEventListener("click", () => { if (stage) render(stage, currentLang); }),
+  );
+}
+
+document.addEventListener("DOMContentLoaded", initCicd);

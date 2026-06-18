@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus 🐙 — CI/CD (GitHub Actions)</title>
+  <meta name="description" content="O pipeline de CI/CD do Polypus no GitHub Actions: build & test, PRs vinculados a issue, agentes de PRD e code review por IA, e publish no npm — com diagrama interativo e exemplos." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="index.html#top">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how" data-i18n="nav.how">Como funciona</a>
+      <a href="index.html#contribute" data-i18n="nav.contribute">Contribuir</a>
+      <a href="index.html#quickstart" data-i18n="nav.quickstart">Começar</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-ext" href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
+    </nav>
+    <div class="lang-toggle" role="group" aria-label="language">
+      <button data-lang="pt" class="active">PT</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="deep">
+      <a class="back-link" href="index.html" data-i18n="cicd.back">← voltar</a>
+      <h1 class="deep-title" data-i18n="cicd.title">CI/CD do Polypus</h1>
+      <p class="deep-intro" data-i18n="cicd.intro">
+        O projeto roda inteiramente no GitHub Actions: build e testes, governança de PRs
+        vinculados a issue, dois agentes de IA (PRD e review) e publish no npm. Clique em cada
+        peça do pipeline.
+      </p>
+
+      <!-- Pipeline interativo -->
+      <div class="flow" id="cicdFlow">
+        <button class="node" data-cstage="trigger"><span class="node-ic">⚡</span><span>Gatilhos</span></button>
+        <span class="arrow"></span>
+        <button class="node" data-cstage="ci"><span class="node-ic">🧪</span>ci.yml</button>
+        <span class="arrow"></span>
+        <button class="node" data-cstage="gate"><span class="node-ic">🚦</span>require-issue</button>
+        <span class="arrow"></span>
+        <button class="node" data-cstage="review"><span class="node-ic">🤖</span>pr-review</button>
+        <span class="arrow"></span>
+        <button class="node" data-cstage="prd"><span class="node-ic">🧭</span>prd-bot</button>
+        <span class="arrow"></span>
+        <button class="node done" data-cstage="release"><span class="node-ic">📦</span>release</button>
+        <span class="arrow"></span>
+        <button class="node" data-cstage="housekeeping"><span class="node-ic">🧹</span>dependabot + stale</button>
+      </div>
+
+      <div class="stage-detail" id="cicdDetail" aria-live="polite">
+        <h3 id="cicdTitle" data-i18n="cicd.hint">Selecione uma etapa do pipeline</h3>
+        <p id="cicdBody" data-i18n="cicd.hintBody">Os detalhes e o YAML de cada workflow aparecem aqui.</p>
+        <pre id="cicdCode" class="hidden"><code></code></pre>
+      </div>
+
+      <!-- Ciclo de vida de uma mudança -->
+      <div class="swarm-note">
+        <h3 data-i18n="cicd.lifeTitle">Ciclo de vida de uma mudança</h3>
+        <div class="flow mini">
+          <span class="node sm"><span class="node-ic">📌</span>Issue</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">✅</span>accepted</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">🧭</span>PRD bot</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">🌿</span>Branch</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">🔀</span>PR</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">🧪</span>CI + 🤖 Review</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">✓</span>Merge</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">📦</span>Release → npm</span>
+        </div>
+      </div>
+
+      <!-- Segredos -->
+      <h2 class="section-title" style="margin-top: 52px" data-i18n="cicd.secretsTitle">Segredos usados</h2>
+      <div class="compare" style="grid-template-columns: 1fr; max-width: 760px;">
+        <div class="card">
+          <ul data-i18n="cicd.secrets">
+            <li><code>OPENROUTER_API_KEY</code> — modelos gratuitos para o PRD bot e o review bot.</li>
+            <li><code>NPM_TOKEN</code> — publish no npm (com provenance) ao publicar um Release.</li>
+            <li><code>GITHUB_TOKEN</code> — automático; comenta em issues/PRs.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-octo">🐙</div>
+    <p class="footer-by">
+      <span data-i18n="footer.by">Feito por</span>
+      <a href="https://github.com/GaberRB" target="_blank" rel="noopener">Gabriel Rios</a>
+    </p>
+    <p class="footer-links">
+      <a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a> ·
+      <a href="https://www.linkedin.com/in/gabriel-riosb/" target="_blank" rel="noopener">LinkedIn</a>
+    </p>
+    <p class="footer-pix" data-i18n="footer.pix">💜 Apoie via PIX: gabrielriosbelmiro@gmail.com</p>
+    <p class="footer-lic">MIT © Gabriel Rios</p>
+  </footer>
+</body>
+</html>
