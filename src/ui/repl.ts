@@ -11,6 +11,8 @@ export interface ReplContext {
   session: SessionState;
   /** Run a task with the currently active agent. */
   runTask(task: string): Promise<void>;
+  /** Run a task as a swarm across the configured agents (parallel worktrees). */
+  runSwarm(task: string): Promise<void>;
   /** Current in-memory config. */
   getConfig(): PolypusConfig;
   /** Re-read config from disk (after add/remove). */
@@ -85,6 +87,19 @@ async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promis
       session.history = [];
       console.log(pc.dim(t("repl.historyCleared")));
       return;
+
+    case "swarm": {
+      if (!arg) {
+        console.log(pc.yellow(t("repl.needName", { usage: "/swarm <task>" })));
+        return;
+      }
+      try {
+        await ctx.runSwarm(arg);
+      } catch (e) {
+        console.log(pc.red(`✗ ${(e as Error).message}`));
+      }
+      return;
+    }
 
     case "agents":
       printAgents(ctx.getConfig(), session.agentName);

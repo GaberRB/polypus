@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `/swarm <task>` slash command in the interactive REPL — runs a task as a
+  parallel swarm (same 3+ agent gate and live dashboard as `polypus swarm`),
+  so you no longer have to leave the session to use it. Shows in `/help`. (#41)
 - Large pastes in the REPL are now captured as a whole via bracketed paste and
   shown compactly as `[Pasted text #N +M lines]`, while the full text is still
   sent to the agent — so a multi-line paste no longer gets split into several
