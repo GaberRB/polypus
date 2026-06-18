@@ -8,6 +8,8 @@ export interface PromptContext {
   allow: string[];
   /** Extra agent-specific instructions (e.g. a subtask brief from the orchestrator). */
   briefing?: string;
+  /** Project operating instructions loaded from `.poly/agents.md` (or `AGENTS.md`). */
+  projectInstructions?: string;
 }
 
 /** Shared role/permission preamble used by both the native and emulated paths. */
@@ -32,6 +34,7 @@ function basePreamble(ctx: PromptContext): string {
     "- Do not ask for permission and do not say you cannot edit files — you can. Just emit the tool calls.",
     "- Make the changes directly. When the task is fully done, call the `finish` tool with a short summary.",
     t("prompt.language", { language: LOCALE_NAMES[getLocale()] }),
+    ctx.projectInstructions ? `\n${t("prompt.projectInstructions")}\n\n${ctx.projectInstructions}` : "",
     ctx.briefing ? `\nYour assigned task:\n${ctx.briefing}` : "",
   ].join("\n");
 }

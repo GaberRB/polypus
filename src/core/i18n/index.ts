@@ -29,7 +29,8 @@ const en: Catalog = {
   "cli.cmd.removeAgent": "Remove a configured agent",
   "cli.cmd.listAgents": "List configured agents",
   "cli.cmd.run": "Run a coding task with an agent",
-  "cli.cmd.swarm": "Split a task across multiple agents working in parallel git worktrees",
+  "cli.cmd.swarm":
+    "Split a task across multiple agents working in parallel git worktrees (requires 3+ configured agents)",
   "cli.cmd.models": "Browse OpenRouter models (price, context, tool support)",
   "cli.cmd.prd": "Generate a PRD from a GitHub issue (uses a free OpenRouter model)",
   "cli.arg.prdIssue": "issue number to turn into a PRD",
@@ -123,6 +124,8 @@ const en: Catalog = {
 
   // swarm
   "swarm.noAgents": "No agents configured. Run `polypus setup` or `polypus add-agent` first.",
+  "swarm.needsAgents":
+    "Swarm mode needs at least {min} configured agents (you have {have}). Add more with `polypus add-agent`, or use `polypus run` for a single agent.",
   "swarm.status": "swarm agents=[{agents}] workspace={workspace}",
   "swarm.bypassNote":
     "Workers run in bypass mode inside isolated git worktrees; branches are merged at the end.",
@@ -247,6 +250,8 @@ const en: Catalog = {
 
   // agent system prompt
   "prompt.language": "Communicate with the user in {language}.",
+  "prompt.projectInstructions":
+    "Project-specific operating instructions follow, loaded from `.poly/agents.md`. Treat them as authoritative for how to work in THIS repo. Paths they reference (e.g. skills/*.md, ../context.md, ../rules.md) are relative to the `.poly/` directory — read those files when relevant before acting:",
 };
 
 const ptBR: Catalog = {
@@ -264,7 +269,8 @@ const ptBR: Catalog = {
   "cli.cmd.removeAgent": "Remove um agente configurado",
   "cli.cmd.listAgents": "Lista os agentes configurados",
   "cli.cmd.run": "Executa uma tarefa de código com um agente",
-  "cli.cmd.swarm": "Divide uma tarefa entre vários agentes trabalhando em paralelo em git worktrees",
+  "cli.cmd.swarm":
+    "Divide uma tarefa entre vários agentes em git worktrees paralelas (requer 3+ agentes configurados)",
   "cli.cmd.models": "Explora os modelos do OpenRouter (preço, contexto, suporte a tools)",
   "cli.cmd.prd": "Gera um PRD a partir de uma issue do GitHub (usa um modelo gratuito do OpenRouter)",
   "cli.arg.prdIssue": "número da issue para transformar em PRD",
@@ -354,6 +360,8 @@ const ptBR: Catalog = {
   ].join("\n"),
 
   "swarm.noAgents": "Nenhum agente configurado. Rode `polypus setup` ou `polypus add-agent` primeiro.",
+  "swarm.needsAgents":
+    "O modo swarm precisa de pelo menos {min} agentes configurados (você tem {have}). Adicione mais com `polypus add-agent`, ou use `polypus run` para um agente só.",
   "swarm.status": "swarm agentes=[{agents}] workspace={workspace}",
   "swarm.bypassNote":
     "Os workers rodam em modo bypass dentro de git worktrees isoladas; os branches são mesclados no final.",
@@ -450,6 +458,8 @@ const ptBR: Catalog = {
   "wizard.keyPrompt": "Chave de API (armazenada em texto puro no arquivo de config)",
 
   "prompt.language": "Comunique-se com o usuário em {language}.",
+  "prompt.projectInstructions":
+    "Seguem instruções operacionais específicas do projeto, carregadas de `.poly/agents.md`. Trate-as como autoritativas para trabalhar NESTE repositório. Os caminhos que elas citam (ex.: skills/*.md, ../context.md, ../rules.md) são relativos à pasta `.poly/` — leia esses arquivos quando relevante antes de agir:",
 
   "models.fetching": "Buscando modelos do OpenRouter…",
   "models.fetchError": "Não foi possível buscar modelos: {msg}",
