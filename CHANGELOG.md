@@ -1,0 +1,61 @@
+# Changelog
+
+All notable changes to this project are documented here.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- `polypus prd <issue#>` — generate a structured PRD from a GitHub issue using a
+  free OpenRouter model, plus a `prd-bot` GitHub Actions workflow that posts the
+  PRD as a comment when an issue is labeled `accepted`. (#12)
+- `polypus review <pr#>` — automated first-pass code review of a PR diff using a
+  free OpenRouter model, plus a `pr-review` workflow that comments on opened and
+  reopened PRs. (#15)
+
+### Changed
+- Hardened the `prd`/`review` commands: numeric issue/PR ref validation, a
+  fail-fast guard when `--input -` is used without a pipe, and a configurable
+  diff cap via `POLYPUS_MAX_DIFF_CHARS`. (#16)
+
+## [0.2.1] - 2026-06-17
+
+### Fixed
+- The CLI now reads its version from `package.json` instead of a hardcoded
+  string, so `polypus --version` stays in sync with releases. (#11)
+
+## [0.2.0] - 2026-06-17
+
+### Added
+- Auto-correction layer for failed tool calls: on failure the raw error is
+  enriched with its likely cause and missing context (real file contents, nearby
+  paths, the editable allow-list, or the tool schema) so the model can self-heal
+  instead of looping. (#7)
+
+### Changed
+- CI pipeline, issue-gated PR workflow, and OSS governance docs.
+- Package scoped for npm publishing as `@gaberrb/polypus`.
+
+## [0.1.0] - Initial release
+
+### Added
+- Agentic coding harness with a tool-using agent loop (`read_file`, `write_file`,
+  `edit_file`, `run_command`, `list_dir`).
+- Provider support: OpenRouter, Ollama, native Anthropic, and generic
+  OpenAI-compatible endpoints.
+- Tool-calling for models without native function-calling via an XML tool
+  protocol injected into the prompt and parsed back (emulated mode).
+- OpenRouter model discovery with price/context/tool filters (`polypus models`).
+- Parallel swarm: a lead agent decomposes a task and workers run concurrently in
+  isolated git worktrees, merging at the end (`polypus swarm`).
+- Permission modes (`plan` / `review` / `bypass`) with a path allow-list.
+- Interactive TUI: animated banner, thinking spinner, ESC-to-cancel, REPL.
+- Secret loading from `~/.polypus/.env` and `./.env`.
+- Bilingual interface (Portuguese pt-BR default, English).
+
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/GaberRB/polypus/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/GaberRB/polypus/releases/tag/v0.2.0
+[0.1.0]: https://github.com/GaberRB/polypus/tree/616e9d7
