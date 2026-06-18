@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-06-17
+
 ### Added
 - `polypus prd <issue#>` — generate a structured PRD from a GitHub issue using a
   free OpenRouter model, plus a `prd-bot` GitHub Actions workflow that posts the
@@ -65,7 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/GaberRB/polypus/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/GaberRB/polypus/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/GaberRB/polypus/releases/tag/v0.2.0
 [0.1.0]: https://github.com/GaberRB/polypus/tree/616e9d7
