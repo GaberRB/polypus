@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root) and injects it, telling the agent the referenced paths are relative to
   `.poly/` so it follows the repo's conventions instead of guessing. (#33)
 
+### Changed
+- `polypus swarm` now requires **3 or more configured agents**; with fewer it
+  fails fast with a clear message (swarm degenerates into a single-agent run
+  otherwise). The `--help` description states the requirement. (#34)
+
 ## [0.3.0] - 2026-06-18
 
 ### Added

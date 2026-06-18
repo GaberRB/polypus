@@ -10,9 +10,22 @@ export interface SwarmCliOptions {
   maxSubtasks?: string;
 }
 
+/** Minimum number of configured agents for swarm mode to be worthwhile. */
+export const MIN_SWARM_AGENTS = 3;
+
+/** Swarm only pays off when there are several agents to spread subtasks across. */
+export function canSwarm(agentCount: number): boolean {
+  return agentCount >= MIN_SWARM_AGENTS;
+}
+
 /** `polypus swarm <task>` — decompose and run a task across agents in parallel worktrees. */
 export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> {
   const config = await loadConfig();
+
+  // Gate: swarm is for 3+ agents; with fewer it degenerates into a single-agent run.
+  if (!canSwarm(config.agents.length)) {
+    throw new Error(t("swarm.needsAgents", { min: MIN_SWARM_AGENTS, have: config.agents.length }));
+  }
 
   const selected = opts.agents
     ? opts.agents.split(",").map((s) => s.trim()).filter(Boolean)
