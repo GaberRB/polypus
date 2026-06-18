@@ -146,6 +146,11 @@ across your team.
 /exit            quit
 ```
 
+Pasting a large, multi-line block at the prompt is collapsed to a compact
+`[Pasted text #1 +16 lines]` marker so it doesn't flood the terminal — the full
+text is still sent to the agent. (Requires a terminal with bracketed paste, which
+most modern terminals support.)
+
 ## How non-tool models "code"
 
 Models with native function-calling (most hosted models) use it directly. For

@@ -1,5 +1,3 @@
-import * as readline from "node:readline/promises";
-import { stdin, stdout } from "node:process";
 import pc from "picocolors";
 import type { SessionState } from "../cli/commands/run.js";
 import type { PermissionMode, PolypusConfig } from "../core/config/schema.js";
@@ -7,6 +5,7 @@ import { findAgent, loadConfig, saveConfig } from "../core/config/store.js";
 import { addAgentInteractive } from "./wizard.js";
 import { t } from "../core/i18n/index.js";
 import { promptLabel } from "./banner.js";
+import { readLine } from "./line-reader.js";
 
 export interface ReplContext {
   session: SessionState;
@@ -55,18 +54,6 @@ export async function startRepl(ctx: ReplContext): Promise<void> {
     }
 
     await handleCommand(cmd, arg, ctx);
-  }
-}
-
-/** Read a single line with a transient readline; returns null on EOF. */
-async function readLine(prompt: string): Promise<string | null> {
-  const rl = readline.createInterface({ input: stdin, output: stdout });
-  try {
-    return await rl.question(prompt);
-  } catch {
-    return null; // stream closed
-  } finally {
-    rl.close();
   }
 }
 

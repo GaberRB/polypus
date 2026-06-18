@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Large pastes in the REPL are now captured as a whole via bracketed paste and
+  shown compactly as `[Pasted text #N +M lines]`, while the full text is still
+  sent to the agent — so a multi-line paste no longer gets split into several
+  prompts or truncated. Falls back cleanly when bracketed paste isn't available. (#42)
+
 ## [0.4.0] - 2026-06-18
 
 ### Added
