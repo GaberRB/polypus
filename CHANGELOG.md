@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-18
+
 ### Added
 - Project operating instructions are now auto-loaded into the agent's system
   prompt: on a fresh run Polypus reads `.poly/agents.md` (or `AGENTS.md` at the
@@ -103,7 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/GaberRB/polypus/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/GaberRB/polypus/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/GaberRB/polypus/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/GaberRB/polypus/compare/v0.2.0...v0.2.1
