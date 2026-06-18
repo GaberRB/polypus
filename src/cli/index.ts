@@ -5,6 +5,7 @@ import { removeAgent } from "./commands/remove-agent.js";
 import { listAgents } from "./commands/list-agents.js";
 import { run } from "./commands/run.js";
 import { setup } from "./commands/setup.js";
+import { init } from "./commands/init.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
 import { prd } from "./commands/prd.js";
@@ -60,6 +61,12 @@ function buildProgram(): Command {
     .command("setup")
     .description(t("cli.cmd.setup"))
     .action(() => setup());
+
+  program
+    .command("init")
+    .option("--force", t("cli.opt.force"))
+    .description(t("cli.cmd.init"))
+    .action((opts) => init(opts));
 
   program
     .command("add-agent")

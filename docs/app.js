@@ -47,7 +47,7 @@ const I18N = {
     "feat.f7t": "Permissões", "feat.f7": "Modos plan/review/bypass + allow-list de caminhos.",
     "feat.f8t": "Wizard", "feat.f8": "Onboarding interativo de chaves, modelos e permissões.",
     "qs.title": "Comece em 1 minuto",
-    "qs.s1": "Instale", "qs.s2": "Configure", "qs.s3": "Use",
+    "qs.s1": "Instale", "qs.s2": "Configure", "qs.sInit": "Modele o projeto", "qs.s3": "Use",
     "footer.by": "Feito por",
   },
   en: {
@@ -95,7 +95,7 @@ const I18N = {
     "feat.f7t": "Permissions", "feat.f7": "plan/review/bypass modes + path allow-list.",
     "feat.f8t": "Wizard", "feat.f8": "Interactive onboarding for keys, models and permissions.",
     "qs.title": "Start in 1 minute",
-    "qs.s1": "Install", "qs.s2": "Configure", "qs.s3": "Use",
+    "qs.s1": "Install", "qs.s2": "Configure", "qs.sInit": "Scaffold the project", "qs.s3": "Use",
     "footer.by": "Made by",
   },
 };
