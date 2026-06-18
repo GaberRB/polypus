@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   prompt: on a fresh run Polypus reads `.poly/agents.md` (or `AGENTS.md` at the
   root) and injects it, telling the agent the referenced paths are relative to
   `.poly/` so it follows the repo's conventions instead of guessing. (#33)
+- `polypus init` — scaffold a `.poly/` workspace in the current directory with a
+  didactic starter set: `agents.md` (role + golden rules + skills index),
+  `skills/` (coding + spec-driven), a lean Spec-Driven Development template
+  (`templates/spec.md`) and a `README.md`. Idempotent (existing files are kept;
+  `--force` overwrites), with locale-aware content (en / pt-BR). Pairs with the
+  auto-loading of `.poly/agents.md` so a fresh project follows its conventions
+  out of the box. Docs and site updated. (#37)
 
 ### Changed
 - `polypus swarm` now requires **3 or more configured agents**; with fewer it
