@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Project operating instructions are now auto-loaded into the agent's system
+  prompt: on a fresh run Polypus reads `.poly/agents.md` (or `AGENTS.md` at the
+  root) and injects it, telling the agent the referenced paths are relative to
+  `.poly/` so it follows the repo's conventions instead of guessing. (#33)
+
 ### Changed
 - `polypus swarm` now requires **3 or more configured agents**; with fewer it
   fails fast with a clear message (swarm degenerates into a single-agent run

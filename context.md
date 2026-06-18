@@ -51,7 +51,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_49 módulos em `src/`._
+_50 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -74,6 +74,7 @@ _49 módulos em `src/`._
 - `loop.ts`
 - `orchestrator.ts`
 - `prd.ts`
+- `project-context.ts`
 - `review.ts`
 - `worker.ts`
 
