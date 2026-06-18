@@ -1,7 +1,8 @@
 import pc from "picocolors";
 import { loadConfig } from "../../core/config/store.js";
 import { createProvider, type ResolvedAgent } from "../../core/providers/registry.js";
-import { runSwarm, type SwarmEvents } from "../../core/agent/orchestrator.js";
+import { runSwarm } from "../../core/agent/orchestrator.js";
+import { SwarmView, describeToolCall } from "../../ui/swarm-view.js";
 import { t } from "../../core/i18n/index.js";
 
 export interface SwarmCliOptions {
@@ -31,15 +32,32 @@ export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> 
   );
   console.log(pc.yellow(t("swarm.bypassNote") + "\n"));
 
-  const result = await runSwarm({
-    task,
-    workspace: process.cwd(),
-    agents: resolved,
-    allow: config.permissions.allow,
-    deny: config.permissions.deny,
-    maxSubtasks: opts.maxSubtasks ? Number(opts.maxSubtasks) : undefined,
-    events: renderSwarmEvents(),
-  });
+  const view = new SwarmView(resolved[0]!.config.name);
+  view.start();
+  let result;
+  try {
+    result = await runSwarm({
+      task,
+      workspace: process.cwd(),
+      agents: resolved,
+      allow: config.permissions.allow,
+      deny: config.permissions.deny,
+      maxSubtasks: opts.maxSubtasks ? Number(opts.maxSubtasks) : undefined,
+      events: {
+        onDecomposed: (subtasks) => view.setSubtasks(subtasks),
+        onWorkerStart: (subtask, agentName) => view.workerStart(subtask.id, agentName),
+        onWorkerDone: (outcome) => view.workerDone(outcome),
+        onMerge: (merge) => view.merge(merge),
+        workerEvents: (subtask) => ({
+          onToolCall: (call) => view.workerAction(subtask.id, describeToolCall(call)),
+          onStep: (step) => view.workerStep(subtask.id, step),
+        }),
+      },
+    });
+  } finally {
+    view.stop();
+  }
+  console.log("");
 
   // Final report.
   console.log(pc.bold("\n" + t("swarm.summary")));
@@ -57,27 +75,4 @@ export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> 
   } else {
     console.log(pc.green("\n" + t("swarm.allMerged")));
   }
-}
-
-function renderSwarmEvents(): SwarmEvents {
-  return {
-    onDecomposed(subtasks) {
-      console.log(pc.bold(t("swarm.decomposed", { n: subtasks.length })));
-      for (const s of subtasks) console.log(pc.dim(`  ${s.id}: ${s.title}`));
-      console.log("");
-    },
-    onWorkerStart(subtask, agentName) {
-      console.log(pc.cyan(t("swarm.workerStart", { id: subtask.id, agent: agentName })));
-    },
-    onWorkerDone(o) {
-      const head = o.finished
-        ? pc.green(t("swarm.workerDone", { id: o.subtask.id }))
-        : pc.yellow(t("swarm.workerStopped", { id: o.subtask.id }));
-      const changes = o.committed ? t("swarm.changesCommitted") : t("swarm.noChanges");
-      console.log(head + pc.dim(t("swarm.workerMeta", { steps: o.steps, changes })));
-    },
-    onMerge(m) {
-      console.log(m.ok ? pc.dim(t("swarm.merged", { branch: m.branch })) : pc.red(t("swarm.mergeConflict", { branch: m.branch })));
-    },
-  };
 }
