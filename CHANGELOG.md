@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fail-fast guard when `--input -` is used without a pipe, and a configurable
   diff cap via `POLYPUS_MAX_DIFF_CHARS`. (#16)
 
+### Fixed
+- `write_file` no longer dead-loops when the model's response is truncated at the
+  output token limit (so `content` arrives empty/partial and the call fails with
+  `Received: [path]`). The agent loop now detects the cut-off (`finishReason`
+  length/max_tokens) and tells the model to write large files in smaller pieces
+  instead of resending the same oversized output. (#25)
+
 ## [0.2.1] - 2026-06-17
 
 ### Fixed

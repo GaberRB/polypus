@@ -28,8 +28,28 @@ export interface CorrectionDeps {
   allow: string[];
   /** Spec of the tool that failed, used to restate its schema on bad args. */
   toolSpec?: ToolSpec;
+  /** The model's response was cut off at the token limit (finishReason length/max_tokens). */
+  truncated?: boolean;
   /** Optional LLM fixer, invoked only when no deterministic rule matches. */
   escalate?: Escalator;
+}
+
+/**
+ * Guidance for a response that hit the output token limit. The most common
+ * real-world cause of a `write_file` failing with only `path` (Issue #25): the
+ * model emitted a huge file, got cut off mid tool-call, and `content` never
+ * arrived. Telling it to split the file is what actually breaks the loop.
+ */
+export function truncationGuidance(toolName?: string): string {
+  const fileHint =
+    toolName === "write_file" || toolName === "edit_file"
+      ? " Write large files in parts: create the file with the first chunk via write_file, then append the rest with edit_file in the next steps."
+      : "";
+  return [
+    "AUTO-CORRECTION — your previous response was cut off at the output token limit,",
+    "so the tool call was incomplete (e.g. 'content' missing or partial).",
+    "Do NOT resend the same large output — produce a smaller one this time." + fileHint,
+  ].join("\n");
 }
 
 /**
@@ -53,6 +73,10 @@ async function deterministicCorrection(
   output: string,
   deps: CorrectionDeps,
 ): Promise<string | null> {
+  // Truncation takes priority: a failed call after a cut-off response is almost
+  // always the cause, and restating the schema (below) would just loop.
+  if (deps.truncated) return truncationGuidance(call.name);
+
   const path = typeof call.arguments.path === "string" ? call.arguments.path : undefined;
 
   // edit_file: the 'search' snippet was not found in the file.

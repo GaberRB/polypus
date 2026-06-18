@@ -12,17 +12,17 @@ class ScriptedProvider implements Provider {
   readonly name = "scripted";
   readonly model = "scripted";
   private i = 0;
-  constructor(private readonly outputs: string[]) {}
+  constructor(private readonly outputs: string[], private readonly finishReason = "stop") {}
   async chat(): Promise<ChatResponse> {
     const content = this.outputs[Math.min(this.i++, this.outputs.length - 1)]!;
-    return { content, toolCalls: [], finishReason: "stop" };
+    return { content, toolCalls: [], finishReason: this.finishReason };
   }
 }
 
-function makeAgent(outputs: string[]): ResolvedAgent {
+function makeAgent(outputs: string[], finishReason?: string): ResolvedAgent {
   return {
     config: { name: "t", provider: "ollama", model: "m", toolMode: "emulated" },
-    provider: new ScriptedProvider(outputs),
+    provider: new ScriptedProvider(outputs, finishReason),
     toolMode: "emulated",
   };
 }
@@ -155,6 +155,28 @@ describe("runAgent (emulated path)", () => {
 
     expect(corrections).toBeGreaterThan(0);
     expect(result.messages.some((m) => m.content.includes("AUTO-CORRECTION"))).toBe(true);
+  });
+
+  it("guides the model to split output when a tool call is truncated (Issue #25)", async () => {
+    const ws = workspace();
+    // write_file missing 'content' (lost to truncation) + finishReason "length".
+    const agent = makeAgent(
+      [`<polypus:tool name="write_file"><arg name="path">snake.js</arg></polypus:tool>`],
+      "length",
+    );
+
+    let guidance = "";
+    const result = await runAgent({
+      task: "write snake.js",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+      events: { onCorrection: (_c, g) => { guidance = g; } },
+    });
+
+    expect(guidance).toMatch(/token limit|cut off/i);
+    expect(result.messages.some((m) => /write large files in parts/i.test(m.content))).toBe(true);
   });
 
   it("leaves the raw error untouched when autoCorrect is disabled", async () => {

@@ -107,6 +107,18 @@ describe("buildCorrection", () => {
     expect(guidance).toContain("required");
   });
 
+  it("prioritizes truncation guidance over the schema on a cut-off call (Issue #25)", async () => {
+    const ws = workspace();
+    const guidance = await buildCorrection(
+      call("write_file", { path: "snake.js" }), // content lost to truncation
+      "write_file needs two arguments: 'path' and 'content'. Received: [path].",
+      deps(ws, { toolSpec: editSpec, truncated: true }),
+    );
+    expect(guidance).toMatch(/token limit|cut off/i);
+    expect(guidance).toMatch(/parts|smaller/i);
+    expect(guidance).toContain("write_file"); // file-specific hint
+  });
+
   it("returns null for an unrecognized error with no escalator", async () => {
     const ws = workspace();
     const guidance = await buildCorrection(

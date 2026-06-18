@@ -5,7 +5,7 @@ import type { ResolvedAgent } from "../providers/registry.js";
 import type { ChatParams, Message, ToolCall } from "../providers/types.js";
 import { getTool, toolSpecs } from "../tools/registry.js";
 import type { ToolResult } from "../tools/types.js";
-import { buildCorrection, makeLLMEscalator } from "./correction.js";
+import { buildCorrection, makeLLMEscalator, truncationGuidance } from "./correction.js";
 
 export interface Usage {
   promptTokens: number;
@@ -120,7 +120,22 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     messages.push(driver.assistantMessage(response, toolCalls));
     if (text) events?.onAssistantText?.(text);
 
+    // The model's output was cut off at the token limit — its tool call (if any)
+    // is incomplete. Surfaced as guidance so it can recover by splitting output.
+    const truncated = response.finishReason === "length" || response.finishReason === "max_tokens";
+
     if (toolCalls.length === 0) {
+      // Cut off before producing any tool call (e.g. a half-written file dump).
+      if (truncated && autoCorrect) {
+        if (consecutiveNoTool < maxReprompts) {
+          consecutiveNoTool++;
+          const guidance = truncationGuidance();
+          events?.onCorrection?.({ id: "trunc", name: "", arguments: {} }, guidance);
+          messages.push({ role: "user", content: guidance });
+          continue;
+        }
+        return { finished: false, reason: "stalled", steps: step, messages, usage };
+      }
       const stalled = text.trim().length === 0 || looksLikeStall(text);
       if (stalled) {
         // The "yes, you can act" reinforcement loop for models that refuse/stall.
@@ -163,6 +178,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
           workspace: opts.workspace,
           allow: opts.promptContext.allow,
           toolSpec: tool?.spec,
+          truncated,
           // Only spend a fixer-LLM call once the model has already repeated a
           // failing call — the first failure gets deterministic help for free.
           escalate: sig === lastFailSig ? makeLLMEscalator(agent.provider) : undefined,
@@ -171,6 +187,12 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
           resultText = `${result.output}\n\n${guidance}`;
           events?.onCorrection?.(call, guidance);
         }
+      } else if (result.ok && truncated && autoCorrect) {
+        // The call "succeeded" but the response was cut off, so the written file
+        // is likely incomplete — flag it so the model can finish/repair it.
+        const guidance = truncationGuidance(call.name);
+        resultText = `${result.output}\n\n${guidance}`;
+        events?.onCorrection?.(call, guidance);
       }
       messages.push(driver.toolResultMessage(call, resultText));
 
