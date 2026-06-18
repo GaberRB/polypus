@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The startup banner showed a hardcoded `v0.1.0` instead of the real version.
+  It now reads the version from `package.json` (shared via `src/core/version.ts`,
+  the single source of truth also used by `polypus --version`), so the banner and
+  `--version` always match. (#32)
+
 ## [0.3.0] - 2026-06-18
 
 ### Added

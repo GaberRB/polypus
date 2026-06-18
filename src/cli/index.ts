@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { createRequire } from "node:module";
 import pc from "picocolors";
 import { addAgent } from "./commands/add-agent.js";
 import { removeAgent } from "./commands/remove-agent.js";
@@ -15,12 +14,7 @@ import { configDir, loadConfig } from "../core/config/store.js";
 import { loadDotenv } from "../core/config/dotenv.js";
 import { pickLocale, setLocale, t } from "../core/i18n/index.js";
 import { banner } from "../ui/banner.js";
-
-// Single source of truth for the CLI version: read from package.json at runtime.
-// Resolved relative to the bundled dist/index.js, where package.json sits one level up.
-const { version: pkgVersion } = createRequire(import.meta.url)("../package.json") as {
-  version: string;
-};
+import { VERSION } from "../core/version.js";
 
 /** Entry point for bare `polypus`: onboard on first run, then start interactive mode. */
 async function launchInteractive(): Promise<void> {
@@ -57,7 +51,7 @@ function buildProgram(): Command {
   program
     .name("polypus")
     .description(t("cli.description"))
-    .version(pkgVersion)
+    .version(VERSION)
     .option("--lang <locale>", t("cli.opt.lang"))
     // No subcommand → launch the interactive experience (Claude/Devin-style).
     .action(() => launchInteractive());
