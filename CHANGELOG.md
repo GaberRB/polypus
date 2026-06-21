@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-06-21
+
+### Added
+- Headless/JSON mode: `polypus run "<task>" --json` emits a single JSON object
+  (`{ result, events }`) instead of the colored TUI — with the run reason, step
+  count, summary, `filesChanged` (derived from successful `write_file`/`edit_file`
+  calls), token usage, and a structured event log. Gives CI and scripts a stable
+  contract to parse (`… --json | jq '.result.filesChanged'`) instead of scraping
+  colored text. Intended for use with `--mode bypass` (no TTY for confirmations).
+  Bilingual help/error strings. (#62)
+
 ## [0.4.3] - 2026-06-21
 
 ### Added
@@ -138,7 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/GaberRB/polypus/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/GaberRB/polypus/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/GaberRB/polypus/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/GaberRB/polypus/compare/v0.4.0...v0.4.1
