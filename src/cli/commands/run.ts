@@ -6,6 +6,7 @@ import { createProvider } from "../../core/providers/registry.js";
 import { PermissionEngine, type ConfirmRequest } from "../../core/permissions/modes.js";
 import { runAgent, type AgentEvents } from "../../core/agent/loop.js";
 import { resolveMentions } from "../../core/context/mentions.js";
+import { createJsonCollector } from "./json-output.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
 import { runSwarmSession } from "./swarm.js";
@@ -17,6 +18,8 @@ export interface RunOptions {
   agent?: string;
   mode?: string;
   maxSteps?: string;
+  /** Headless mode: emit a single JSON object instead of the colored TUI. */
+  json?: boolean;
 }
 
 /** `polypus run [task]` — one-shot if a task is given, otherwise an interactive REPL. */
@@ -42,20 +45,24 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     await executeTask(taskText, resolved, workspace, session);
   };
 
+  if (opts.json && !task) throw new Error(t("run.jsonNeedsTask"));
+
   if (task) {
     const resolved = createProvider(agentConfig);
-    console.log(
-      pc.dim(
-        t("run.status", {
-          name: resolved.config.name,
-          provider: resolved.config.provider,
-          model: resolved.config.model,
-          toolMode: resolved.toolMode,
-          mode: session.mode,
-        }),
-      ),
-    );
-    await executeTask(task, resolved, workspace, session);
+    if (!opts.json) {
+      console.log(
+        pc.dim(
+          t("run.status", {
+            name: resolved.config.name,
+            provider: resolved.config.provider,
+            model: resolved.config.model,
+            toolMode: resolved.toolMode,
+            mode: session.mode,
+          }),
+        ),
+      );
+    }
+    await executeTask(task, resolved, workspace, session, opts.json ?? false);
     return;
   }
 
@@ -98,6 +105,7 @@ async function executeTask(
   resolved: ReturnType<typeof createProvider>,
   workspace: string,
   session: SessionState,
+  json = false,
 ): Promise<void> {
   // Inject @file / @dir mentions into the task as explicit context before sending.
   const mention = await resolveMentions(task, {
@@ -107,27 +115,31 @@ async function executeTask(
   });
   if (mention.injected.length > 0) {
     task = mention.task;
-    console.log(pc.dim(`↳ @ ${mention.injected.join(", ")}`));
+    if (!json) console.log(pc.dim(`↳ @ ${mention.injected.join(", ")}`));
   }
 
   const spinner = new Spinner();
   const controller = new AbortController();
   const cancel = listenForCancel(controller); // ESC / Ctrl+C aborts the task
+  const collector = json ? createJsonCollector() : undefined;
 
   const permissions = new PermissionEngine({
     mode: session.mode,
     policy: { workspace, allow: session.allow, deny: session.deny },
     allowedCommands: session.allowedCommands,
-    confirm: async (req) => {
-      spinner.stop();
-      cancel.pause(); // hand stdin to the clack prompt
-      const ok = await confirmAction(req);
-      cancel.resume();
-      return ok;
-    },
+    // Headless runs have no TTY for confirmations — use --mode bypass instead.
+    confirm: json
+      ? async () => false
+      : async (req) => {
+          spinner.stop();
+          cancel.pause(); // hand stdin to the clack prompt
+          const ok = await confirmAction(req);
+          cancel.resume();
+          return ok;
+        },
   });
 
-  spinner.start(t("ui.thinking"));
+  if (!json) spinner.start(t("ui.thinking"));
   let result;
   try {
     result = await runAgent({
@@ -139,7 +151,7 @@ async function executeTask(
       history: session.history,
       maxSteps: session.maxSteps,
       signal: controller.signal,
-      events: renderEvents(spinner),
+      events: collector ? collector.events : renderEvents(spinner),
     });
   } finally {
     spinner.stop();
@@ -147,6 +159,11 @@ async function executeTask(
   }
 
   session.history = result.messages;
+
+  if (collector) {
+    process.stdout.write(JSON.stringify(collector.build(result)) + "\n");
+    return;
+  }
 
   if (result.reason === "finished") {
     console.log(pc.green("\n" + t("run.done", { steps: result.steps })) + (result.summary ? ` ${result.summary}` : ""));

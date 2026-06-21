@@ -60,6 +60,7 @@ const en: Catalog = {
   "cli.opt.agent": "which configured agent to use",
   "cli.opt.mode": "plan | review | bypass (overrides config)",
   "cli.opt.maxSteps": "maximum agent steps",
+  "cli.opt.json": "headless mode: emit a single JSON object (steps, tool calls, files changed, usage) instead of the TUI — use with --mode bypass",
   "cli.arg.swarmTask": "high-level task to split across agents",
   "cli.opt.agents": "comma-separated agent names (default: all configured)",
   "cli.opt.maxSubtasks": "maximum number of parallel subtasks",
@@ -92,6 +93,7 @@ const en: Catalog = {
   "run.reprompt": "↻ no tool call — reinforcing instructions (attempt {attempt})",
   "run.autocorrect": "↻ tool failed — auto-correcting with extra context",
   "run.cancelled": "■ cancelled",
+  "run.jsonNeedsTask": "--json requires a task argument (headless mode has no interactive REPL).",
 
   // repl
   "repl.welcome": "Polypus interactive session.",
@@ -307,6 +309,7 @@ const ptBR: Catalog = {
   "cli.opt.agent": "qual agente configurado usar",
   "cli.opt.mode": "plan | review | bypass (sobrescreve a config)",
   "cli.opt.maxSteps": "número máximo de passos do agente",
+  "cli.opt.json": "modo headless: emite um único objeto JSON (passos, tool calls, arquivos alterados, uso) em vez da TUI — use com --mode bypass",
   "cli.arg.swarmTask": "tarefa de alto nível para dividir entre os agentes",
   "cli.opt.agents": "nomes de agentes separados por vírgula (padrão: todos)",
   "cli.opt.maxSubtasks": "número máximo de subtarefas paralelas",
@@ -337,6 +340,7 @@ const ptBR: Catalog = {
   "run.reprompt": "↻ nenhuma chamada de tool — reforçando instruções (tentativa {attempt})",
   "run.autocorrect": "↻ tool falhou — autocorrigindo com contexto extra",
   "run.cancelled": "■ cancelado",
+  "run.jsonNeedsTask": "--json exige um argumento de tarefa (o modo headless não tem REPL interativo).",
 
   "repl.welcome": "Sessão interativa do Polypus.",
   "repl.welcomeHint": " Digite /help para comandos, /exit para sair.",

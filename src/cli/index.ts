@@ -98,6 +98,7 @@ function buildProgram(): Command {
     .option("--agent <name>", t("cli.opt.agent"))
     .option("--mode <mode>", t("cli.opt.mode"))
     .option("--max-steps <n>", t("cli.opt.maxSteps"))
+    .option("--json", t("cli.opt.json"))
     .description(t("cli.cmd.run"))
     .action((task, opts) => run(task, opts));
 
