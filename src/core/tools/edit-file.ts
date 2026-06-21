@@ -59,6 +59,7 @@ export const editFileTool: Tool = {
     const decision = await ctx.permissions.authorizeWrite(
       args.data.path,
       `- ${firstLine(args.data.search)}\n+ ${firstLine(args.data.replace)}`,
+      args.data.replace,
     );
     if (!decision.allowed) return { ok: false, output: `Edit denied: ${decision.reason}` };
 

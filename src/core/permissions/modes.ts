@@ -1,5 +1,7 @@
 import type { PermissionMode } from "../config/schema.js";
 import { checkPath, isCommandPreApproved, type PathPolicy } from "./allowlist.js";
+import { scanSecrets, screenCommand } from "./policy.js";
+import { t } from "../i18n/index.js";
 
 export interface ConfirmRequest {
   kind: "write" | "command";
@@ -36,9 +38,19 @@ export class PermissionEngine {
     return d.allowed ? { allowed: true } : { allowed: false, reason: d.reason };
   }
 
-  async authorizeWrite(target: string, preview?: string): Promise<Decision> {
+  async authorizeWrite(target: string, preview?: string, content?: string): Promise<Decision> {
     const d = checkPath(this.opts.policy, target);
     if (!d.allowed) return { allowed: false, reason: d.reason };
+
+    // Block hard-coded secrets before any mode gating — applies even in bypass.
+    const findings = scanSecrets(content ?? preview ?? "");
+    if (findings.length > 0) {
+      const first = findings[0]!;
+      return {
+        allowed: false,
+        reason: t("policy.secretFound", { kind: first.kind, line: first.line }),
+      };
+    }
 
     if (this.opts.mode === "plan") {
       return { allowed: false, reason: "plan mode: file modifications are disabled" };
@@ -50,6 +62,11 @@ export class PermissionEngine {
   }
 
   async authorizeCommand(command: string): Promise<Decision> {
+    // Destructive commands are blocked in every mode, including bypass.
+    const screen = screenCommand(command);
+    if (screen.blocked) {
+      return { allowed: false, reason: t("policy.blockedCommand", { reason: screen.reason ?? "" }) };
+    }
     if (this.opts.mode === "plan") {
       return { allowed: false, reason: "plan mode: running commands is disabled" };
     }
