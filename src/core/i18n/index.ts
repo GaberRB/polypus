@@ -94,6 +94,10 @@ const en: Catalog = {
   "run.autocorrect": "↻ tool failed — auto-correcting with extra context",
   "run.cancelled": "■ cancelled",
   "run.jsonNeedsTask": "--json requires a task argument (headless mode has no interactive REPL).",
+  "review.approveAll": "approve all",
+  "review.reject": "reject",
+  "review.pickHunks": "pick hunks…",
+  "review.selectHunks": "Select the hunks to apply (space to toggle, enter to confirm)",
 
   // repl
   "repl.welcome": "Polypus interactive session.",
@@ -346,6 +350,10 @@ const ptBR: Catalog = {
   "run.autocorrect": "↻ tool falhou — autocorrigindo com contexto extra",
   "run.cancelled": "■ cancelado",
   "run.jsonNeedsTask": "--json exige um argumento de tarefa (o modo headless não tem REPL interativo).",
+  "review.approveAll": "aprovar tudo",
+  "review.reject": "rejeitar",
+  "review.pickHunks": "escolher hunks…",
+  "review.selectHunks": "Selecione os hunks a aplicar (espaço alterna, enter confirma)",
 
   "repl.welcome": "Sessão interativa do Polypus.",
   "repl.welcomeHint": " Digite /help para comandos, /exit para sair.",

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-06-21
+
+### Added
+- Diff/hunk approval in `review` mode: before a `write_file`/`edit_file` is
+  applied, Polypus now shows the **real colored unified diff** (instead of a
+  one-line summary) and lets you approve all, reject, or — when the change has
+  more than one hunk — pick exactly which hunks to apply. Only the approved
+  hunks are written. Backed by a dependency-free line diff
+  (`src/core/permissions/diff.ts`) and a richer confirmation contract that can
+  return the reconstructed content. Degrades safely to whole-file approval when
+  there is a single hunk. Bilingual (en/pt-BR). (#58)
+
 ## [0.4.5] - 2026-06-21
 
 ### Added
@@ -161,7 +173,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/GaberRB/polypus/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/GaberRB/polypus/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/GaberRB/polypus/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/GaberRB/polypus/compare/v0.4.2...v0.4.3

@@ -3,7 +3,8 @@ import * as p from "@clack/prompts";
 import type { PermissionMode } from "../../core/config/schema.js";
 import { loadConfig, resolveAgent } from "../../core/config/store.js";
 import { createProvider } from "../../core/providers/registry.js";
-import { PermissionEngine, type ConfirmRequest } from "../../core/permissions/modes.js";
+import { PermissionEngine, type ConfirmRequest, type ConfirmResult } from "../../core/permissions/modes.js";
+import { hunkLabel, type Hunk } from "../../core/permissions/diff.js";
 import { runAgent, type AgentEvents } from "../../core/agent/loop.js";
 import { resolveMentions } from "../../core/context/mentions.js";
 import { createJsonCollector } from "./json-output.js";
@@ -234,11 +235,45 @@ function listenForCancel(controller: AbortController): CancelListener {
   return { pause: detach, resume: attach, dispose: detach };
 }
 
-async function confirmAction(req: ConfirmRequest): Promise<boolean> {
+async function confirmAction(req: ConfirmRequest): Promise<ConfirmResult> {
+  // Writes in review mode: show the real diff and allow approve-all / reject /
+  // (when there is more than one hunk) per-hunk selection.
+  if (req.kind === "write" && req.hunks && req.hunks.length > 0) {
+    renderDiff(req.hunks);
+    const options = [
+      { value: "approve", label: t("review.approveAll") },
+      { value: "reject", label: t("review.reject") },
+      ...(req.hunks.length > 1 ? [{ value: "hunks", label: t("review.pickHunks") }] : []),
+    ];
+    const choice = await p.select({ message: t("run.confirm", { summary: req.summary }), options });
+    if (p.isCancel(choice) || choice === "reject") return false;
+    if (choice === "approve") return true;
+
+    const selected = await p.multiselect({
+      message: t("review.selectHunks"),
+      options: req.hunks.map((h, i) => ({ value: i, label: hunkLabel(h) })),
+      required: false,
+    });
+    if (p.isCancel(selected)) return false;
+    return selected as number[];
+  }
+
   if (req.preview) console.log(pc.dim(req.preview));
   const answer = await p.confirm({ message: t("run.confirm", { summary: req.summary }) });
   if (p.isCancel(answer)) return false;
   return answer === true;
+}
+
+/** Print a colored unified diff for the hunks of a pending write. */
+function renderDiff(hunks: Hunk[]): void {
+  for (const h of hunks) {
+    console.log(pc.cyan(`@@ -${h.oldStart + 1},${h.oldCount} +${h.newStart + 1},${h.newCount} @@`));
+    for (const l of h.lines) {
+      if (l.type === "+") console.log(pc.green(`+${l.text}`));
+      else if (l.type === "-") console.log(pc.red(`-${l.text}`));
+      else console.log(pc.dim(` ${l.text}`));
+    }
+  }
 }
 
 function renderEvents(spinner: Spinner): AgentEvents {
