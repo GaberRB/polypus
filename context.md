@@ -51,7 +51,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_69 módulos em `src/`._
+_71 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -77,6 +77,7 @@ _69 módulos em `src/`._
 
 ### `src/core/agent`
 - `compaction.ts`
+- `concurrency.ts`
 - `correction.ts`
 - `free-provider.ts`
 - `hooks.ts`
@@ -143,6 +144,7 @@ _69 módulos em `src/`._
 
 ### `src/ui`
 - `banner.ts`
+- `cancel.ts`
 - `line-reader.ts`
 - `paste.ts` — Bracketed-paste handling for the REPL. When a terminal has bracketed paste
 - `repl.ts`
