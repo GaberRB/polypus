@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-06-21
+
+### Added
+- Test-driven verification loop: `polypus run "<task>" --verify` runs the
+  project's checks after the agent calls `finish` (auto-detected from
+  `package.json`: `typecheck`, `build`, `test`) and, if any fail, feeds the
+  output back to the agent to fix — iterating until green or a retry budget
+  (3 fixes) is exhausted. Turns "generated code" into "code that actually
+  builds and passes its tests". Opt-in so it never adds cost unless requested.
+  Bilingual (en/pt-BR). (#54)
+
 ## [0.4.6] - 2026-06-21
 
 ### Added
@@ -173,7 +184,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/GaberRB/polypus/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/GaberRB/polypus/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/GaberRB/polypus/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/GaberRB/polypus/compare/v0.4.3...v0.4.4
