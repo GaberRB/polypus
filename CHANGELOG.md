@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.12] - 2026-06-21
+
+### Changed
+- Swarm reliability overhaul (`polypus swarm` and the REPL `/swarm`):
+  - **End-to-end cancellation:** `AbortSignal` is threaded through
+    `runSwarm → runWorker → runAgent` (and `decompose`); ESC/Ctrl+C now cancels
+    via the shared `listenForCancel` (extracted to `src/ui/cancel.ts`). On
+    cancel, already-committed workers still merge and the rest are cleaned up.
+  - **Per-worker idle timeout:** a watchdog (reset on each step) aborts a worker
+    that stops making progress (`POLYPUS_SWARM_IDLE_TIMEOUT_MS`, default 5 min)
+    instead of hanging the whole run.
+  - **Resilience:** workers never reject — a failed/aborted worker yields an
+    unfinished outcome, so the merge loop for committed workers always runs.
+  - **Automatic concurrency cap:** a bounded pool runs at most N workers, where
+    `recommendConcurrency` sums per-endpoint capacity (local Ollama capped at 2,
+    hosted runs all) — avoiding the local contention that could freeze a run. (#46)
+
 ## [0.4.11] - 2026-06-21
 
 ### Added
@@ -231,7 +248,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.11...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.12...HEAD
+[0.4.12]: https://github.com/GaberRB/polypus/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/GaberRB/polypus/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/GaberRB/polypus/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/GaberRB/polypus/compare/v0.4.8...v0.4.9
