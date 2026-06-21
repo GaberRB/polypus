@@ -33,7 +33,7 @@ export const writeFileTool: Tool = {
     }
 
     const preview = previewContent(args.data.content);
-    const decision = await ctx.permissions.authorizeWrite(args.data.path, preview);
+    const decision = await ctx.permissions.authorizeWrite(args.data.path, preview, args.data.content);
     if (!decision.allowed) return { ok: false, output: `Write denied: ${decision.reason}` };
 
     try {

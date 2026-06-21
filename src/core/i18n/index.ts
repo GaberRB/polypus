@@ -261,6 +261,11 @@ const en: Catalog = {
   "mentions.injectedHeader": "Referenced files (@-mentions)",
   "mentions.dirHeader": "@{path} (directory listing)",
   "mentions.notFound": "(could not resolve @{path}: not found or outside the allow-list)",
+
+  // safety policy
+  "policy.blockedCommand": "blocked by safety policy ({reason}) — refusing in all modes",
+  "policy.secretFound":
+    "write blocked: a possible secret ({kind}) was found on line {line}. Remove it or load it from an environment variable instead of hard-coding it.",
 };
 
 const ptBR: Catalog = {
@@ -478,6 +483,11 @@ const ptBR: Catalog = {
   "mentions.injectedHeader": "Arquivos referenciados (@-mentions)",
   "mentions.dirHeader": "@{path} (conteúdo do diretório)",
   "mentions.notFound": "(não foi possível resolver @{path}: não encontrado ou fora da allow-list)",
+
+  // safety policy
+  "policy.blockedCommand": "bloqueado pela política de segurança ({reason}) — recusado em todos os modos",
+  "policy.secretFound":
+    "escrita bloqueada: possível segredo ({kind}) encontrado na linha {line}. Remova-o ou carregue de uma variável de ambiente em vez de fixá-lo no código.",
 
   "models.fetching": "Buscando modelos do OpenRouter…",
   "models.fetchError": "Não foi possível buscar modelos: {msg}",

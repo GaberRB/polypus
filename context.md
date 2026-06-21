@@ -51,7 +51,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_59 módulos em `src/`._
+_60 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -100,6 +100,7 @@ _59 módulos em `src/`._
 ### `src/core/permissions`
 - `allowlist.ts`
 - `modes.ts`
+- `policy.ts` — Safety policy shared by the permission engine: a deny-list of obviously
 
 ### `src/core/protocol`
 - `driver.ts`

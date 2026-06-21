@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-06-21
+
+### Added
+- Safety policy layer (`src/core/permissions/policy.ts`): a deny-list of
+  obviously destructive shell commands (`rm -rf /`, fork bomb, `mkfs`,
+  `dd of=/dev/sd*`, `curl … | sh`, `chmod 777 /`, …) is now refused in **every**
+  permission mode, including `bypass`. File writes are scanned for hard-coded
+  secrets (private-key blocks, AWS access keys, GitHub/Slack/OpenAI/Google
+  tokens) and blocked with guidance to use an environment variable instead —
+  also in all modes. Conservative patterns keep false positives low. Bilingual
+  messages (en/pt-BR). (#63)
+
 ## [0.4.4] - 2026-06-21
 
 ### Added
@@ -149,7 +161,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/GaberRB/polypus/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/GaberRB/polypus/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/GaberRB/polypus/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/GaberRB/polypus/compare/v0.4.1...v0.4.2
