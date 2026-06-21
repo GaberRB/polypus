@@ -9,6 +9,7 @@ import { init } from "./commands/init.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
 import { usage } from "./commands/usage.js";
+import { sessions } from "./commands/sessions.js";
 import { prd } from "./commands/prd.js";
 import { review } from "./commands/review.js";
 import { join } from "node:path";
@@ -102,6 +103,8 @@ function buildProgram(): Command {
     .option("--json", t("cli.opt.json"))
     .option("--verify", t("cli.opt.verify"))
     .option("--budget <usd>", t("cli.opt.budget"))
+    .option("--continue", t("cli.opt.continue"))
+    .option("--resume <id>", t("cli.opt.resume"))
     .description(t("cli.cmd.run"))
     .action((task, opts) => run(task, opts));
 
@@ -128,6 +131,11 @@ function buildProgram(): Command {
     .command("usage")
     .description(t("cli.cmd.usage"))
     .action(() => usage());
+
+  program
+    .command("sessions")
+    .description(t("cli.cmd.sessions"))
+    .action(() => sessions());
 
   program
     .command("prd")

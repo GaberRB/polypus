@@ -58,6 +58,15 @@ const SECRET_PATTERNS: { re: RegExp; kind: string }[] = [
   { re: /\bAIza[0-9A-Za-z_-]{35}\b/, kind: "Google API key" },
 ];
 
+/** Replace any secrets in the text with a redaction marker (best-effort). */
+export function redactSecrets(text: string): string {
+  let out = text;
+  for (const { re } of SECRET_PATTERNS) {
+    out = out.replace(new RegExp(re.source, re.flags.includes("g") ? re.flags : re.flags + "g"), "[redacted]");
+  }
+  return out;
+}
+
 /** Scan text for hard-coded secrets. Returns one finding per matching line. */
 export function scanSecrets(text: string): SecretFinding[] {
   const findings: SecretFinding[] = [];
