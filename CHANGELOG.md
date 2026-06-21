@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.10] - 2026-06-21
+
+### Added
+- Automatic context compaction for long sessions. When the prompt grows past a
+  token threshold (default 120k, set `POLYPUS_COMPACT_THRESHOLD` or disable with
+  `POLYPUS_NO_COMPACT`), Polypus summarizes the older middle of the conversation
+  into a single brief — preserving the system prompt and the most recent turns —
+  so long tasks don't overflow the context window or get needlessly expensive.
+  The cut is chosen so it never orphans a tool-call/result pair. Shows
+  `↯ context compacted: ~120k → ~28k tokens`. Bilingual (en/pt-BR). (#51)
+
 ## [0.4.9] - 2026-06-21
 
 ### Added
@@ -205,7 +216,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.9...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.10...HEAD
+[0.4.10]: https://github.com/GaberRB/polypus/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/GaberRB/polypus/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/GaberRB/polypus/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/GaberRB/polypus/compare/v0.4.6...v0.4.7

@@ -1,7 +1,7 @@
 import type { AgentEvents, RunResult } from "../../core/agent/loop.js";
 
 export interface JsonEvent {
-  type: "step" | "assistant" | "tool_call" | "tool_result" | "correction" | "reprompt";
+  type: "step" | "assistant" | "tool_call" | "tool_result" | "correction" | "reprompt" | "compaction";
   [key: string]: unknown;
 }
 
@@ -60,6 +60,9 @@ export function createJsonCollector(): JsonCollector {
     },
     onReprompt(attempt) {
       log.push({ type: "reprompt", attempt });
+    },
+    onCompaction(before, after) {
+      log.push({ type: "compaction", before, after });
     },
     onUsage() {
       /* usage is summarised in the final result, not per-event */

@@ -7,6 +7,7 @@ import { getTool, toolSpecs } from "../tools/registry.js";
 import type { ToolResult } from "../tools/types.js";
 import { buildCorrection, makeLLMEscalator, truncationGuidance } from "./correction.js";
 import { loadProjectInstructions } from "./project-context.js";
+import { compactHistory, estimateTokens } from "./compaction.js";
 
 export interface Usage {
   promptTokens: number;
@@ -23,6 +24,8 @@ export interface AgentEvents {
   onStep?(step: number): void;
   /** Cumulative token usage so far this run. */
   onUsage?(usage: Usage): void;
+  /** Fired when old history is summarized to free up context (token counts). */
+  onCompaction?(before: number, after: number): void;
 }
 
 export interface RunOptions {
@@ -38,6 +41,8 @@ export interface RunOptions {
   maxToolRetries?: number;
   /** Enrich failed tool results with corrective guidance so the model can self-heal (default true). */
   autoCorrect?: boolean;
+  /** Summarize old history when the prompt grows past this many tokens (0 disables). */
+  compactThresholdTokens?: number;
   /** Abort the run (e.g. user pressed ESC). */
   signal?: AbortSignal;
   events?: AgentEvents;
@@ -105,10 +110,26 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const maxToolRetries = opts.maxToolRetries ?? 3;
   const autoCorrect = opts.autoCorrect ?? true;
   const usage: Usage = { promptTokens: 0, completionTokens: 0 };
+  const compactThreshold = opts.compactThresholdTokens ?? 0;
+  let lastPromptTokens = 0;
 
   for (let step = 1; step <= maxSteps; step++) {
     if (opts.signal?.aborted) return { finished: false, reason: "cancelled", steps: step - 1, messages, usage };
     events?.onStep?.(step);
+
+    // Auto-compact: when the prompt grows past the threshold, summarize old
+    // history into one message, preserving the system prompt and recent turns.
+    if (compactThreshold > 0) {
+      const current = lastPromptTokens || estimateTokens(messages);
+      if (current >= compactThreshold) {
+        const compacted = await compactHistory(messages, agent, opts.signal);
+        if (compacted.length < messages.length) {
+          messages.splice(0, messages.length, ...compacted);
+          lastPromptTokens = estimateTokens(messages);
+          events?.onCompaction?.(current, lastPromptTokens);
+        }
+      }
+    }
 
     let response;
     try {
@@ -124,6 +145,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     }
     usage.promptTokens += response.usage?.promptTokens ?? 0;
     usage.completionTokens += response.usage?.completionTokens ?? 0;
+    lastPromptTokens = response.usage?.promptTokens ?? estimateTokens(messages);
     events?.onUsage?.(usage);
     const { toolCalls, text } = driver.parse(response);
     messages.push(driver.assistantMessage(response, toolCalls));

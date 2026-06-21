@@ -50,6 +50,16 @@ export interface RunOptions {
 /** How many times the agent may re-try to make the verification checks pass. */
 const MAX_VERIFY_FIXES = 3;
 
+/**
+ * Token threshold above which old history is auto-compacted. Defaults to 120k,
+ * overridable via POLYPUS_COMPACT_THRESHOLD; POLYPUS_NO_COMPACT disables it.
+ */
+function compactionThreshold(): number {
+  if (process.env.POLYPUS_NO_COMPACT) return 0;
+  const v = Number(process.env.POLYPUS_COMPACT_THRESHOLD);
+  return Number.isFinite(v) && v > 0 ? v : 120_000;
+}
+
 /** `polypus run [task]` — one-shot if a task is given, otherwise an interactive REPL. */
 export async function run(task: string | undefined, opts: RunOptions): Promise<void> {
   let config = await loadConfig();
@@ -224,6 +234,7 @@ async function executeTask(
       promptContext: { workspace, mode: session.mode, allow: session.allow },
       history: session.history,
       maxSteps: session.maxSteps,
+      compactThresholdTokens: compactionThreshold(),
       signal: controller.signal,
       events,
     });
@@ -454,6 +465,10 @@ function renderEvents(spinner: Spinner): AgentEvents {
     onReprompt(attempt) {
       spinner.stop();
       console.log(pc.yellow("  " + t("run.reprompt", { attempt })));
+    },
+    onCompaction(before, after) {
+      spinner.stop();
+      console.log(pc.dim("↯ " + t("compaction.done", { before: fmtTokens(before), after: fmtTokens(after) })));
     },
     onCorrection() {
       spinner.stop();
