@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.15] - 2026-06-21
+
+### Fixed
+- The autonomous `agent.yml` workflow no longer fails at the "Open the pull
+  request" step when GitHub Actions isn't permitted to create PRs. It now uses
+  an optional `POLYPUS_PR_TOKEN` PAT when present, and otherwise degrades
+  gracefully: the run stays green and posts the branch compare link as an issue
+  comment instead of erroring. (follow-up to #61)
+
 ## [0.4.14] - 2026-06-21
 
 ### Added
@@ -276,7 +285,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.14...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.15...HEAD
+[0.4.15]: https://github.com/GaberRB/polypus/compare/v0.4.14...v0.4.15
 [0.4.14]: https://github.com/GaberRB/polypus/compare/v0.4.13...v0.4.14
 [0.4.13]: https://github.com/GaberRB/polypus/compare/v0.4.12...v0.4.13
 [0.4.12]: https://github.com/GaberRB/polypus/compare/v0.4.11...v0.4.12
