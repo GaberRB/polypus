@@ -5,8 +5,9 @@ import { loadConfig, resolveAgent } from "../../core/config/store.js";
 import { createProvider } from "../../core/providers/registry.js";
 import { PermissionEngine, type ConfirmRequest, type ConfirmResult } from "../../core/permissions/modes.js";
 import { hunkLabel, type Hunk } from "../../core/permissions/diff.js";
-import { runAgent, type AgentEvents } from "../../core/agent/loop.js";
+import { runAgent, type AgentEvents, type RunResult } from "../../core/agent/loop.js";
 import { resolveMentions } from "../../core/context/mentions.js";
+import { buildVerifyFeedback, detectChecks, runChecks } from "../../core/agent/verify.js";
 import { createJsonCollector } from "./json-output.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
@@ -21,7 +22,12 @@ export interface RunOptions {
   maxSteps?: string;
   /** Headless mode: emit a single JSON object instead of the colored TUI. */
   json?: boolean;
+  /** After the agent finishes, run project checks and iterate until they pass. */
+  verify?: boolean;
 }
+
+/** How many times the agent may re-try to make the verification checks pass. */
+const MAX_VERIFY_FIXES = 3;
 
 /** `polypus run [task]` — one-shot if a task is given, otherwise an interactive REPL. */
 export async function run(task: string | undefined, opts: RunOptions): Promise<void> {
@@ -63,7 +69,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
         ),
       );
     }
-    await executeTask(task, resolved, workspace, session, opts.json ?? false);
+    await executeTask(task, resolved, workspace, session, opts.json ?? false, opts.verify ?? false);
     return;
   }
 
@@ -107,6 +113,7 @@ async function executeTask(
   workspace: string,
   session: SessionState,
   json = false,
+  verify = false,
 ): Promise<void> {
   // Inject @file / @dir mentions into the task as explicit context before sending.
   const mention = await resolveMentions(task, {
@@ -140,11 +147,9 @@ async function executeTask(
         },
   });
 
-  if (!json) spinner.start(t("ui.thinking"));
-  let result;
-  try {
-    result = await runAgent({
-      task,
+  const runOnce = (taskText: string): Promise<RunResult> =>
+    runAgent({
+      task: taskText,
       workspace,
       agent: resolved,
       permissions,
@@ -154,12 +159,22 @@ async function executeTask(
       signal: controller.signal,
       events: collector ? collector.events : renderEvents(spinner),
     });
+
+  if (!json) spinner.start(t("ui.thinking"));
+  let result: RunResult;
+  try {
+    result = await runOnce(task);
+    session.history = result.messages;
+
+    // Test-driven verification: run project checks and feed failures back to
+    // the agent until they pass or the retry budget is exhausted.
+    if (verify && result.reason === "finished" && !controller.signal.aborted) {
+      result = await runVerification(runOnce, workspace, session, spinner, json, controller.signal, result);
+    }
   } finally {
     spinner.stop();
     cancel.dispose();
   }
-
-  session.history = result.messages;
 
   if (collector) {
     process.stdout.write(JSON.stringify(collector.build(result)) + "\n");
@@ -262,6 +277,49 @@ async function confirmAction(req: ConfirmRequest): Promise<ConfirmResult> {
   const answer = await p.confirm({ message: t("run.confirm", { summary: req.summary }) });
   if (p.isCancel(answer)) return false;
   return answer === true;
+}
+
+/**
+ * Run the project's verification checks; on failure feed the output back to the
+ * agent and re-run, up to MAX_VERIFY_FIXES times. Returns the latest run result.
+ */
+async function runVerification(
+  runOnce: (task: string) => Promise<RunResult>,
+  workspace: string,
+  session: SessionState,
+  spinner: Spinner,
+  json: boolean,
+  signal: AbortSignal,
+  initial: RunResult,
+): Promise<RunResult> {
+  const checks = await detectChecks(workspace);
+  if (checks.length === 0) {
+    if (!json) console.log(pc.dim(t("verify.noChecks")));
+    return initial;
+  }
+  let result = initial;
+  for (let fix = 0; ; fix++) {
+    if (signal.aborted) return result;
+    if (!json) spinner.start(t("verify.running"));
+    const results = await runChecks(workspace, checks);
+    spinner.stop();
+    const failed = results.filter((r) => !r.ok);
+    if (failed.length === 0) {
+      if (!json) console.log(pc.green("✓ " + t("verify.passed")));
+      return result;
+    }
+    if (fix >= MAX_VERIFY_FIXES) {
+      if (!json) console.log(pc.yellow("⚠ " + t("verify.giveUp", { n: failed.length })));
+      return result;
+    }
+    if (!json) {
+      console.log(pc.yellow("✗ " + t("verify.failed", { n: failed.length, attempt: fix + 1 })));
+    }
+    if (!json) spinner.start(t("ui.thinking"));
+    result = await runOnce(buildVerifyFeedback(failed));
+    spinner.stop();
+    session.history = result.messages;
+  }
 }
 
 /** Print a colored unified diff for the hunks of a pending write. */

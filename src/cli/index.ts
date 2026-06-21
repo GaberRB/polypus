@@ -99,6 +99,7 @@ function buildProgram(): Command {
     .option("--mode <mode>", t("cli.opt.mode"))
     .option("--max-steps <n>", t("cli.opt.maxSteps"))
     .option("--json", t("cli.opt.json"))
+    .option("--verify", t("cli.opt.verify"))
     .description(t("cli.cmd.run"))
     .action((task, opts) => run(task, opts));
 
