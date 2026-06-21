@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-06-21
+
+### Added
+- Token budget + cost analytics. Runs now show an estimated USD cost next to the
+  token count (using the OpenRouter price catalog for OpenRouter agents). A new
+  `--budget <usd>` flag stops the run via the existing abort signal once the
+  estimated session spend reaches the cap. Every run is appended to
+  `~/.polypus/usage.jsonl`, and `polypus usage` aggregates tokens and cost per
+  day with a grand total. Cost is simply omitted when pricing is unknown
+  (e.g. local Ollama). Bilingual (en/pt-BR). (#59)
+
 ## [0.4.7] - 2026-06-21
 
 ### Added
@@ -184,7 +195,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.7...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.8...HEAD
+[0.4.8]: https://github.com/GaberRB/polypus/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/GaberRB/polypus/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/GaberRB/polypus/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/GaberRB/polypus/compare/v0.4.4...v0.4.5

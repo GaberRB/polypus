@@ -62,6 +62,8 @@ const en: Catalog = {
   "cli.opt.maxSteps": "maximum agent steps",
   "cli.opt.json": "headless mode: emit a single JSON object (steps, tool calls, files changed, usage) instead of the TUI — use with --mode bypass",
   "cli.opt.verify": "after the agent finishes, run project checks (typecheck/build/test) and iterate until they pass",
+  "cli.opt.budget": "stop the run when the estimated session cost reaches this USD amount (OpenRouter pricing)",
+  "cli.cmd.usage": "Show token/cost analytics aggregated per day",
   "cli.arg.swarmTask": "high-level task to split across agents",
   "cli.opt.agents": "comma-separated agent names (default: all configured)",
   "cli.opt.maxSubtasks": "maximum number of parallel subtasks",
@@ -104,6 +106,14 @@ const en: Catalog = {
   "verify.passed": "verification passed",
   "verify.failed": "{n} check(s) failed — handing the output back to the agent (attempt {attempt})",
   "verify.giveUp": "{n} check(s) still failing after the retry budget — stopping",
+  "budget.session": "session spend: {spent} / budget {budget}",
+  "budget.hit": "■ stopped: estimated cost reached the budget of {budget}",
+
+  // usage analytics
+  "usage.header": "Usage (tokens / estimated cost) per day:",
+  "usage.empty": "No usage recorded yet. Run a task to start tracking.",
+  "usage.total": "total",
+  "usage.runs": "runs",
 
   // repl
   "repl.welcome": "Polypus interactive session.",
@@ -326,6 +336,8 @@ const ptBR: Catalog = {
   "cli.opt.maxSteps": "número máximo de passos do agente",
   "cli.opt.json": "modo headless: emite um único objeto JSON (passos, tool calls, arquivos alterados, uso) em vez da TUI — use com --mode bypass",
   "cli.opt.verify": "após o agente terminar, roda as checagens do projeto (typecheck/build/test) e itera até passar",
+  "cli.opt.budget": "interrompe a execução quando o custo estimado da sessão atingir este valor em USD (preços do OpenRouter)",
+  "cli.cmd.usage": "Mostra analytics de tokens/custo agregados por dia",
   "cli.arg.swarmTask": "tarefa de alto nível para dividir entre os agentes",
   "cli.opt.agents": "nomes de agentes separados por vírgula (padrão: todos)",
   "cli.opt.maxSubtasks": "número máximo de subtarefas paralelas",
@@ -366,6 +378,14 @@ const ptBR: Catalog = {
   "verify.passed": "verificação passou",
   "verify.failed": "{n} checagem(ns) falharam — devolvendo a saída ao agente (tentativa {attempt})",
   "verify.giveUp": "{n} checagem(ns) ainda falhando após o limite de tentativas — parando",
+  "budget.session": "gasto da sessão: {spent} / orçamento {budget}",
+  "budget.hit": "■ interrompido: o custo estimado atingiu o orçamento de {budget}",
+
+  // usage analytics
+  "usage.header": "Uso (tokens / custo estimado) por dia:",
+  "usage.empty": "Nenhum uso registrado ainda. Rode uma tarefa para começar a medir.",
+  "usage.total": "total",
+  "usage.runs": "execuções",
 
   "repl.welcome": "Sessão interativa do Polypus.",
   "repl.welcomeHint": " Digite /help para comandos, /exit para sair.",
