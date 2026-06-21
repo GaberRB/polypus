@@ -4,10 +4,11 @@ import type { PermissionEngine } from "../permissions/modes.js";
 import type { ResolvedAgent } from "../providers/registry.js";
 import type { ChatParams, Message, ToolCall } from "../providers/types.js";
 import { getTool, toolSpecs } from "../tools/registry.js";
-import type { ToolResult } from "../tools/types.js";
+import type { Tool, ToolResult } from "../tools/types.js";
 import { buildCorrection, makeLLMEscalator, truncationGuidance } from "./correction.js";
 import { loadProjectInstructions } from "./project-context.js";
 import { compactHistory, estimateTokens } from "./compaction.js";
+import { runAfterHook, screenCommandHook, type HooksConfig } from "./hooks.js";
 
 export interface Usage {
   promptTokens: number;
@@ -43,6 +44,10 @@ export interface RunOptions {
   autoCorrect?: boolean;
   /** Summarize old history when the prompt grows past this many tokens (0 disables). */
   compactThresholdTokens?: number;
+  /** User-declared custom tools (from `.poly/tools/*.json`) available to the agent. */
+  extraTools?: Tool[];
+  /** Pre/post-tool hooks (from `.poly/hooks.json`). */
+  hooks?: HooksConfig;
   /** Abort the run (e.g. user pressed ESC). */
   signal?: AbortSignal;
   events?: AgentEvents;
@@ -85,7 +90,15 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const maxSteps = opts.maxSteps ?? 30;
   const maxReprompts = opts.maxReprompts ?? 3;
 
-  const driver = makeDriver(agent.toolMode, toolSpecs());
+  // Merge user-declared custom tools with the built-ins (finish stays last).
+  const extra = opts.extraTools ?? [];
+  const extraByName = new Map(extra.map((tl) => [tl.spec.name, tl]));
+  const baseSpecs = toolSpecs();
+  const finishSpec = baseSpecs[baseSpecs.length - 1]!;
+  const allSpecs = [...baseSpecs.slice(0, -1), ...extra.map((tl) => tl.spec), finishSpec];
+  const resolveTool = (name: string): Tool | undefined => extraByName.get(name) ?? getTool(name);
+
+  const driver = makeDriver(agent.toolMode, allSpecs);
   const ctx = { workspace: opts.workspace, permissions };
 
   const seeding = !(opts.history && opts.history.length > 0);
@@ -192,10 +205,26 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         return { finished: true, reason: "finished", summary, steps: step, messages, usage };
       }
 
-      const tool = getTool(call.name);
-      const result: ToolResult = tool
-        ? await tool.run(call.arguments, ctx)
-        : { ok: false, output: `Unknown tool "${call.name}". Available: ${toolSpecs().map((t) => t.name).join(", ")}` };
+      const tool = resolveTool(call.name);
+      // Pre-tool hook: the user's beforeCommand deny-list can block a command.
+      const hookScreen =
+        call.name === "run_command"
+          ? screenCommandHook(opts.hooks, String(call.arguments.command ?? ""))
+          : { blocked: false as const };
+
+      let result: ToolResult;
+      if (hookScreen.blocked) {
+        result = { ok: false, output: `Command blocked by hook: ${hookScreen.reason}` };
+      } else if (tool) {
+        result = await tool.run(call.arguments, ctx);
+        // Post-tool hook: e.g. format a file after a successful write/edit.
+        if (result.ok) {
+          const note = await runAfterHook(opts.hooks, call, opts.workspace);
+          if (note) result = { ...result, output: `${result.output}\n${note}` };
+        }
+      } else {
+        result = { ok: false, output: `Unknown tool "${call.name}". Available: ${allSpecs.map((t) => t.name).join(", ")}` };
+      }
 
       events?.onToolResult?.(call, result);
 

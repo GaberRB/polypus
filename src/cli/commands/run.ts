@@ -23,6 +23,8 @@ import {
   saveSession,
   type SessionRecord,
 } from "../../core/agent/session-store.js";
+import { loadHooks } from "../../core/agent/hooks.js";
+import { loadCustomTools } from "../../core/tools/custom.js";
 import { createJsonCollector } from "./json-output.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
@@ -225,6 +227,12 @@ async function executeTask(
         },
   });
 
+  // Load user-declared custom tools and hooks from .poly/ (if any).
+  const [extraTools, hooks] = await Promise.all([loadCustomTools(workspace), loadHooks(workspace)]);
+  if (!json && extraTools.length > 0) {
+    console.log(pc.dim(t("tools.customLoaded", { names: extraTools.map((tl) => tl.spec.name).join(", ") })));
+  }
+
   const runOnce = (taskText: string): Promise<RunResult> =>
     runAgent({
       task: taskText,
@@ -235,6 +243,8 @@ async function executeTask(
       history: session.history,
       maxSteps: session.maxSteps,
       compactThresholdTokens: compactionThreshold(),
+      extraTools,
+      hooks,
       signal: controller.signal,
       events,
     });

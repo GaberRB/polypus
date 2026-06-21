@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.11] - 2026-06-21
+
+### Added
+- Custom tools and hooks, declared in `.poly/` — extend Polypus without touching
+  the core:
+  - **Custom tools** (`.poly/tools/*.json`: `name`, `description`, `parameters`
+    schema, `command` template with `{arg}` placeholders) are loaded into the
+    agent's tool set for both native and emulated modes and run through the
+    permission engine.
+  - **Hooks** (`.poly/hooks.json`): `afterWrite`/`afterEdit`/`afterTool` run a
+    shell command after a successful tool (e.g. `npx prettier -w {path}` to
+    format on save), and `beforeCommand.deny` blocks `run_command` calls
+    containing any listed substring.
+  Bilingual (en/pt-BR). (#53)
+
 ## [0.4.10] - 2026-06-21
 
 ### Added
@@ -216,7 +231,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.10...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.11...HEAD
+[0.4.11]: https://github.com/GaberRB/polypus/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/GaberRB/polypus/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/GaberRB/polypus/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/GaberRB/polypus/compare/v0.4.7...v0.4.8
