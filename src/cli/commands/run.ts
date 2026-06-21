@@ -8,6 +8,13 @@ import { hunkLabel, type Hunk } from "../../core/permissions/diff.js";
 import { runAgent, type AgentEvents, type RunResult } from "../../core/agent/loop.js";
 import { resolveMentions } from "../../core/context/mentions.js";
 import { buildVerifyFeedback, detectChecks, runChecks } from "../../core/agent/verify.js";
+import {
+  estimateCost,
+  fmtUsd,
+  recordUsage,
+  resolveModelPricing,
+  type ModelPricing,
+} from "../../core/agent/usage.js";
 import { createJsonCollector } from "./json-output.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
@@ -24,6 +31,8 @@ export interface RunOptions {
   json?: boolean;
   /** After the agent finishes, run project checks and iterate until they pass. */
   verify?: boolean;
+  /** Abort the run when the estimated session cost reaches this USD amount. */
+  budget?: string;
 }
 
 /** How many times the agent may re-try to make the verification checks pass. */
@@ -43,6 +52,8 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     allowedCommands: config.permissions.allowedCommands,
     maxSteps: opts.maxSteps ? Number(opts.maxSteps) : undefined,
     history: [],
+    budget: opts.budget ? Number(opts.budget) : undefined,
+    costUsd: 0,
   };
 
   // Resolve the active agent freshly each run so /agent, /add and /remove work.
@@ -70,6 +81,9 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
       );
     }
     await executeTask(task, resolved, workspace, session, opts.json ?? false, opts.verify ?? false);
+    if (session.budget !== undefined && !opts.json) {
+      console.log(pc.dim(t("budget.session", { spent: fmtUsd(session.costUsd), budget: fmtUsd(session.budget) })));
+    }
     return;
   }
 
@@ -105,6 +119,10 @@ export interface SessionState {
   allowedCommands: string[];
   maxSteps?: number;
   history: Message[];
+  /** Optional USD spend cap for the whole session (from --budget). */
+  budget?: number;
+  /** Estimated USD spent so far this session. */
+  costUsd: number;
 }
 
 async function executeTask(
@@ -130,6 +148,23 @@ async function executeTask(
   const controller = new AbortController();
   const cancel = listenForCancel(controller); // ESC / Ctrl+C aborts the task
   const collector = json ? createJsonCollector() : undefined;
+
+  // Cost estimation + budget enforcement (no-op when pricing is unknown).
+  const pricing = await resolveModelPricing(resolved.config);
+  let budgetHit = false;
+  const baseEvents = collector ? collector.events : renderEvents(spinner);
+  const events: AgentEvents = {
+    ...baseEvents,
+    onUsage(u) {
+      baseEvents.onUsage?.(u);
+      if (session.budget !== undefined && pricing && !controller.signal.aborted) {
+        if (session.costUsd + estimateCost(u, pricing) >= session.budget) {
+          budgetHit = true;
+          controller.abort();
+        }
+      }
+    },
+  };
 
   const permissions = new PermissionEngine({
     mode: session.mode,
@@ -157,7 +192,7 @@ async function executeTask(
       history: session.history,
       maxSteps: session.maxSteps,
       signal: controller.signal,
-      events: collector ? collector.events : renderEvents(spinner),
+      events,
     });
 
   if (!json) spinner.start(t("ui.thinking"));
@@ -176,9 +211,26 @@ async function executeTask(
     cancel.dispose();
   }
 
+  // Account for estimated spend and persist analytics (best-effort).
+  const runCost = pricing ? estimateCost(result.usage, pricing) : 0;
+  session.costUsd += runCost;
+  await recordUsage({
+    ts: new Date().toISOString(),
+    agent: resolved.config.name,
+    provider: resolved.config.provider,
+    model: resolved.config.model,
+    promptTokens: result.usage.promptTokens,
+    completionTokens: result.usage.completionTokens,
+    costUsd: runCost,
+  });
+
   if (collector) {
     process.stdout.write(JSON.stringify(collector.build(result)) + "\n");
     return;
+  }
+
+  if (budgetHit) {
+    console.log(pc.yellow("\n" + t("budget.hit", { budget: fmtUsd(session.budget ?? 0) })));
   }
 
   if (result.reason === "finished") {
@@ -192,16 +244,13 @@ async function executeTask(
 
   if (result.usage.promptTokens || result.usage.completionTokens) {
     const total = result.usage.promptTokens + result.usage.completionTokens;
-    console.log(
-      pc.dim(
-        "↳ " +
-          t("ui.tokens", {
-            total: fmtTokens(total),
-            in: fmtTokens(result.usage.promptTokens),
-            out: fmtTokens(result.usage.completionTokens),
-          }),
-      ),
-    );
+    const tokensLine = t("ui.tokens", {
+      total: fmtTokens(total),
+      in: fmtTokens(result.usage.promptTokens),
+      out: fmtTokens(result.usage.completionTokens),
+    });
+    const cost = pricing ? ` · ~${fmtUsd(runCost)}` : "";
+    console.log(pc.dim("↳ " + tokensLine + cost));
   }
 }
 

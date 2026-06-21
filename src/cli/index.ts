@@ -8,6 +8,7 @@ import { setup } from "./commands/setup.js";
 import { init } from "./commands/init.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
+import { usage } from "./commands/usage.js";
 import { prd } from "./commands/prd.js";
 import { review } from "./commands/review.js";
 import { join } from "node:path";
@@ -100,6 +101,7 @@ function buildProgram(): Command {
     .option("--max-steps <n>", t("cli.opt.maxSteps"))
     .option("--json", t("cli.opt.json"))
     .option("--verify", t("cli.opt.verify"))
+    .option("--budget <usd>", t("cli.opt.budget"))
     .description(t("cli.cmd.run"))
     .action((task, opts) => run(task, opts));
 
@@ -121,6 +123,11 @@ function buildProgram(): Command {
     .option("--limit <n>", t("cli.opt.limit"))
     .description(t("cli.cmd.models"))
     .action((opts) => models(opts));
+
+  program
+    .command("usage")
+    .description(t("cli.cmd.usage"))
+    .action(() => usage());
 
   program
     .command("prd")
