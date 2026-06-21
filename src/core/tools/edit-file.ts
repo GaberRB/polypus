@@ -59,12 +59,13 @@ export const editFileTool: Tool = {
     const decision = await ctx.permissions.authorizeWrite(
       args.data.path,
       `- ${firstLine(args.data.search)}\n+ ${firstLine(args.data.replace)}`,
-      args.data.replace,
+      updated,
     );
     if (!decision.allowed) return { ok: false, output: `Edit denied: ${decision.reason}` };
 
+    // decision.content is set when the user approved only some hunks in review mode.
     try {
-      await writeFile(abs, updated, "utf8");
+      await writeFile(abs, decision.content ?? updated, "utf8");
       return { ok: true, output: `Edited ${args.data.path}.` };
     } catch (err) {
       return { ok: false, output: `Could not write edit: ${(err as Error).message}` };

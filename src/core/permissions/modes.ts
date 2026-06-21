@@ -1,19 +1,33 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import type { PermissionMode } from "../config/schema.js";
 import { checkPath, isCommandPreApproved, type PathPolicy } from "./allowlist.js";
 import { scanSecrets, screenCommand } from "./policy.js";
+import { computeHunks, type Hunk } from "./diff.js";
+import { applyHunks } from "./diff.js";
 import { t } from "../i18n/index.js";
 
 export interface ConfirmRequest {
   kind: "write" | "command";
   summary: string;
   preview?: string;
+  /** For writes in review mode: the change split into hunks, for diff/hunk approval. */
+  hunks?: Hunk[];
 }
 
-export type ConfirmFn = (req: ConfirmRequest) => Promise<boolean>;
+/**
+ * Result of a confirmation: `true` = approve all, `false` = reject, or an array
+ * of approved hunk indexes (a subset approval for a write).
+ */
+export type ConfirmResult = boolean | number[];
+
+export type ConfirmFn = (req: ConfirmRequest) => Promise<ConfirmResult>;
 
 export interface Decision {
   allowed: boolean;
   reason?: string;
+  /** When present, the exact content the caller should write (a subset-of-hunks result). */
+  content?: string;
 }
 
 export interface PermissionEngineOptions {
@@ -42,8 +56,21 @@ export class PermissionEngine {
     const d = checkPath(this.opts.policy, target);
     if (!d.allowed) return { allowed: false, reason: d.reason };
 
-    // Block hard-coded secrets before any mode gating — applies even in bypass.
-    const findings = scanSecrets(content ?? preview ?? "");
+    // Read the current file (if any) so we can diff and scan only added lines.
+    let oldContent = "";
+    try {
+      oldContent = await readFile(resolve(this.opts.policy.workspace, target), "utf8");
+    } catch {
+      /* new file — no old content */
+    }
+    const hunks = content !== undefined ? computeHunks(oldContent, content) : [];
+    const added = hunks
+      .flatMap((h) => h.lines.filter((l) => l.type === "+").map((l) => l.text))
+      .join("\n");
+
+    // Block hard-coded secrets in the added content before any mode gating —
+    // applies even in bypass. Pre-existing secrets are not re-flagged.
+    const findings = scanSecrets(hunks.length > 0 ? added : content ?? preview ?? "");
     if (findings.length > 0) {
       const first = findings[0]!;
       return {
@@ -57,8 +84,15 @@ export class PermissionEngine {
     }
     if (this.opts.mode === "bypass") return { allowed: true };
 
-    const ok = await this.ask({ kind: "write", summary: `write ${d.rel}`, preview });
-    return ok ? { allowed: true } : { allowed: false, reason: "rejected by user" };
+    const res = await this.ask({ kind: "write", summary: `write ${d.rel}`, preview, hunks });
+    if (res === true) return { allowed: true };
+    if (res === false) return { allowed: false, reason: "rejected by user" };
+
+    // A subset of hunk indexes was approved.
+    const approved = new Set(res);
+    if (approved.size === 0) return { allowed: false, reason: "rejected by user" };
+    if (approved.size === hunks.length) return { allowed: true };
+    return { allowed: true, content: applyHunks(oldContent, hunks, approved) };
   }
 
   async authorizeCommand(command: string): Promise<Decision> {
@@ -73,11 +107,11 @@ export class PermissionEngine {
     if (this.opts.mode === "bypass") return { allowed: true };
     if (isCommandPreApproved(this.opts.allowedCommands, command)) return { allowed: true };
 
-    const ok = await this.ask({ kind: "command", summary: `run: ${command}` });
-    return ok ? { allowed: true } : { allowed: false, reason: "rejected by user" };
+    const res = await this.ask({ kind: "command", summary: `run: ${command}` });
+    return res === true ? { allowed: true } : { allowed: false, reason: "rejected by user" };
   }
 
-  private async ask(req: ConfirmRequest): Promise<boolean> {
+  private async ask(req: ConfirmRequest): Promise<ConfirmResult> {
     if (!this.opts.confirm) return false;
     return this.opts.confirm(req);
   }

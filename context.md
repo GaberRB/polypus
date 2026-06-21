@@ -51,7 +51,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_60 módulos em `src/`._
+_61 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -99,6 +99,7 @@ _60 módulos em `src/`._
 
 ### `src/core/permissions`
 - `allowlist.ts`
+- `diff.ts` — Minimal line-based diff (LCS) grouped into hunks, used to show the real change
 - `modes.ts`
 - `policy.ts` — Safety policy shared by the permission engine: a deny-list of obviously
 

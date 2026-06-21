@@ -36,11 +36,13 @@ export const writeFileTool: Tool = {
     const decision = await ctx.permissions.authorizeWrite(args.data.path, preview, args.data.content);
     if (!decision.allowed) return { ok: false, output: `Write denied: ${decision.reason}` };
 
+    // decision.content is set when the user approved only some hunks in review mode.
+    const finalContent = decision.content ?? args.data.content;
     try {
       const abs = resolve(ctx.workspace, args.data.path);
       await mkdir(dirname(abs), { recursive: true });
-      await writeFile(abs, args.data.content, "utf8");
-      const lines = args.data.content.split("\n").length;
+      await writeFile(abs, finalContent, "utf8");
+      const lines = finalContent.split("\n").length;
       return { ok: true, output: `Wrote ${args.data.path} (${lines} lines).` };
     } catch (err) {
       return { ok: false, output: `Could not write file: ${(err as Error).message}` };
