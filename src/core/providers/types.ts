@@ -39,6 +39,12 @@ export interface ChatRequest {
   params?: ChatParams;
   /** Abort the in-flight request (e.g. user pressed ESC). */
   signal?: AbortSignal;
+  /**
+   * When provided, the provider streams the response and calls this for each
+   * text chunk as it arrives, while still returning the final aggregated
+   * ChatResponse. Providers without streaming support ignore it.
+   */
+  onDelta?: (textChunk: string) => void;
 }
 
 export interface Usage {

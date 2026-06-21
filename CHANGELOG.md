@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.13] - 2026-06-21
+
+### Added
+- Streaming model responses. OpenAI-compatible providers (OpenRouter, Ollama,
+  generic gateways) now stream the answer token-by-token instead of waiting for
+  the whole completion: text appears live and ESC interrupts mid-generation
+  rather than only between steps. Implemented via an optional `onDelta` callback
+  on `ChatRequest` and an `onAssistantDelta` agent event; streamed tool-call
+  deltas are aggregated by index. Active in native tool mode (emulated stays
+  non-streaming so its XML protocol isn't shown raw, and `--json` keeps its
+  single-object output). The native Anthropic provider falls back to
+  non-streaming. Bilingual (en/pt-BR). (#57)
+
 ## [0.4.12] - 2026-06-21
 
 ### Changed
@@ -248,7 +261,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.12...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.13...HEAD
+[0.4.13]: https://github.com/GaberRB/polypus/compare/v0.4.12...v0.4.13
 [0.4.12]: https://github.com/GaberRB/polypus/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/GaberRB/polypus/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/GaberRB/polypus/compare/v0.4.9...v0.4.10

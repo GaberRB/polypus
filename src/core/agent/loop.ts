@@ -17,6 +17,8 @@ export interface Usage {
 
 export interface AgentEvents {
   onAssistantText?(text: string): void;
+  /** Fired for each streamed text chunk (native mode only) before onAssistantText. */
+  onAssistantDelta?(text: string): void;
   onToolCall?(call: ToolCall): void;
   onToolResult?(call: ToolCall, result: ToolResult): void;
   onReprompt?(attempt: number): void;
@@ -144,6 +146,10 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       }
     }
 
+    // Stream live tokens only in native mode (emulated would leak raw XML) and
+    // only when a consumer is listening (e.g. not in --json mode).
+    const wantDelta = driver.kind === "native" && typeof events?.onAssistantDelta === "function";
+
     let response;
     try {
       response = await agent.provider.chat({
@@ -151,6 +157,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         tools: driver.providerTools(),
         params: opts.params,
         signal: opts.signal,
+        onDelta: wantDelta ? (chunk) => events!.onAssistantDelta!(chunk) : undefined,
       });
     } catch (err) {
       if (opts.signal?.aborted) return { finished: false, reason: "cancelled", steps: step, messages, usage };
