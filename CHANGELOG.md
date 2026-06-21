@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.9] - 2026-06-21
+
+### Added
+- Session persistence and resume. Each task now saves the conversation to
+  `~/.polypus/sessions/<id>.json` (agent, mode, messages — with secrets redacted
+  on save). `polypus run --continue` resumes the most recent session and
+  `polypus run --resume <id>` a specific one; `polypus sessions` lists them. In
+  the REPL, `/sessions` lists and `/resume <id>` switches. So a long task no
+  longer has to start from zero after you quit. Bilingual (en/pt-BR). (#56)
+
 ## [0.4.8] - 2026-06-21
 
 ### Added
@@ -195,7 +205,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.8...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.9...HEAD
+[0.4.9]: https://github.com/GaberRB/polypus/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/GaberRB/polypus/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/GaberRB/polypus/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/GaberRB/polypus/compare/v0.4.5...v0.4.6

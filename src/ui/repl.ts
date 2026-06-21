@@ -3,6 +3,7 @@ import type { SessionState } from "../cli/commands/run.js";
 import type { PermissionMode, PolypusConfig } from "../core/config/schema.js";
 import { findAgent, loadConfig, saveConfig } from "../core/config/store.js";
 import { addAgentInteractive } from "./wizard.js";
+import { listSessions, loadSession } from "../core/agent/session-store.js";
 import { t } from "../core/i18n/index.js";
 import { promptLabel } from "./banner.js";
 import { readLine } from "./line-reader.js";
@@ -87,6 +88,38 @@ async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promis
       session.history = [];
       console.log(pc.dim(t("repl.historyCleared")));
       return;
+
+    case "sessions": {
+      const all = await listSessions();
+      if (all.length === 0) {
+        console.log(pc.yellow(t("sessions.empty")));
+        return;
+      }
+      console.log(pc.bold(t("sessions.header")));
+      for (const s of all) {
+        console.log(`  ${pc.cyan(s.id)} ${pc.dim(`[${s.messageCount} msgs]`)} ${s.title}`);
+      }
+      return;
+    }
+
+    case "resume": {
+      if (!arg) {
+        console.log(pc.yellow(t("repl.needName", { usage: "/resume <id>" })));
+        return;
+      }
+      const record = await loadSession(arg);
+      if (!record) {
+        console.log(pc.red(t("sessions.notFound", { id: arg })));
+        return;
+      }
+      session.id = record.id;
+      session.title = record.title;
+      session.agentName = record.agentName;
+      session.mode = record.mode;
+      session.history = record.messages;
+      console.log(pc.green(t("sessions.resumed", { id: record.id, n: record.messages.length })));
+      return;
+    }
 
     case "swarm": {
       if (!arg) {

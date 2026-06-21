@@ -64,6 +64,9 @@ const en: Catalog = {
   "cli.opt.verify": "after the agent finishes, run project checks (typecheck/build/test) and iterate until they pass",
   "cli.opt.budget": "stop the run when the estimated session cost reaches this USD amount (OpenRouter pricing)",
   "cli.cmd.usage": "Show token/cost analytics aggregated per day",
+  "cli.cmd.sessions": "List saved sessions that can be resumed",
+  "cli.opt.continue": "resume the most recent saved session",
+  "cli.opt.resume": "resume a specific saved session by id",
   "cli.arg.swarmTask": "high-level task to split across agents",
   "cli.opt.agents": "comma-separated agent names (default: all configured)",
   "cli.opt.maxSubtasks": "maximum number of parallel subtasks",
@@ -115,6 +118,14 @@ const en: Catalog = {
   "usage.total": "total",
   "usage.runs": "runs",
 
+  // sessions
+  "sessions.header": "Saved sessions (most recent first):",
+  "sessions.empty": "No saved sessions yet.",
+  "sessions.hint": "Resume with `polypus run --continue` or `polypus run --resume <id>`.",
+  "sessions.notFound": 'No saved session with id "{id}".',
+  "sessions.noneToContinue": "No previous session to continue — starting fresh.",
+  "sessions.resumed": "↺ resumed session {id} ({n} messages)",
+
   // repl
   "repl.welcome": "Polypus interactive session.",
   "repl.welcomeHint": " Type /help for commands, /exit to quit.",
@@ -141,6 +152,8 @@ const en: Catalog = {
     "  /allow <glob>    add a path glob to the allow-list",
     "  /allow           show the current allow-list and mode",
     "  /reset           clear the conversation history",
+    "  /sessions        list saved sessions you can resume",
+    "  /resume <id>     resume a saved session",
     "  /help            show this help",
     "  /exit            quit",
     "Anything else is sent to the agent as a task.",
@@ -338,6 +351,9 @@ const ptBR: Catalog = {
   "cli.opt.verify": "após o agente terminar, roda as checagens do projeto (typecheck/build/test) e itera até passar",
   "cli.opt.budget": "interrompe a execução quando o custo estimado da sessão atingir este valor em USD (preços do OpenRouter)",
   "cli.cmd.usage": "Mostra analytics de tokens/custo agregados por dia",
+  "cli.cmd.sessions": "Lista as sessões salvas que podem ser retomadas",
+  "cli.opt.continue": "retoma a sessão salva mais recente",
+  "cli.opt.resume": "retoma uma sessão salva específica pelo id",
   "cli.arg.swarmTask": "tarefa de alto nível para dividir entre os agentes",
   "cli.opt.agents": "nomes de agentes separados por vírgula (padrão: todos)",
   "cli.opt.maxSubtasks": "número máximo de subtarefas paralelas",
@@ -387,6 +403,14 @@ const ptBR: Catalog = {
   "usage.total": "total",
   "usage.runs": "execuções",
 
+  // sessions
+  "sessions.header": "Sessões salvas (mais recentes primeiro):",
+  "sessions.empty": "Nenhuma sessão salva ainda.",
+  "sessions.hint": "Retome com `polypus run --continue` ou `polypus run --resume <id>`.",
+  "sessions.notFound": 'Nenhuma sessão salva com id "{id}".',
+  "sessions.noneToContinue": "Nenhuma sessão anterior para continuar — começando do zero.",
+  "sessions.resumed": "↺ sessão {id} retomada ({n} mensagens)",
+
   "repl.welcome": "Sessão interativa do Polypus.",
   "repl.welcomeHint": " Digite /help para comandos, /exit para sair.",
   "repl.modeChanged": "modo → {mode}",
@@ -412,6 +436,8 @@ const ptBR: Catalog = {
     "  /allow <glob>    adiciona um glob de caminho à allow-list",
     "  /allow           mostra a allow-list e o modo atuais",
     "  /reset           limpa o histórico da conversa",
+    "  /sessions        lista as sessões salvas que você pode retomar",
+    "  /resume <id>     retoma uma sessão salva",
     "  /help            mostra esta ajuda",
     "  /exit            sair",
     "Qualquer outra coisa é enviada ao agente como tarefa.",

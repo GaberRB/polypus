@@ -15,6 +15,14 @@ import {
   resolveModelPricing,
   type ModelPricing,
 } from "../../core/agent/usage.js";
+import {
+  deriveTitle,
+  latestSession,
+  loadSession,
+  newSessionId,
+  saveSession,
+  type SessionRecord,
+} from "../../core/agent/session-store.js";
 import { createJsonCollector } from "./json-output.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
@@ -33,6 +41,10 @@ export interface RunOptions {
   verify?: boolean;
   /** Abort the run when the estimated session cost reaches this USD amount. */
   budget?: string;
+  /** Resume the most recently saved session. */
+  continue?: boolean;
+  /** Resume a specific saved session by id. */
+  resume?: string;
 }
 
 /** How many times the agent may re-try to make the verification checks pass. */
@@ -41,20 +53,37 @@ const MAX_VERIFY_FIXES = 3;
 /** `polypus run [task]` — one-shot if a task is given, otherwise an interactive REPL. */
 export async function run(task: string | undefined, opts: RunOptions): Promise<void> {
   let config = await loadConfig();
-  const agentConfig = resolveAgent(config, opts.agent);
   const workspace = process.cwd();
 
+  // Resume/continue: seed from a saved session.
+  let seeded: SessionRecord | undefined;
+  if (opts.resume) {
+    seeded = await loadSession(opts.resume);
+    if (!seeded) throw new Error(t("sessions.notFound", { id: opts.resume }));
+  } else if (opts.continue) {
+    seeded = await latestSession();
+    if (!seeded && !opts.json) console.log(pc.dim(t("sessions.noneToContinue")));
+  }
+
+  const agentConfig = resolveAgent(config, opts.agent ?? seeded?.agentName);
+
   const session: SessionState = {
+    id: seeded?.id ?? newSessionId(),
+    title: seeded?.title ?? "",
     agentName: agentConfig.name,
-    mode: (opts.mode as PermissionMode) ?? config.permissions.mode,
+    mode: (opts.mode as PermissionMode) ?? seeded?.mode ?? config.permissions.mode,
     allow: config.permissions.allow,
     deny: config.permissions.deny,
     allowedCommands: config.permissions.allowedCommands,
     maxSteps: opts.maxSteps ? Number(opts.maxSteps) : undefined,
-    history: [],
+    history: seeded?.messages ?? [],
     budget: opts.budget ? Number(opts.budget) : undefined,
     costUsd: 0,
   };
+
+  if (seeded && !opts.json) {
+    console.log(pc.dim(t("sessions.resumed", { id: seeded.id, n: seeded.messages.length })));
+  }
 
   // Resolve the active agent freshly each run so /agent, /add and /remove work.
   const runTask = async (taskText: string): Promise<void> => {
@@ -111,6 +140,10 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
 }
 
 export interface SessionState {
+  /** Stable id used to persist/resume this session. */
+  id: string;
+  /** Short human title (first task), for `polypus sessions`. */
+  title: string;
   /** Name of the currently active agent (switchable via /agent). */
   agentName: string;
   mode: PermissionMode;
@@ -210,6 +243,17 @@ async function executeTask(
     spinner.stop();
     cancel.dispose();
   }
+
+  // Persist the conversation so it can be resumed (secrets are redacted on save).
+  if (!session.title) session.title = deriveTitle(session.history);
+  await saveSession({
+    id: session.id,
+    updatedAt: new Date().toISOString(),
+    title: session.title,
+    agentName: session.agentName,
+    mode: session.mode,
+    messages: session.history,
+  }).catch(() => {/* best-effort persistence */});
 
   // Account for estimated spend and persist analytics (best-effort).
   const runCost = pricing ? estimateCost(result.usage, pricing) : 0;
