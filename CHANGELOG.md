@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.14] - 2026-06-21
+
+### Added
+- Autonomous implementation workflow (`.github/workflows/agent.yml`). Label an
+  issue `polypus-go` (opt-in) and a runner executes Polypus headlessly
+  (`run --mode bypass --verify --json --budget`) to implement it, gates on the
+  local CI (typecheck/build/test), and opens a PR titled `feat: … (Closes #N)`.
+  The model is a configurable cheap OpenRouter model (`POLYPUS_AGENT_MODEL`
+  repo variable, default DeepSeek V3) with a per-run USD budget
+  (`POLYPUS_BUDGET_USD`, default 0.50). Guard-rails: runs only on the project's
+  own repo and refuses to open a PR if a secret is detected in the diff. Builds
+  on the headless `--json` (#62), `--verify` (#54) and budget (#59) features.
+  Evaluating review-bot feedback to cut false positives is tracked as a
+  follow-up. (#61)
+
 ## [0.4.13] - 2026-06-21
 
 ### Added
@@ -261,7 +276,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.13...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.14...HEAD
+[0.4.14]: https://github.com/GaberRB/polypus/compare/v0.4.13...v0.4.14
 [0.4.13]: https://github.com/GaberRB/polypus/compare/v0.4.12...v0.4.13
 [0.4.12]: https://github.com/GaberRB/polypus/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/GaberRB/polypus/compare/v0.4.10...v0.4.11
