@@ -410,16 +410,29 @@ function renderDiff(hunks: Hunk[]): void {
 }
 
 function renderEvents(spinner: Spinner): AgentEvents {
+  // Tracks whether the current step already streamed text live, so onAssistantText
+  // doesn't reprint it — it just closes the line.
+  let streamed = false;
   return {
     onStep() {
+      streamed = false;
       spinner.start(t("ui.thinking"));
     },
     onUsage(usage) {
       const total = usage.promptTokens + usage.completionTokens;
       if (total > 0) spinner.setSuffix(t("ui.tokensShort", { total: fmtTokens(total) }));
     },
+    onAssistantDelta(chunk) {
+      spinner.stop();
+      process.stdout.write(pc.cyan(chunk));
+      streamed = true;
+    },
     onAssistantText(text) {
       spinner.stop();
+      if (streamed) {
+        process.stdout.write("\n"); // close the streamed line; already printed
+        return;
+      }
       if (text.trim()) console.log(pc.cyan(text.trim()));
     },
     onToolCall(call) {

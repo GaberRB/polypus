@@ -48,16 +48,36 @@ export class OpenAICompatibleProvider implements Provider {
         parameters: t.parameters,
       },
     }));
+    const base = {
+      model: this.model,
+      messages,
+      ...(tools && tools.length > 0 ? { tools } : {}),
+      temperature: req.params?.temperature,
+      // Generous default so large files aren't truncated mid tool-call.
+      max_tokens: req.params?.maxTokens ?? 8192,
+    };
+
+    // Streaming path: emit text chunks live while aggregating the full response.
+    if (req.onDelta) {
+      const stream = await this.client.chat.completions.create(
+        { ...base, stream: true, stream_options: { include_usage: true } },
+        { signal: req.signal },
+      );
+      const agg = await aggregateStream(stream as AsyncIterable<StreamChunk>, req.onDelta);
+      return {
+        content: agg.content,
+        toolCalls: agg.toolCalls.map((tc, i) => ({
+          id: tc.id || `call_${i}`,
+          name: tc.name,
+          arguments: safeParseArgs(tc.arguments),
+        })),
+        finishReason: agg.finishReason || "stop",
+        usage: agg.usage,
+      };
+    }
 
     const completion = await this.client.chat.completions.create(
-      {
-        model: this.model,
-        messages,
-        ...(tools && tools.length > 0 ? { tools } : {}),
-        temperature: req.params?.temperature,
-        // Generous default so large files aren't truncated mid tool-call.
-        max_tokens: req.params?.maxTokens ?? 8192,
-      },
+      { ...base },
       { signal: req.signal },
     );
 
@@ -81,6 +101,68 @@ export class OpenAICompatibleProvider implements Provider {
         : undefined,
     };
   }
+}
+
+/** Minimal shape of an OpenAI streaming chunk (only the fields we read). */
+export interface StreamChunk {
+  choices?: Array<{
+    delta?: {
+      content?: string | null;
+      tool_calls?: Array<{
+        index: number;
+        id?: string;
+        function?: { name?: string; arguments?: string };
+      }>;
+    };
+    finish_reason?: string | null;
+  }>;
+  usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
+}
+
+export interface AggregatedStream {
+  content: string;
+  toolCalls: Array<{ id: string; name: string; arguments: string }>;
+  finishReason: string;
+  usage?: { promptTokens?: number; completionTokens?: number };
+}
+
+/**
+ * Consume an OpenAI-style chat stream, calling `onDelta` for each text chunk and
+ * aggregating content, tool-call deltas (by index), finish reason, and usage.
+ * Pure (no SDK dependency) so it can be unit-tested with a mocked iterable.
+ */
+export async function aggregateStream(
+  stream: AsyncIterable<StreamChunk>,
+  onDelta?: (chunk: string) => void,
+): Promise<AggregatedStream> {
+  let content = "";
+  let finishReason = "";
+  let usage: AggregatedStream["usage"];
+  const toolAcc: Array<{ id: string; name: string; arguments: string }> = [];
+
+  for await (const chunk of stream) {
+    const choice = chunk.choices?.[0];
+    const delta = choice?.delta;
+    if (delta?.content) {
+      content += delta.content;
+      onDelta?.(delta.content);
+    }
+    for (const tc of delta?.tool_calls ?? []) {
+      const slot = (toolAcc[tc.index] ??= { id: "", name: "", arguments: "" });
+      if (tc.id) slot.id = tc.id;
+      if (tc.function?.name) slot.name = tc.function.name;
+      if (tc.function?.arguments) slot.arguments += tc.function.arguments;
+    }
+    if (choice?.finish_reason) finishReason = choice.finish_reason;
+    if (chunk.usage) {
+      usage = {
+        promptTokens: chunk.usage.prompt_tokens,
+        completionTokens: chunk.usage.completion_tokens,
+      };
+    }
+  }
+
+  return { content, finishReason, usage, toolCalls: toolAcc.filter(Boolean) };
 }
 
 function toOpenAIMessage(m: Message): OpenAI.Chat.ChatCompletionMessageParam {
