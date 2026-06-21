@@ -5,6 +5,7 @@ import { loadConfig, resolveAgent } from "../../core/config/store.js";
 import { createProvider } from "../../core/providers/registry.js";
 import { PermissionEngine, type ConfirmRequest } from "../../core/permissions/modes.js";
 import { runAgent, type AgentEvents } from "../../core/agent/loop.js";
+import { resolveMentions } from "../../core/context/mentions.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
 import { runSwarmSession } from "./swarm.js";
@@ -98,6 +99,17 @@ async function executeTask(
   workspace: string,
   session: SessionState,
 ): Promise<void> {
+  // Inject @file / @dir mentions into the task as explicit context before sending.
+  const mention = await resolveMentions(task, {
+    workspace,
+    allow: session.allow,
+    deny: session.deny,
+  });
+  if (mention.injected.length > 0) {
+    task = mention.task;
+    console.log(pc.dim(`↳ @ ${mention.injected.join(", ")}`));
+  }
+
   const spinner = new Spinner();
   const controller = new AbortController();
   const cancel = listenForCancel(controller); // ESC / Ctrl+C aborts the task
