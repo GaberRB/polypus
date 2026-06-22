@@ -162,6 +162,7 @@ function buildProgram(): Command {
     .option("--out <file>", t("cli.opt.out"))
     .option("--model <model>", t("cli.opt.model"))
     .option("--input <file>", t("cli.opt.input"))
+    .option("--json", t("cli.opt.reviewJson"))
     .description(t("cli.cmd.review"))
     .action((pr, opts) => review(pr, opts));
 

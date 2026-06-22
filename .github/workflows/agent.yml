@@ -158,6 +158,49 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Self-correction loop: review the diff, feed any blocking findings back to
+      # the agent to fix, then re-validate. The agent evaluates each finding (the
+      # reviewer is a free model and can be wrong), and the local CI is the judge.
+      # At most 2 fix passes; if blockers remain, the PR is opened flagged for a
+      # human (see the note in "Open the pull request").
+      - name: Self-review loop — fix blocking findings (max 2 passes)
+        if: steps.changes.outputs.changed == 'true'
+        id: selfreview
+        env:
+          REVIEW_PASSES: "2"
+        run: |
+          final_blocking=0
+          for pass in $(seq 0 "$REVIEW_PASSES"); do
+            echo "::group::Auto-review (#$((pass + 1)))"
+            git add -A
+            git diff --cached > selfreview.patch
+            node dist/index.js review HEAD --input selfreview.patch --json \
+              > review.json || echo '{"blocking":[]}' > review.json
+            COUNT=$(node -e "try{const r=require('./review.json');console.log((r.blocking||[]).length)}catch{console.log(0)}")
+            echo "Blocking findings: $COUNT"
+            echo "::endgroup::"
+            [ "$COUNT" = "0" ] && { final_blocking=0; break; }
+            if [ "$pass" -ge "$REVIEW_PASSES" ]; then final_blocking="$COUNT"; break; fi
+            node -e "const r=require('./review.json');const l=(r.blocking||[]).map((b,i)=>(i+1)+'. '+(b.file?'['+b.file+'] ':'')+b.issue);require('fs').writeFileSync('blockers.txt',l.join('\n'))"
+            {
+              echo "An automated code review flagged these potential BLOCKING issues in your last change:"
+              echo
+              cat blockers.txt
+              echo
+              echo "Evaluate each finding critically — the reviewer is a free model and is sometimes wrong."
+              echo "Fix only the ones that are genuine correctness/security bugs; if a finding is a false"
+              echo "positive, leave that code unchanged. Do not touch unrelated code. Keep the diff minimal."
+              echo "The project's typecheck, build and tests must still pass."
+            } > fix-task.md
+            echo "::group::Polypus fix pass $((pass + 1))"
+            node dist/index.js run "$(cat fix-task.md)" \
+              --mode bypass --verify --json --max-steps "$MAX_STEPS" > fix-result.json || true
+            echo "::endgroup::"
+            npm run typecheck && npm run build && npm test
+          done
+          rm -f selfreview.patch review.json blockers.txt fix-task.md fix-result.json
+          echo "blocking_left=$final_blocking" >> "$GITHUB_OUTPUT"
+
       - name: Guard-rail — no secrets in the diff
         if: steps.changes.outputs.changed == 'true'
         run: |
@@ -195,7 +238,11 @@ jobs:
             -m "Autonomous implementation by Polypus (model: $AGENT_MODEL)."
           git push -u origin "$BRANCH"
           VERSION=$(node -p "require('./package.json').version")
-          BODY=$(printf 'Autonomous implementation by Polypus for #%s, approved via comment and gated on the local CI.\n\nModel: `%s`. Includes a patch bump to **v%s** + CHANGELOG. **Merging this PR auto-releases v%s to npm.**\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$VERSION" "$VERSION" "$ISSUE")
+          NOTE=""
+          if [ "${{ steps.selfreview.outputs.blocking_left }}" != "0" ] && [ -n "${{ steps.selfreview.outputs.blocking_left }}" ]; then
+            NOTE="> ⚠ **Revisão manual necessária:** após 2 tentativas de auto-correção, o review automático ainda apontou ${{ steps.selfreview.outputs.blocking_left }} possível(is) problema(s) bloqueante(s). Confira antes de mergear."$'\n\n'
+          fi
+          BODY="${NOTE}$(printf 'Autonomous implementation by Polypus for #%s, approved via comment and gated on the local CI.\n\nModel: `%s`. Includes a patch bump to **v%s** + CHANGELOG. **Merging this PR auto-releases v%s to npm.**\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$VERSION" "$VERSION" "$ISSUE")"
           if gh pr create -R "$GITHUB_REPOSITORY" --base main --head "$BRANCH" --title "feat: $TITLE (Closes #$ISSUE)" --body "$BODY"; then
             echo "✓ Pull request opened."
           else

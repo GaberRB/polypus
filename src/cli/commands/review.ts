@@ -2,7 +2,7 @@ import { writeFile, readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import pc from "picocolors";
-import { reviewDiff, type PrMeta } from "../../core/agent/review.js";
+import { reviewDiff, reviewDiffStructured, type PrMeta } from "../../core/agent/review.js";
 import { resolveFreeProvider, DEFAULT_REVIEW_MODEL, withRetry } from "../../core/agent/free-provider.js";
 import { numericRef, readStdin, readProjectGuide } from "./cli-io.js";
 import { t } from "../../core/i18n/index.js";
@@ -14,6 +14,8 @@ export interface ReviewCliOptions {
   model?: string;
   /** Read the diff from a file (or "-" for stdin) instead of calling gh. */
   input?: string;
+  /** Emit findings as a JSON object instead of Markdown (for the agent loop). */
+  json?: boolean;
 }
 
 /** `polypus review <pr#>` — review a PR diff with a free model (non-interactive). */
@@ -25,13 +27,16 @@ export async function review(prRef: string, opts: ReviewCliOptions): Promise<voi
 
   // Review against the project's conventions and summary when available.
   const guide = readProjectGuide(["rules.md", "context.md"]);
-  const markdown = await withRetry(() => reviewDiff(diff, meta, provider, guide));
+
+  const output = opts.json
+    ? JSON.stringify(await withRetry(() => reviewDiffStructured(diff, meta, provider, guide)), null, 2)
+    : await withRetry(() => reviewDiff(diff, meta, provider, guide));
 
   if (opts.out) {
-    await writeFile(opts.out, markdown + "\n", "utf8");
+    await writeFile(opts.out, output + "\n", "utf8");
     console.error(pc.green(t("review.wrote", { path: opts.out })));
   } else {
-    process.stdout.write(markdown + "\n");
+    process.stdout.write(output + "\n");
   }
 }
 
