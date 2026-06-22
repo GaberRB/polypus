@@ -144,7 +144,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   const ctx: ReplContext = {
     session,
     runTask,
-    runSwarm: (taskText) => runSwarmSession(taskText, config, { workspace }),
+    runSwarm: (taskText, swarmOpts) => runSwarmSession(taskText, config, { workspace, ...swarmOpts }),
     getConfig: () => config,
     reload: async () => {
       config = await loadConfig();

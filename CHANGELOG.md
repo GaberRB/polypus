@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.25] - 2026-06-22
+
+### Added
+- `--workers <n>` for swarm (CLI `polypus swarm` and the REPL `/swarm`): sets
+  **both** the subtask count and the concurrency, so a **single agent** can fan
+  out to N real **parallel** workers (overrides the per-endpoint cap). Previously
+  one agent defaulted to 2 subtasks run **serially**, and `--workers` didn't
+  exist. The REPL `/swarm` now parses `--workers N` out of the line.
+
+### Fixed
+- The agent no longer hangs trying to start long-running servers: `run_command`
+  now **refuses** dev-server/watcher commands (`npm run dev`/`start`, `start /B
+  node …`, `vite`, `nodemon`, `--watch`, …) — which never return and block the
+  run until timeout, looping the agent — and tells it to use one-shot checks
+  (`build`/`test`) instead. The system prompt also warns against starting servers.
+  (the swarm hang reported with `start /B node dist/index.js`)
+
 ## [0.4.24] - 2026-06-22
 
 ### Fixed
@@ -373,7 +390,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.24...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.25...HEAD
+[0.4.25]: https://github.com/GaberRB/polypus/compare/v0.4.24...v0.4.25
 [0.4.24]: https://github.com/GaberRB/polypus/compare/v0.4.23...v0.4.24
 [0.4.23]: https://github.com/GaberRB/polypus/compare/v0.4.22...v0.4.23
 [0.4.22]: https://github.com/GaberRB/polypus/compare/v0.4.21...v0.4.22

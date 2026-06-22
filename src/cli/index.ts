@@ -114,6 +114,7 @@ function buildProgram(): Command {
     .argument("<task>", t("cli.arg.swarmTask"))
     .option("--agents <names>", t("cli.opt.agents"))
     .option("--max-subtasks <n>", t("cli.opt.maxSubtasks"))
+    .option("--workers <n>", t("cli.opt.workers"))
     .description(t("cli.cmd.swarm"))
     .action((task, opts) => swarm(task, opts));
 
