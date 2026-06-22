@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.20] - 2026-06-22
+
+### Changed
+- Swarm com 1 agente: o mesmo agente divide o trabalho em sub-agentes (sem exigir 3+ configurados) (#84)
+
 ## [0.4.19] - 2026-06-22
 
 ### Added
@@ -332,7 +337,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.19...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.20...HEAD
+[0.4.20]: https://github.com/GaberRB/polypus/compare/v0.4.19...v0.4.20
 [0.4.19]: https://github.com/GaberRB/polypus/compare/v0.4.18...v0.4.19
 [0.4.18]: https://github.com/GaberRB/polypus/compare/v0.4.17...v0.4.18
 [0.4.17]: https://github.com/GaberRB/polypus/compare/v0.4.16...v0.4.17

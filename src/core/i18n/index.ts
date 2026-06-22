@@ -174,7 +174,7 @@ const en: Catalog = {
   // swarm
   "swarm.noAgents": "No agents configured. Run `polypus setup` or `polypus add-agent` first.",
   "swarm.needsAgents":
-    "Swarm mode needs at least {min} configured agents (you have {have}). Add more with `polypus add-agent`, or use `polypus run` for a single agent.",
+    "Swarm mode needs at least {min} configured agent (you have {have}). Add more with `polypus add-agent`, or use `polypus run` for a single agent.",
   "swarm.status": "swarm agents=[{agents}] workspace={workspace}",
   "swarm.bypassNote":
     "Workers run in bypass mode inside isolated git worktrees; branches are merged at the end.",
@@ -471,7 +471,7 @@ const ptBR: Catalog = {
 
   "swarm.noAgents": "Nenhum agente configurado. Rode `polypus setup` ou `polypus add-agent` primeiro.",
   "swarm.needsAgents":
-    "O modo swarm precisa de pelo menos {min} agentes configurados (você tem {have}). Adicione mais com `polypus add-agent`, ou use `polypus run` para um agente só.",
+    "O modo swarm precisa de pelo menos {min} agente configurado (você tem {have}). Adicione mais com `polypus add-agent`, ou use `polypus run` para um agente só.",
   "swarm.status": "swarm agentes=[{agents}] workspace={workspace}",
   "swarm.bypassNote":
     "Os workers rodam em modo bypass dentro de git worktrees isoladas; os branches são mesclados no final.",
