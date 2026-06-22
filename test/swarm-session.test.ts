@@ -10,8 +10,8 @@ function cfg(n: number) {
 }
 
 describe("runSwarmSession gate", () => {
-  it("rejects with fewer than 3 configured agents", async () => {
-    await expect(runSwarmSession("do something", cfg(2))).rejects.toThrow(/3/);
+  it("accepts with at least 1 configured agent", async () => {
+    await expect(runSwarmSession("do something", cfg(1))).resolves.not.toThrow();
   });
 
   it("rejects with zero agents", async () => {
