@@ -14,11 +14,14 @@ export interface OpenRouterModel {
   supportsTools: boolean;
   /** True when both prompt and completion are free. */
   free: boolean;
+  /** Popularity score of the model. */
+  popularity: number;
 }
 
 interface RawModel {
   id?: string;
   name?: string;
+  popularity?: number;
   context_length?: number;
   pricing?: { prompt?: string; completion?: string };
   supported_parameters?: string[];
@@ -58,6 +61,7 @@ function normalize(m: RawModel): OpenRouterModel {
     contextLength: m.context_length ?? 0,
     supportsTools: (m.supported_parameters ?? []).includes("tools"),
     free: promptPrice === 0 && completionPrice === 0,
+    popularity: m.popularity ?? 0, // Default to 0 if not provided
   };
 }
 
@@ -67,7 +71,7 @@ function toPerMillion(price: string | undefined): number {
   return Number.isFinite(n) ? n * 1_000_000 : 0;
 }
 
-export type ModelSort = "price" | "price-desc" | "context" | "name";
+export type ModelSort = "price" | "price-desc" | "context" | "name" | "popularity" | "popularity-desc";
 
 export interface ModelFilter {
   search?: string;
@@ -76,6 +80,8 @@ export interface ModelFilter {
   freeOnly?: boolean;
   /** Max prompt price in USD per 1M tokens. */
   maxPrice?: number;
+  /** Minimum popularity score. */
+  minPopularity?: number;
   sort?: ModelSort;
 }
 
@@ -91,6 +97,7 @@ export function filterModels(models: OpenRouterModel[], f: ModelFilter): OpenRou
     if (f.freeOnly && !m.free) return false;
     // Negative price = variable/"auto" router pricing → excluded when capping price.
     if (f.maxPrice !== undefined && (m.promptPrice < 0 || m.promptPrice > f.maxPrice)) return false;
+    if (f.minPopularity !== undefined && m.popularity < f.minPopularity) return false;
     return true;
   });
 
@@ -105,6 +112,10 @@ export function filterModels(models: OpenRouterModel[], f: ModelFilter): OpenRou
         return b.contextLength - a.contextLength;
       case "name":
         return a.id.localeCompare(b.id);
+      case "popularity":
+        return a.popularity - b.popularity;
+      case "popularity-desc":
+        return b.popularity - a.popularity;
       default:
         return key(a) - key(b);
     }

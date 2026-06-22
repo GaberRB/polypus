@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.26] - 2026-06-22
+
+### Changed
+- A busca de apis do OpenRouter (#91)
+
+### Added
+- Improved OpenRouter model search filters: added support for sorting by popularity (`popularity` and `popularity-desc`) and filtering by minimum popularity (`minPopularity`). Updated the CLI (`polypus models`) to include these options and enhanced the table legend to explain the new sorting criteria. (#91)
+
 ## [0.4.25] - 2026-06-22
 
 ### Added
@@ -390,7 +398,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.25...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.26...HEAD
+[0.4.26]: https://github.com/GaberRB/polypus/compare/v0.4.25...v0.4.26
 [0.4.25]: https://github.com/GaberRB/polypus/compare/v0.4.24...v0.4.25
 [0.4.24]: https://github.com/GaberRB/polypus/compare/v0.4.23...v0.4.24
 [0.4.23]: https://github.com/GaberRB/polypus/compare/v0.4.22...v0.4.23
