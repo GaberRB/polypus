@@ -7,6 +7,10 @@ import { t } from "../core/i18n/index.js";
 const ENABLE_BRACKETED_PASTE = "\x1b[?2004h";
 const DISABLE_BRACKETED_PASTE = "\x1b[?2004l";
 
+/** Key codes for keyboard shortcuts. */
+const KEY_SHIFT_TAB = "\x1b[Z";
+const KEY_TAB = "\t";
+
 /**
  * Read a single line from the user. On a TTY, enables bracketed paste so a large
  * multi-line paste is shown compactly as `[Pasted text #N +M lines]` while the
@@ -36,7 +40,14 @@ async function readLineTTY(prompt: string): Promise<string | null> {
   const proxy = new PassThrough();
   const rl = readline.createInterface({ input: proxy, output: stdout, terminal: true });
   const onData = (buf: Buffer): void => {
-    proxy.write(filter.push(buf.toString("utf8")));
+    const input = buf.toString("utf8");
+    if (input === KEY_SHIFT_TAB) {
+      // Handle Shift+Tab shortcut for mode toggling.
+      // This will be handled in the REPL loop.
+      proxy.write(input);
+    } else {
+      proxy.write(filter.push(input));
+    }
   };
 
   stdout.write(ENABLE_BRACKETED_PASTE);
