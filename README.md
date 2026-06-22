@@ -218,6 +218,27 @@ worktree (in `bypass` mode, since the worktree is throwaway), and the branches
 are merged back sequentially. Conflicting branches are kept for manual
 inspection rather than force-merged.
 
+## MCP (external tool servers)
+
+Connect [Model Context Protocol](https://modelcontextprotocol.io) servers to give
+the agent extra tools. Declare them in `.poly/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    }
+  }
+}
+```
+
+On each run Polypus spawns the servers (stdio transport), lists their tools and
+exposes them to the agent as `mcp__<server>__<tool>` — for both native and
+emulated models. Servers that fail to start are skipped, the processes are shut
+down when the run ends, and external MCP tools are disabled in `plan` mode.
+
 ## Autonomous agent — the tool self-improving 🤖
 
 Polypus can run **itself** in CI to implement its own issues. Label an issue
