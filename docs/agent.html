@@ -64,6 +64,17 @@
         </p>
       </div>
 
+      <div class="note-box">
+        <h3 style="margin-top:0">🔒 Aprovação por comentário (só o admin)</h3>
+        <p style="margin:0">
+          Ao rotular com <span class="kbd">polypus-go</span>, o Polypus <strong>primeiro estima</strong>
+          o esforço/custo e <strong>comenta na issue</strong> — e <strong>não implementa nada</strong> até o
+          <strong>dono do repositório</strong> comentar <span class="kbd">/polypus approve</span>. Só o owner
+          (admin) pode aprovar (verificado por <code>author_association == OWNER</code>). Sem PAT/Environment extra:
+          o comentário é o gate.
+        </p>
+      </div>
+
       <!-- Diagrama principal -->
       <h2 class="section-title">O fluxo, ponta a ponta</h2>
       <p class="deep-intro">

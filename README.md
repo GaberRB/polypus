@@ -242,14 +242,18 @@ down when the run ends, and external MCP tools are disabled in `plan` mode.
 ## Autonomous agent — the tool self-improving 🤖
 
 Polypus can run **itself** in CI to implement its own issues. Label an issue
-`polypus-go` and the `agent.yml` workflow implements it headlessly, gates on the
-local CI, patch-bumps the version + CHANGELOG, and opens a release-ready PR; when
-you merge it, `auto-release.yml` cuts the GitHub Release and `release.yml`
-publishes the new version to npm. The only human step is the **merge**.
+`polypus-go` and the `agent.yml` workflow first **estimates** the effort/cost and
+posts it as an issue comment. Nothing is implemented until the repo **owner**
+comments `/polypus approve` on the issue — only the owner can approve. After that
+it implements headlessly, gates on the local CI, patch-bumps the version +
+CHANGELOG, and opens a release-ready PR; when you merge it, `auto-release.yml`
+cuts the GitHub Release and `release.yml` publishes to npm.
 
 ```
 issue + label `polypus-go`
-  → agent.yml: implement (cheap model) → secret scan → CI gate → bump + CHANGELOG → open PR
+  → agent.yml (estimate): posts the cost estimate as a comment
+  → you (owner) comment `/polypus approve`
+  → agent.yml (implement): cheap model → secret scan → CI gate → bump + CHANGELOG → open PR
   → you merge the PR
   → auto-release.yml → release.yml → npm publish
 ```
