@@ -59,7 +59,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_73 módulos em `src/`._
+_75 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -114,6 +114,10 @@ _73 módulos em `src/`._
 
 ### `src/core/i18n`
 - `index.ts` — Minimal zero-dependency i18n. Default locale is pt-BR; English is available.
+
+### `src/core/mcp`
+- `client.ts`
+- `index.ts`
 
 ### `src/core/permissions`
 - `allowlist.ts`

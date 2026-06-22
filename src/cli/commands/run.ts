@@ -25,6 +25,7 @@ import {
 } from "../../core/agent/session-store.js";
 import { loadHooks } from "../../core/agent/hooks.js";
 import { loadCustomTools } from "../../core/tools/custom.js";
+import { loadMcpTools } from "../../core/mcp/index.js";
 import { createJsonCollector } from "./json-output.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
@@ -228,10 +229,19 @@ async function executeTask(
         },
   });
 
-  // Load user-declared custom tools and hooks from .poly/ (if any).
-  const [extraTools, hooks] = await Promise.all([loadCustomTools(workspace), loadHooks(workspace)]);
-  if (!json && extraTools.length > 0) {
-    console.log(pc.dim(t("tools.customLoaded", { names: extraTools.map((tl) => tl.spec.name).join(", ") })));
+  // Load user-declared custom tools and hooks from .poly/ (if any), plus any
+  // MCP servers (external tool servers) declared in .poly/mcp.json.
+  const [customTools, hooks, mcp] = await Promise.all([
+    loadCustomTools(workspace),
+    loadHooks(workspace),
+    loadMcpTools(workspace),
+  ]);
+  const extraTools = [...customTools, ...mcp.tools];
+  if (!json && customTools.length > 0) {
+    console.log(pc.dim(t("tools.customLoaded", { names: customTools.map((tl) => tl.spec.name).join(", ") })));
+  }
+  if (!json && mcp.servers.length > 0) {
+    console.log(pc.dim(t("mcp.connected", { servers: mcp.servers.join(", "), n: mcp.tools.length })));
   }
 
   const runOnce = (taskText: string): Promise<RunResult> =>
@@ -264,6 +274,7 @@ async function executeTask(
   } finally {
     spinner.stop();
     cancel.dispose();
+    await mcp.close(); // shut down any spawned MCP servers
   }
 
   // Persist the conversation so it can be resumed (secrets are redacted on save).
