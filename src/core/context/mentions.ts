@@ -10,7 +10,7 @@ const MAX_FILE_CHARS = 10_000;
  * Matches `@path` mentions: an `@` at the start or after whitespace, followed by
  * a path-like token (letters, digits, `. / _ -`). A trailing `/` marks a directory.
  */
-const MENTION_RE = /(?:^|\s)@([\w./-]+)/g;
+const MENTION_RE = /(?:^|\s)@([\w./-]*)/g;
 
 export interface MentionResult {
   /** The task text with a "Referenced files" block appended (unchanged if no valid mentions). */
@@ -26,14 +26,32 @@ export interface MentionResult {
  * until a repository index exists.
  */
 export async function resolveMentions(task: string, policy: PathPolicy): Promise<MentionResult> {
-  const tokens = [...task.matchAll(MENTION_RE)].map((m) => m[1]!);
-  const unique = [...new Set(tokens)];
-  if (unique.length === 0) return { task, injected: [] };
+  const tokens = [...task.matchAll(MENTION_RE)].map((m) => m[1]);
+  const unique = [...new Set(tokens.filter(Boolean))];
+  const hasEmptyMention = tokens.includes(undefined); // Check for '@' without a name
 
   const blocks: string[] = [];
   const injected: string[] = [];
 
+  // Handle empty mentions (just '@')
+  if (hasEmptyMention) {
+    const cwd = policy.workspace;
+    try {
+      const entries = await readdir(cwd, { withFileTypes: true });
+      const listing = entries
+        .map((e) => (e.isDirectory() ? `${e.name}/` : e.name))
+        .sort()
+        .join("\n");
+      blocks.push(`## ${t("mentions.dirHeader", { path: "." })}\n${listing || "(empty)"}`);
+      injected.push(".");
+    } catch {
+      blocks.push(`## @\n${t("mentions.notFound", { path: "." })}`);
+    }
+  }
+
+  // Handle specific mentions (@file, @path, etc.)
   for (const token of unique) {
+    if (!token) continue; // Skip undefined tokens (though filter(Boolean) should prevent this)
     const decision = checkPath(policy, token);
     if (!decision.allowed) {
       blocks.push(`## @${token}\n${t("mentions.notFound", { path: token })}`);
