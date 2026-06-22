@@ -1,18 +1,19 @@
 name: agent
 
-# Autonomous implementation: when an issue is labeled `polypus-go`, run Polypus
-# headless to implement it, gate on the local CI, and open a PR with `Closes #N`.
+# Autonomous implementation: when an issue is labeled `polypus-go`, Polypus first
+# ESTIMATES the effort/cost and posts it as an issue comment, then waits for your
+# APPROVAL (the `implement` job uses an Environment gate). Once approved, it runs
+# headless, gates on the local CI, patch-bumps the version, and opens a PR.
 #
 # Setup:
 #   - Secret  OPENROUTER_API_KEY  — model API key (required).
-#   - Secret  POLYPUS_PR_TOKEN    — optional PAT (repo scope) used to open the PR.
-#       Use this OR enable "Allow GitHub Actions to create and approve pull
-#       requests" (Settings → Actions → General). Without either, the run still
-#       succeeds and comments the branch link on the issue instead of failing.
+#   - Secret  POLYPUS_PR_TOKEN    — optional PAT (repo scope) to open the PR / trigger publish.
 #   - Variable POLYPUS_AGENT_MODEL — OpenRouter model id (optional; cheap default below).
-#   - Variable POLYPUS_BUDGET_USD  — per-run USD cap (optional; default 0.50).
-#   - Create a `polypus-go` label and add it to an issue to trigger this.
-# The linked issue should also carry `accepted` so the opened PR passes require-issue.
+#   - Environment `autonomous-agent` with required reviewers — this is the APPROVAL gate.
+#       Settings → Environments → New environment → add yourself as a required reviewer.
+#       Without reviewers the implement job runs immediately (no gate).
+#   - Create a `polypus-go` label and add it to an issue (keep `accepted` too).
+# There is intentionally no spend cap: the estimate + your approval are the control.
 
 on:
   issues:
@@ -28,17 +29,84 @@ permissions:
   pull-requests: write
   issues: write
 
+env:
+  AGENT_MODEL: ${{ vars.POLYPUS_AGENT_MODEL || 'deepseek/deepseek-chat-v3-0324' }}
+
 jobs:
-  implement:
-    # Guard-rail: only our own repo, and only the opt-in trigger label.
+  # 1) Estimate the effort/cost and post it on the issue. Outputs the step budget.
+  estimate:
     if: >
       github.repository == 'GaberRB/polypus' &&
       (github.event_name == 'workflow_dispatch' || github.event.label.name == 'polypus-go')
     runs-on: ubuntu-latest
+    outputs:
+      maxsteps: ${{ steps.est.outputs.maxsteps }}
     env:
       ISSUE: ${{ github.event.issue.number || github.event.inputs.issue }}
-      AGENT_MODEL: ${{ vars.POLYPUS_AGENT_MODEL || 'deepseek/deepseek-chat-v3-0324' }}
-      BUDGET_USD: ${{ vars.POLYPUS_BUDGET_USD || '0.50' }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Configure the Polypus agent (cheap OpenRouter model)
+        run: |
+          node dist/index.js add-agent ci --provider openrouter --model "$AGENT_MODEL" \
+            --api-key '${OPENROUTER_API_KEY}' --set-default
+      - name: Estimate effort/cost and comment on the issue
+        id: est
+        run: |
+          gh issue view "$ISSUE" --json title -q .title > issue-title.txt
+          gh issue view "$ISSUE" --json body  -q .body  > issue-body.txt
+          {
+            echo "Implement GitHub issue #$ISSUE: $(cat issue-title.txt)"
+            echo
+            cat issue-body.txt
+          } > task.md
+          node dist/index.js estimate "$(cat task.md)" --json > est.json || echo '{}' > est.json
+          rm -f issue-title.txt issue-body.txt task.md
+          node <<'NODE'
+          const fs = require("fs");
+          let e = {};
+          try { e = (JSON.parse(fs.readFileSync("est.json", "utf8")).estimate) || {}; } catch {}
+          const steps = Number(e.estimatedSteps) || 30;
+          // Generous step budget derived from the estimate (no spend cap by design).
+          const maxsteps = Math.min(250, Math.max(60, steps * 2));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `maxsteps=${maxsteps}\n`);
+          const body = [
+            "🧮 **Estimativa do Polypus** (modelo `" + (process.env.AGENT_MODEL || "") + "`)",
+            "",
+            "| | |",
+            "|---|---|",
+            "| Complexidade | **" + (e.complexity || "?") + "** |",
+            "| Passos estimados | ~" + (e.estimatedSteps ?? "?") + " |",
+            "| Tokens estimados | ~" + (e.estimatedTokens ?? "?") + " |",
+            "| Custo estimado | **" + (e.costLabel || "?") + "** |",
+            e.rationale ? "\n> " + e.rationale : "",
+            e.risks ? "\n> ⚠ " + e.risks : "",
+            "",
+            "▶ Para continuar, **aprove o job `implement`** na execução desta Action " +
+              "(" + process.env.RUN_URL + "). Sem aprovação, nada é implementado.",
+          ].join("\n");
+          fs.writeFileSync("comment.md", body);
+          NODE
+          gh issue comment "$ISSUE" --body-file comment.md
+          rm -f est.json comment.md
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  # 2) Implement — gated by the `autonomous-agent` Environment (manual approval).
+  implement:
+    needs: estimate
+    environment: autonomous-agent
+    runs-on: ubuntu-latest
+    env:
+      ISSUE: ${{ github.event.issue.number || github.event.inputs.issue }}
+      MAX_STEPS: ${{ needs.estimate.outputs.maxsteps }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -54,11 +122,8 @@ jobs:
 
       - name: Configure the Polypus agent (cheap OpenRouter model)
         run: |
-          node dist/index.js add-agent ci \
-            --provider openrouter \
-            --model "$AGENT_MODEL" \
-            --api-key '${OPENROUTER_API_KEY}' \
-            --set-default
+          node dist/index.js add-agent ci --provider openrouter --model "$AGENT_MODEL" \
+            --api-key '${OPENROUTER_API_KEY}' --set-default
 
       - name: Run Polypus headless to implement the issue
         run: |
@@ -75,8 +140,7 @@ jobs:
           } > task.md
           echo "::group::Polypus run"
           node dist/index.js run "$(cat task.md)" \
-            --mode bypass --verify --json \
-            --max-steps 40 --budget "$BUDGET_USD" \
+            --mode bypass --verify --json --max-steps "$MAX_STEPS" \
             > polypus-result.json || true
           echo "::endgroup::"
           rm -f issue-title.txt issue-body.txt task.md
@@ -118,9 +182,6 @@ jobs:
 
       - name: Open the pull request
         if: steps.changes.outputs.changed == 'true'
-        # Prefer a PAT (POLYPUS_PR_TOKEN) so the PR can be created even when the
-        # repo setting "Allow GitHub Actions to create and approve pull requests"
-        # is off; fall back to the default token otherwise.
         env:
           GH_TOKEN: ${{ secrets.POLYPUS_PR_TOKEN || github.token }}
         run: |
@@ -135,12 +196,10 @@ jobs:
           git push -u origin "$BRANCH"
           VERSION=$(node -p "require('./package.json').version")
           BODY=$(printf 'Autonomous implementation by Polypus for #%s, generated headlessly and gated on the local CI (typecheck/build/test).\n\nModel: `%s`. Includes a patch bump to **v%s** + CHANGELOG. **Merging this PR auto-releases v%s to npm** (auto-release.yml → release.yml). Please review before merging.\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$VERSION" "$VERSION" "$ISSUE")
-          # Never hard-fail the job on PR creation: if the token may not open PRs
-          # (Actions PR-create disabled and no PAT), post the compare link instead.
           if gh pr create --base main --head "$BRANCH" --title "feat: $TITLE (Closes #$ISSUE)" --body "$BODY"; then
             echo "✓ Pull request opened."
           else
             COMPARE="${{ github.server_url }}/${{ github.repository }}/compare/main...$BRANCH?expand=1"
-            echo "::warning::Could not open the PR automatically — posting the branch link on the issue. To enable auto-PRs, turn on 'Allow GitHub Actions to create and approve pull requests' in Settings → Actions → General, or add a POLYPUS_PR_TOKEN secret (a PAT with repo scope)."
+            echo "::warning::Could not open the PR automatically — posting the branch link on the issue."
             gh issue comment "$ISSUE" --body "🤖 Polypus pushed an implementation to \`$BRANCH\` and it passed the CI gate, but the workflow couldn't open the PR automatically. Open it here: $COMPARE"
           fi

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.18] - 2026-06-22
+
+### Added
+- `polypus estimate "<task>"` — estimates the effort (complexity, steps, tokens)
+  and the USD cost to implement a task, without making any changes. `--json` for
+  a machine-readable contract.
+- The autonomous `agent.yml` now runs in two jobs: **estimate** (posts the cost
+  estimate as an issue comment and derives a step budget) and **implement**,
+  which is gated behind an `autonomous-agent` Environment so it waits for your
+  **manual approval** before doing anything. There is no spend cap by design —
+  the estimate plus your approval are the control. (follow-up to #61)
+
 ## [0.4.17] - 2026-06-22
 
 ### Added
@@ -308,7 +320,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.17...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.18...HEAD
+[0.4.18]: https://github.com/GaberRB/polypus/compare/v0.4.17...v0.4.18
 [0.4.17]: https://github.com/GaberRB/polypus/compare/v0.4.16...v0.4.17
 [0.4.16]: https://github.com/GaberRB/polypus/compare/v0.4.15...v0.4.16
 [0.4.15]: https://github.com/GaberRB/polypus/compare/v0.4.14...v0.4.15

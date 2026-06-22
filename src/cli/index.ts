@@ -10,6 +10,7 @@ import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
 import { usage } from "./commands/usage.js";
 import { sessions } from "./commands/sessions.js";
+import { estimate } from "./commands/estimate.js";
 import { prd } from "./commands/prd.js";
 import { review } from "./commands/review.js";
 import { join } from "node:path";
@@ -131,6 +132,14 @@ function buildProgram(): Command {
     .command("usage")
     .description(t("cli.cmd.usage"))
     .action(() => usage());
+
+  program
+    .command("estimate")
+    .argument("<task>", t("cli.arg.estimateTask"))
+    .option("--agent <name>", t("cli.opt.agent"))
+    .option("--json", t("cli.opt.json"))
+    .description(t("cli.cmd.estimate"))
+    .action((task, opts) => estimate(task, opts));
 
   program
     .command("sessions")

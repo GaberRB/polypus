@@ -59,7 +59,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_71 módulos em `src/`._
+_73 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -67,6 +67,7 @@ _71 módulos em `src/`._
 ### `src/cli/commands`
 - `add-agent.ts`
 - `cli-io.ts`
+- `estimate.ts`
 - `init.ts`
 - `json-output.ts`
 - `list-agents.ts`
@@ -87,6 +88,7 @@ _71 módulos em `src/`._
 - `compaction.ts`
 - `concurrency.ts`
 - `correction.ts`
+- `estimate.ts`
 - `free-provider.ts`
 - `hooks.ts`
 - `loop.ts`
