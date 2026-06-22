@@ -158,12 +158,14 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Self-correction loop: review the diff, feed any blocking findings back to
-      # the agent to fix, then re-validate. The agent evaluates each finding (the
-      # reviewer is a free model and can be wrong), and the local CI is the judge.
-      # At most 2 fix passes; if blockers remain, the PR is opened flagged for a
-      # human (see the note in "Open the pull request").
-      - name: Self-review loop — fix blocking findings (max 2 passes)
+      # Self-correction loop. Each pass: run the deterministic gate (typecheck,
+      # build, tests) AND a model review of the diff. If both are clean, stop.
+      # Otherwise feed the compiler/test failures (high signal) plus the review
+      # blockers (advisory — the reviewer is a free model and can be wrong) back
+      # to the agent and let it fix. At most 2 fix passes. Compile/test failures
+      # that survive are caught by the hard "CI gate" step below (no PR); review
+      # blockers that survive open the PR flagged for a human.
+      - name: Self-correction loop — fix CI + review findings (max 2 passes)
         if: steps.changes.outputs.changed == 'true'
         id: selfreview
         env:
@@ -171,7 +173,12 @@ jobs:
         run: |
           final_blocking=0
           for pass in $(seq 0 "$REVIEW_PASSES"); do
-            echo "::group::Auto-review (#$((pass + 1)))"
+            echo "::group::Self-check (#$((pass + 1)))"
+            # 1) Deterministic gate — capture output so it can be fed back.
+            ci_ok=1
+            { npm run typecheck && npm run build && npm test; } > ci.log 2>&1 || ci_ok=0
+            echo "CI passed: $ci_ok"
+            # 2) Model review of the current diff.
             git add -A
             git diff --cached > selfreview.patch
             node dist/index.js review HEAD --input selfreview.patch --json \
@@ -179,26 +186,39 @@ jobs:
             COUNT=$(node -e "try{const r=require('./review.json');console.log((r.blocking||[]).length)}catch{console.log(0)}")
             echo "Blocking findings: $COUNT"
             echo "::endgroup::"
-            [ "$COUNT" = "0" ] && { final_blocking=0; break; }
-            if [ "$pass" -ge "$REVIEW_PASSES" ]; then final_blocking="$COUNT"; break; fi
-            node -e "const r=require('./review.json');const l=(r.blocking||[]).map((b,i)=>(i+1)+'. '+(b.file?'['+b.file+'] ':'')+b.issue);require('fs').writeFileSync('blockers.txt',l.join('\n'))"
+
+            final_blocking="$COUNT"
+            # Clean on both fronts → done.
+            [ "$ci_ok" = "1" ] && [ "$COUNT" = "0" ] && break
+            # Out of fix attempts → stop (hard CI gate / human takes over).
+            if [ "$pass" -ge "$REVIEW_PASSES" ]; then break; fi
+
+            # Build a fix task: CI failures first (must fix), review findings after.
             {
-              echo "An automated code review flagged these potential BLOCKING issues in your last change:"
+              echo "Your last change must pass the project's checks. Fix the issues below,"
+              echo "keep the diff minimal, and do not touch unrelated code."
+              if [ "$ci_ok" = "0" ]; then
+                echo
+                echo "## typecheck / build / test failures (these MUST be fixed):"
+                echo '```'
+                tail -n 60 ci.log
+                echo '```'
+              fi
+              if [ "$COUNT" != "0" ]; then
+                echo
+                echo "## Automated review findings (evaluate critically — the reviewer is a free"
+                echo "model and is sometimes wrong; fix only genuine bugs, ignore false positives):"
+                node -e "const r=require('./review.json');console.log((r.blocking||[]).map((b,i)=>(i+1)+'. '+(b.file?'['+b.file+'] ':'')+b.issue).join('\n'))"
+              fi
               echo
-              cat blockers.txt
-              echo
-              echo "Evaluate each finding critically — the reviewer is a free model and is sometimes wrong."
-              echo "Fix only the ones that are genuine correctness/security bugs; if a finding is a false"
-              echo "positive, leave that code unchanged. Do not touch unrelated code. Keep the diff minimal."
-              echo "The project's typecheck, build and tests must still pass."
+              echo "After your fix, typecheck, build and tests must pass."
             } > fix-task.md
             echo "::group::Polypus fix pass $((pass + 1))"
             node dist/index.js run "$(cat fix-task.md)" \
               --mode bypass --verify --json --max-steps "$MAX_STEPS" > fix-result.json || true
             echo "::endgroup::"
-            npm run typecheck && npm run build && npm test
           done
-          rm -f selfreview.patch review.json blockers.txt fix-task.md fix-result.json
+          rm -f selfreview.patch review.json ci.log fix-task.md fix-result.json
           echo "blocking_left=$final_blocking" >> "$GITHUB_OUTPUT"
 
       - name: Guard-rail — no secrets in the diff
