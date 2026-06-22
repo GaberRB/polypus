@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.17] - 2026-06-22
+
+### Added
+- Docs for the autonomous agent: a dedicated, detailed page (`docs/agent.html`)
+  with an end-to-end diagram, examples, the guard-rails, and a step-by-step
+  `POLYPUS_PR_TOKEN` setup guide — framed around the tool self-improving. Linked
+  from the site nav and the CI/CD page (which now lists `agent.yml` /
+  `auto-release.yml` and the `POLYPUS_PR_TOKEN` secret), and summarized in the
+  README with the one-time setup. (follow-up to #61)
+
 ## [0.4.16] - 2026-06-22
 
 ### Added
@@ -298,7 +308,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.16...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.17...HEAD
+[0.4.17]: https://github.com/GaberRB/polypus/compare/v0.4.16...v0.4.17
 [0.4.16]: https://github.com/GaberRB/polypus/compare/v0.4.15...v0.4.16
 [0.4.15]: https://github.com/GaberRB/polypus/compare/v0.4.14...v0.4.15
 [0.4.14]: https://github.com/GaberRB/polypus/compare/v0.4.13...v0.4.14
