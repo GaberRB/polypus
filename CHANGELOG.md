@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.24] - 2026-06-22
+
+### Fixed
+- `auto-release.yml` failed to compile (and so never created the Release on merge)
+  because a step referenced the `secrets` context in its `if:` — which isn't
+  allowed and invalidated the whole workflow. Removed that step; merging a
+  `polypus/issue-*` PR now creates the GitHub Release and publishes to npm as
+  intended. (#83 follow-up)
+
 ## [0.4.23] - 2026-06-22
 
 ### Added
@@ -364,7 +373,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.23...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.24...HEAD
+[0.4.24]: https://github.com/GaberRB/polypus/compare/v0.4.23...v0.4.24
 [0.4.23]: https://github.com/GaberRB/polypus/compare/v0.4.22...v0.4.23
 [0.4.22]: https://github.com/GaberRB/polypus/compare/v0.4.21...v0.4.22
 [0.4.21]: https://github.com/GaberRB/polypus/compare/v0.4.20...v0.4.21

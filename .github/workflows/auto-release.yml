@@ -47,8 +47,5 @@ jobs:
           [ -z "$NOTES" ] && NOTES="Autonomous release $VERSION (merged from ${{ github.event.pull_request.head.ref }})."
           gh release create "$VERSION" --target main --title "$VERSION" --notes "$NOTES"
           echo "Created Release $VERSION — release.yml will publish to npm."
-
-      - name: Warn if the default token was used (npm publish won't auto-trigger)
-        if: ${{ secrets.POLYPUS_PR_TOKEN == '' }}
-        run: |
-          echo "::warning::POLYPUS_PR_TOKEN is not set. The Release was created with the default token, which does not trigger release.yml — npm publish will not run automatically. Add a PAT secret POLYPUS_PR_TOKEN to fully close the loop."
+          # Note: a Release created with the default GITHUB_TOKEN does not trigger
+          # release.yml. Set the POLYPUS_PR_TOKEN PAT (used above) so npm publish runs.
