@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.23] - 2026-06-22
+
+### Added
+- Task generator: decompose a PRD into independent, parallelizable tasks with
+  per-task model/usage/cost estimates (`src/core/agent/task-generator.ts`), plus a
+  `.poly/skills/task-generation.md` skill documenting the workflow. Autonomously
+  implemented by Polypus from issue #83. (#83)
+
 ## [0.4.22] - 2026-06-22
 
 ### Changed
@@ -356,7 +364,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.22...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.23...HEAD
+[0.4.23]: https://github.com/GaberRB/polypus/compare/v0.4.22...v0.4.23
 [0.4.22]: https://github.com/GaberRB/polypus/compare/v0.4.21...v0.4.22
 [0.4.21]: https://github.com/GaberRB/polypus/compare/v0.4.20...v0.4.21
 [0.4.20]: https://github.com/GaberRB/polypus/compare/v0.4.19...v0.4.20
