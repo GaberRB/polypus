@@ -1,7 +1,8 @@
 import pc from "picocolors";
 import * as p from "@clack/prompts";
-import type { PermissionMode } from "../../core/config/schema.js";
+import type { EmbeddingsConfig, PermissionMode, RetrievalConfig } from "../../core/config/schema.js";
 import { loadConfig, resolveAgent } from "../../core/config/store.js";
+import { autoContext } from "../../core/retrieval/retriever.js";
 import { createProvider } from "../../core/providers/registry.js";
 import { PermissionEngine, type ConfirmRequest, type ConfirmResult } from "../../core/permissions/modes.js";
 import { hunkLabel, type Hunk } from "../../core/permissions/diff.js";
@@ -103,7 +104,10 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   const runTask = async (taskText: string): Promise<void> => {
     const active = resolveAgent(config, session.agentName);
     const resolved = createProvider(active);
-    await executeTask(taskText, resolved, workspace, session);
+    await executeTask(taskText, resolved, workspace, session, false, false, {
+      embeddings: config.embeddings,
+      retrieval: config.retrieval,
+    });
   };
 
   if (opts.json && !task) throw new Error(t("run.jsonNeedsTask"));
@@ -123,7 +127,10 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
         ),
       );
     }
-    await executeTask(task, resolved, workspace, session, opts.json ?? false, opts.verify ?? false);
+    await executeTask(task, resolved, workspace, session, opts.json ?? false, opts.verify ?? false, {
+      embeddings: config.embeddings,
+      retrieval: config.retrieval,
+    });
     if (session.budget !== undefined && !opts.json) {
       console.log(pc.dim(t("budget.session", { spent: fmtUsd(session.costUsd), budget: fmtUsd(session.budget) })));
     }
@@ -179,6 +186,7 @@ async function executeTask(
   session: SessionState,
   json = false,
   verify = false,
+  retrievalCfg?: { embeddings?: EmbeddingsConfig; retrieval: RetrievalConfig },
 ): Promise<void> {
   // Inject @file / @dir mentions into the task as explicit context before sending.
   const mention = await resolveMentions(task, {
@@ -189,6 +197,15 @@ async function executeTask(
   if (mention.injected.length > 0) {
     task = mention.task;
     if (!json) console.log(pc.dim(`↳ @ ${mention.injected.join(", ")}`));
+  }
+
+  // Opt-in semantic retrieval (RAG): inject the top matches for the task.
+  if (retrievalCfg) {
+    const auto = await autoContext(workspace, retrievalCfg.embeddings, retrievalCfg.retrieval, task);
+    if (auto) {
+      task = `${task}\n\n--- ${t("retrieval.injectedHeader")} ---\n\n${auto.block}`;
+      if (!json) console.log(pc.dim(`↳ retrieve ${auto.count}`));
+    }
   }
 
   const spinner = new Spinner();

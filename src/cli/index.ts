@@ -13,6 +13,8 @@ import { sessions } from "./commands/sessions.js";
 import { estimate } from "./commands/estimate.js";
 import { prd } from "./commands/prd.js";
 import { review } from "./commands/review.js";
+import { indexRepo } from "./commands/repo-index.js";
+import { retrieveCmd } from "./commands/retrieve.js";
 import { join } from "node:path";
 import { configDir, loadConfig } from "../core/config/store.js";
 import { loadDotenv } from "../core/config/dotenv.js";
@@ -165,6 +167,23 @@ function buildProgram(): Command {
     .option("--json", t("cli.opt.reviewJson"))
     .description(t("cli.cmd.review"))
     .action((pr, opts) => review(pr, opts));
+
+  program
+    .command("index")
+    .option("--rebuild", t("cli.opt.indexRebuild"))
+    .option("--provider <provider>", t("cli.opt.embProvider"))
+    .option("--model <model>", t("cli.opt.embModel"))
+    .option("--base-url <url>", t("cli.opt.embBaseUrl"))
+    .option("--api-key <key>", t("cli.opt.embApiKey"))
+    .description(t("cli.cmd.index"))
+    .action((opts) => indexRepo(opts));
+
+  program
+    .command("retrieve")
+    .argument("<query>", t("cli.arg.retrieveQuery"))
+    .option("-k, --k <n>", t("cli.opt.topK"))
+    .description(t("cli.cmd.retrieve"))
+    .action((query, opts) => retrieveCmd(query, opts));
 
   return program;
 }
