@@ -16,6 +16,7 @@ export interface ModelsCliOptions {
   tools?: boolean;
   free?: boolean;
   maxPrice?: string;
+  minPopularity?: string;
   sort?: string;
   limit?: string;
 }
@@ -40,6 +41,7 @@ export async function models(opts: ModelsCliOptions): Promise<void> {
     tools: opts.tools ? "tools" : "any",
     freeOnly: Boolean(opts.free),
     maxPrice: opts.maxPrice !== undefined ? Number(opts.maxPrice) : undefined,
+    minPopularity: opts.minPopularity !== undefined ? Number(opts.minPopularity) : undefined,
     sort: (opts.sort as ModelSort) ?? "price",
   });
 
