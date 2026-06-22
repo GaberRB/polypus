@@ -5,6 +5,10 @@ name: agent
 #
 # Setup:
 #   - Secret  OPENROUTER_API_KEY  — model API key (required).
+#   - Secret  POLYPUS_PR_TOKEN    — optional PAT (repo scope) used to open the PR.
+#       Use this OR enable "Allow GitHub Actions to create and approve pull
+#       requests" (Settings → Actions → General). Without either, the run still
+#       succeeds and comments the branch link on the issue instead of failing.
 #   - Variable POLYPUS_AGENT_MODEL — OpenRouter model id (optional; cheap default below).
 #   - Variable POLYPUS_BUDGET_USD  — per-run USD cap (optional; default 0.50).
 #   - Create a `polypus-go` label and add it to an issue to trigger this.
@@ -106,6 +110,11 @@ jobs:
 
       - name: Open the pull request
         if: steps.changes.outputs.changed == 'true'
+        # Prefer a PAT (POLYPUS_PR_TOKEN) so the PR can be created even when the
+        # repo setting "Allow GitHub Actions to create and approve pull requests"
+        # is off; fall back to the default token otherwise.
+        env:
+          GH_TOKEN: ${{ secrets.POLYPUS_PR_TOKEN || github.token }}
         run: |
           TITLE=$(gh issue view "$ISSUE" --json title -q .title)
           BRANCH="polypus/issue-$ISSUE"
@@ -116,6 +125,13 @@ jobs:
           git commit -m "feat: implement #$ISSUE (Closes #$ISSUE)" \
             -m "Autonomous implementation by Polypus (model: $AGENT_MODEL)."
           git push -u origin "$BRANCH"
-          gh pr create --base main --head "$BRANCH" \
-            --title "feat: $TITLE (Closes #$ISSUE)" \
-            --body "$(printf 'Autonomous implementation by Polypus for #%s, generated headlessly and gated on the local CI (typecheck/build/test).\n\nModel: `%s`. Please review before merging.\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$ISSUE")"
+          BODY=$(printf 'Autonomous implementation by Polypus for #%s, generated headlessly and gated on the local CI (typecheck/build/test).\n\nModel: `%s`. Please review before merging.\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$ISSUE")
+          # Never hard-fail the job on PR creation: if the token may not open PRs
+          # (Actions PR-create disabled and no PAT), post the compare link instead.
+          if gh pr create --base main --head "$BRANCH" --title "feat: $TITLE (Closes #$ISSUE)" --body "$BODY"; then
+            echo "✓ Pull request opened."
+          else
+            COMPARE="${{ github.server_url }}/${{ github.repository }}/compare/main...$BRANCH?expand=1"
+            echo "::warning::Could not open the PR automatically — posting the branch link on the issue. To enable auto-PRs, turn on 'Allow GitHub Actions to create and approve pull requests' in Settings → Actions → General, or add a POLYPUS_PR_TOKEN secret (a PAT with repo scope)."
+            gh issue comment "$ISSUE" --body "🤖 Polypus pushed an implementation to \`$BRANCH\` and it passed the CI gate, but the workflow couldn't open the PR automatically. Open it here: $COMPARE"
+          fi
