@@ -196,6 +196,17 @@ agent is also instructed to talk back to you in the configured language.
 All file access is restricted to the workspace and the configured **allow-list**
 globs; the **deny-list** (e.g. `.git/**`, `**/.env`) always wins.
 
+### Timeout Configuration
+
+You can control the maximum duration of a swarm session using the environment variable `POLYPUS_SWARM_OVERALL_TIMEOUT_MS` (default: 1 hour). This prevents the session from hanging indefinitely if an agent stalls:
+
+```bash
+export POLYPUS_SWARM_OVERALL_TIMEOUT_MS=1800000  # 30 minutes
+polypus swarm "your task"
+```
+
+Similarly, `POLYPUS_SWARM_IDLE_TIMEOUT_MS` controls the idle timeout for individual workers (default: 5 minutes).
+
 ## Swarm (parallel agents)
 
 ```bash

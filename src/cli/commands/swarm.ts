@@ -2,7 +2,7 @@ import pc from "picocolors";
 import { loadConfig } from "../../core/config/store.js";
 import { createProvider, type ResolvedAgent } from "../../core/providers/registry.js";
 import { runSwarm } from "../../core/agent/orchestrator.js";
-import { recommendConcurrency, idleTimeoutMs } from "../../core/agent/concurrency.js";
+import { recommendConcurrency, idleTimeoutMs, overallTimeoutMs } from "../../core/agent/concurrency.js";
 import { SwarmView, describeToolCall } from "../../ui/swarm-view.js";
 import { listenForCancel } from "../../ui/cancel.js";
 import { t } from "../../core/i18n/index.js";
@@ -71,6 +71,10 @@ export async function runSwarmSession(
   const view = new SwarmView(resolved[0]!.config.name);
   view.start();
   let result;
+  const sessionTimeout = setTimeout(() => {
+    controller.abort();
+    console.log(pc.red(t("swarm.timeout")));
+  }, overallTimeoutMs());
   try {
     result = await runSwarm({
       task,
@@ -94,6 +98,7 @@ export async function runSwarmSession(
       },
     });
   } finally {
+    clearTimeout(sessionTimeout);
     view.stop();
     cancel.dispose();
   }

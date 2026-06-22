@@ -192,6 +192,7 @@ const en: Catalog = {
   "swarm.conflictsHeader": "⚠ {n} branch(es) had merge conflicts (kept for inspection):",
   "swarm.statusDone": "done",
   "swarm.statusIncomplete": "incomplete",
+  "swarm.timeout": "⚠ Session timeout reached. Operation aborted.",
 
   // init
   "init.created": "✓ .poly scaffolded:",
@@ -478,6 +479,7 @@ const ptBR: Catalog = {
   "swarm.conflictsHeader": "⚠ {n} branch(es) tiveram conflitos de merge (mantidos para inspeção):",
   "swarm.statusDone": "ok",
   "swarm.statusIncomplete": "incompleta",
+  "swarm.timeout": "⚠ O tempo máximo da sessão foi atingido. A operação foi interrompida.",
 
   // init
   "init.created": "✓ .poly criado:",

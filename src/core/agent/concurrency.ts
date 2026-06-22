@@ -37,3 +37,9 @@ export function idleTimeoutMs(): number {
   const raw = Number(process.env.POLYPUS_SWARM_IDLE_TIMEOUT_MS);
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_IDLE_TIMEOUT_MS;
 }
+
+/** Overall timeout (ms) for the entire swarm session from env (`POLYPUS_SWARM_OVERALL_TIMEOUT_MS`) or the default. */
+export function overallTimeoutMs(): number {
+  const raw = Number(process.env.POLYPUS_SWARM_OVERALL_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 3_600_000; // Default: 1 hour
+}
