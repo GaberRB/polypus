@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.16] - 2026-06-22
+
+### Added
+- The autonomous `agent.yml` workflow now does the **full release cycle**: after
+  the CI gate it patch-bumps the version and updates the CHANGELOG
+  (`scripts/prepare-release.mjs`) and regenerates `context.md`, so the PR it opens
+  is release-ready. A new `auto-release.yml` then **creates the GitHub Release
+  when that PR is merged** (branch `polypus/issue-*`), which triggers
+  `release.yml` → `npm publish`. So labeling an issue `polypus-go` and merging the
+  resulting PR ships the change to npm end-to-end. Auto-release needs a
+  `POLYPUS_PR_TOKEN` PAT so the created Release triggers the publish workflow.
+  (follow-up to #61)
+
 ## [0.4.15] - 2026-06-21
 
 ### Fixed
@@ -285,7 +298,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.15...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.16...HEAD
+[0.4.16]: https://github.com/GaberRB/polypus/compare/v0.4.15...v0.4.16
 [0.4.15]: https://github.com/GaberRB/polypus/compare/v0.4.14...v0.4.15
 [0.4.14]: https://github.com/GaberRB/polypus/compare/v0.4.13...v0.4.14
 [0.4.13]: https://github.com/GaberRB/polypus/compare/v0.4.12...v0.4.13

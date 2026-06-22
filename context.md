@@ -33,9 +33,13 @@ nativo e qualquer endpoint OpenAI-compatible. Roda um agente, ou divide a tarefa
 - `prd-bot.yml` / `pr-review.yml` — agentes de PRD e de code review (modelos gratuitos do
   OpenRouter) que usam **`context.md` e `rules.md` como contexto**.
 - `agent.yml` — ao rotular uma issue com `polypus-go`, roda o Polypus headless
-  (`run --mode bypass --verify --json --budget`) num runner, valida na CI local e abre um PR
-  com `Closes #N`. Modelo barato configurável (`POLYPUS_AGENT_MODEL`), guard-rails de repo
-  próprio + scan de segredos no diff.
+  (`run --mode bypass --verify --json --budget`) num runner, valida na CI local, **faz o
+  patch bump + CHANGELOG** (`scripts/prepare-release.mjs`) e abre um PR com `Closes #N`.
+  Modelo barato configurável (`POLYPUS_AGENT_MODEL`), guard-rails de repo próprio + scan de
+  segredos no diff.
+- `auto-release.yml` — ao **mergear** um PR de branch `polypus/issue-*` na main, cria o
+  GitHub Release da versão do `package.json` (com `POLYPUS_PR_TOKEN`), fechando o ciclo
+  issue→PR→release.
 - `release.yml` — publica no npm ao publicar um GitHub Release.
 
 ## Comandos principais

@@ -1,0 +1,54 @@
+name: auto-release
+
+# Closes the autonomous loop: when a Polypus-authored PR (branch `polypus/issue-*`)
+# is merged into main, create the GitHub Release for the version in package.json.
+# That Release triggers release.yml, which publishes to npm.
+#
+# IMPORTANT: creating the Release must use a PAT (POLYPUS_PR_TOKEN), because a
+# Release created with the default GITHUB_TOKEN does NOT trigger other workflows
+# (release.yml would never run). Without the PAT, the tag/release is still made
+# but you must publish manually (or re-run release.yml).
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: >
+      github.repository == 'GaberRB/polypus' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'polypus/issue-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Create the GitHub Release for the merged version
+        env:
+          # A PAT is required so the created Release triggers release.yml → npm publish.
+          GH_TOKEN: ${{ secrets.POLYPUS_PR_TOKEN || github.token }}
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Release $VERSION already exists — nothing to do."
+            exit 0
+          fi
+          # Pull this version's notes out of the CHANGELOG, if present.
+          NOTES=$(awk -v v="## [${VERSION#v}]" 'index($0,v)==1{f=1;next} /^## \[/{f=0} f' CHANGELOG.md)
+          [ -z "$NOTES" ] && NOTES="Autonomous release $VERSION (merged from ${{ github.event.pull_request.head.ref }})."
+          gh release create "$VERSION" --target main --title "$VERSION" --notes "$NOTES"
+          echo "Created Release $VERSION — release.yml will publish to npm."
+
+      - name: Warn if the default token was used (npm publish won't auto-trigger)
+        if: ${{ secrets.POLYPUS_PR_TOKEN == '' }}
+        run: |
+          echo "::warning::POLYPUS_PR_TOKEN is not set. The Release was created with the default token, which does not trigger release.yml — npm publish will not run automatically. Add a PAT secret POLYPUS_PR_TOKEN to fully close the loop."

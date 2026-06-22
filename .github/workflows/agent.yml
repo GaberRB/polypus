@@ -108,6 +108,14 @@ jobs:
           npm run build
           npm test
 
+      - name: Prepare release (patch bump + changelog + context)
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          TITLE=$(gh issue view "$ISSUE" --json title -q .title)
+          node scripts/prepare-release.mjs "$TITLE" "$ISSUE"
+          npm run context
+          echo "Prepared $(node -p "require('./package.json').version") — merging the PR will auto-release to npm."
+
       - name: Open the pull request
         if: steps.changes.outputs.changed == 'true'
         # Prefer a PAT (POLYPUS_PR_TOKEN) so the PR can be created even when the
@@ -125,7 +133,8 @@ jobs:
           git commit -m "feat: implement #$ISSUE (Closes #$ISSUE)" \
             -m "Autonomous implementation by Polypus (model: $AGENT_MODEL)."
           git push -u origin "$BRANCH"
-          BODY=$(printf 'Autonomous implementation by Polypus for #%s, generated headlessly and gated on the local CI (typecheck/build/test).\n\nModel: `%s`. Please review before merging.\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$ISSUE")
+          VERSION=$(node -p "require('./package.json').version")
+          BODY=$(printf 'Autonomous implementation by Polypus for #%s, generated headlessly and gated on the local CI (typecheck/build/test).\n\nModel: `%s`. Includes a patch bump to **v%s** + CHANGELOG. **Merging this PR auto-releases v%s to npm** (auto-release.yml → release.yml). Please review before merging.\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$VERSION" "$VERSION" "$ISSUE")
           # Never hard-fail the job on PR creation: if the token may not open PRs
           # (Actions PR-create disabled and no PAT), post the compare link instead.
           if gh pr create --base main --head "$BRANCH" --title "feat: $TITLE (Closes #$ISSUE)" --body "$BODY"; then
