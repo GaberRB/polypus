@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.27] - 2026-06-22
+
+### Changed
+- Referenciar arquivos via polypus (#97)
+
+### Added
+- Support for empty `@` mentions to list all files in the current directory. When a user types just `@`, Polypus will now list the contents of the current directory (`.`) as context, making it easier to reference files interactively. (#97)
+
 ## [0.4.26] - 2026-06-22
 
 ### Changed
@@ -398,7 +406,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.26...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.27...HEAD
+[0.4.27]: https://github.com/GaberRB/polypus/compare/v0.4.26...v0.4.27
 [0.4.26]: https://github.com/GaberRB/polypus/compare/v0.4.25...v0.4.26
 [0.4.25]: https://github.com/GaberRB/polypus/compare/v0.4.24...v0.4.25
 [0.4.24]: https://github.com/GaberRB/polypus/compare/v0.4.23...v0.4.24

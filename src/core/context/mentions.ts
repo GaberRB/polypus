@@ -12,6 +12,9 @@ const MAX_FILE_CHARS = 10_000;
  */
 const MENTION_RE = /(?:^|\s)@([\w./-]+)/g;
 
+/** A bare `@` (start/after whitespace, nothing path-like after) → list the cwd. */
+const EMPTY_MENTION_RE = /(?:^|\s)@(?=\s|$)/;
+
 export interface MentionResult {
   /** The task text with a "Referenced files" block appended (unchanged if no valid mentions). */
   task: string;
@@ -28,11 +31,30 @@ export interface MentionResult {
 export async function resolveMentions(task: string, policy: PathPolicy): Promise<MentionResult> {
   const tokens = [...task.matchAll(MENTION_RE)].map((m) => m[1]!);
   const unique = [...new Set(tokens)];
-  if (unique.length === 0) return { task, injected: [] };
+  // A `+` capture never matches empty, so detect a bare `@` separately.
+  const hasEmptyMention = EMPTY_MENTION_RE.test(task);
+  if (unique.length === 0 && !hasEmptyMention) return { task, injected: [] };
 
   const blocks: string[] = [];
   const injected: string[] = [];
 
+  // Handle empty mentions (just '@')
+  if (hasEmptyMention) {
+    const cwd = policy.workspace;
+    try {
+      const entries = await readdir(cwd, { withFileTypes: true });
+      const listing = entries
+        .map((e) => (e.isDirectory() ? `${e.name}/` : e.name))
+        .sort()
+        .join("\n");
+      blocks.push(`## ${t("mentions.dirHeader", { path: "." })}\n${listing || "(empty)"}`);
+      injected.push(".");
+    } catch {
+      blocks.push(`## @\n${t("mentions.notFound", { path: "." })}`);
+    }
+  }
+
+  // Handle specific mentions (@file, @path, etc.)
   for (const token of unique) {
     const decision = checkPath(policy, token);
     if (!decision.allowed) {
