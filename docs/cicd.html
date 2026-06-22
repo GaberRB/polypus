@@ -17,6 +17,7 @@
     </a>
     <nav class="nav-links">
       <a href="index.html#how" data-i18n="nav.how">Como funciona</a>
+      <a href="agent.html">Agente autônomo</a>
       <a href="index.html#contribute" data-i18n="nav.contribute">Contribuir</a>
       <a href="index.html#quickstart" data-i18n="nav.quickstart">Começar</a>
       <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
@@ -50,10 +51,17 @@
         <span class="arrow"></span>
         <button class="node" data-cstage="prd"><span class="node-ic">🧭</span>prd-bot</button>
         <span class="arrow"></span>
-        <button class="node done" data-cstage="release"><span class="node-ic">📦</span>release</button>
+        <button class="node" data-cstage="release"><span class="node-ic">📦</span>release</button>
         <span class="arrow"></span>
-        <button class="node" data-cstage="housekeeping"><span class="node-ic">🧹</span>dependabot + stale</button>
+        <button class="node done" data-cstage="agent"><span class="node-ic">🤖</span>agent + auto-release</button>
       </div>
+
+      <p class="deep-intro" style="margin-top:18px">
+        🤖 O <strong>agente autônomo</strong> (<code>agent.yml</code> + <code>auto-release.yml</code>) fecha o ciclo
+        <em>issue → PR → npm</em> sozinho: rotule uma issue com <code>polypus-go</code> e a própria ferramenta implementa,
+        valida, abre o PR e — ao mergear — publica.
+        <a href="agent.html">Ver a página do agente autônomo →</a>
+      </p>
 
       <div class="stage-detail" id="cicdDetail" aria-live="polite">
         <h3 id="cicdTitle" data-i18n="cicd.hint">Selecione uma etapa do pipeline</h3>
@@ -88,8 +96,9 @@
       <div class="compare" style="grid-template-columns: 1fr; max-width: 760px;">
         <div class="card">
           <ul data-i18n="cicd.secrets">
-            <li><code>OPENROUTER_API_KEY</code> — modelos gratuitos para o PRD bot e o review bot.</li>
+            <li><code>OPENROUTER_API_KEY</code> — modelos para o PRD bot, o review bot e o agente autônomo.</li>
             <li><code>NPM_TOKEN</code> — publish no npm (com provenance) ao publicar um Release.</li>
+            <li><code>POLYPUS_PR_TOKEN</code> — PAT (escopo <code>repo</code>) usado pelo agente autônomo para abrir o PR e para que o Release dispare o publish. <a href="agent.html">Como configurar →</a></li>
             <li><code>GITHUB_TOKEN</code> — automático; comenta em issues/PRs.</li>
           </ul>
         </div>

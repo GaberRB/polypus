@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus 🐙 — Agente autônomo (a ferramenta se automelhorando)</title>
+  <meta name="description" content="O agente autônomo do Polypus: rotule uma issue com polypus-go e a própria ferramenta implementa, valida na CI, abre o PR e — ao mergear — publica no npm. Diagrama, exemplos e o guia do POLYPUS_PR_TOKEN." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+  <style>
+    /* Page-local touches for the autonomous-agent page (self-contained). */
+    .agent-hero { background: linear-gradient(135deg, rgba(124,92,255,.14), rgba(0,0,0,0)); border: 1px solid var(--border, #2a2a3a); border-radius: 16px; padding: 26px 28px; margin: 8px 0 34px; }
+    .agent-hero .tagline { font-size: 1.05rem; opacity: .9; }
+    .flow.col { flex-direction: column; align-items: stretch; gap: 0; max-width: 720px; margin-inline: auto; }
+    .flow.col .arrow { transform: rotate(90deg); margin: 6px auto; }
+    .stage { display: flex; gap: 14px; align-items: flex-start; border: 1px solid var(--border, #2a2a3a); border-radius: 12px; padding: 14px 16px; background: rgba(255,255,255,.02); }
+    .stage .ic { font-size: 1.4rem; line-height: 1; }
+    .stage h4 { margin: 0 0 4px; }
+    .stage p { margin: 0; opacity: .85; font-size: .94rem; }
+    .stage .who { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
+    .who-bot { color: #8b7bff; }
+    .who-you { color: #4ec9a8; }
+    .who-gha { color: #f0a35e; }
+    .note-box { border-left: 3px solid #8b7bff; background: rgba(124,92,255,.08); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 18px 0; }
+    .note-box.warn { border-left-color: #f0a35e; background: rgba(240,163,94,.08); }
+    .kbd { font: .8rem/1 monospace; background: #1c1c28; border: 1px solid #33334a; border-radius: 6px; padding: 2px 7px; }
+    .en-summary { font-size: .9rem; opacity: .8; border: 1px dashed var(--border, #2a2a3a); border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="index.html#top">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Como funciona</a>
+      <a href="cicd.html">CI/CD</a>
+      <a href="agent.html" aria-current="page">Agente autônomo</a>
+      <a href="index.html#quickstart">Começar</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-ext" href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="deep">
+      <a class="back-link" href="index.html">← voltar</a>
+      <h1 class="deep-title">🤖 Agente autônomo</h1>
+
+      <div class="agent-hero">
+        <p class="tagline">
+          <strong>A própria ferramenta se automelhorando.</strong> Você rotula uma issue com
+          <span class="kbd">polypus-go</span> e o Polypus — rodando a si mesmo num runner do GitHub Actions —
+          <strong>implementa a mudança, valida na CI, abre o PR e, ao mergear, publica a nova versão no npm</strong>.
+          O ciclo <em>issue → código → release</em> fecha sozinho, com modelos baratos e guard-rails de segurança.
+        </p>
+        <p class="en-summary">
+          🇬🇧 <strong>In short:</strong> label an issue <span class="kbd">polypus-go</span> and Polypus runs itself in CI to
+          implement it, gates on typecheck/build/test, opens a release-ready PR, and — once you merge — publishes the
+          patched version to npm. This page documents the flow, the guard-rails and how to set up the
+          <span class="kbd">POLYPUS_PR_TOKEN</span>.
+        </p>
+      </div>
+
+      <!-- Diagrama principal -->
+      <h2 class="section-title">O fluxo, ponta a ponta</h2>
+      <p class="deep-intro">
+        Três peças trabalham em sequência: o workflow <code>agent.yml</code> (implementa e prepara o release),
+        o seu <strong>merge</strong> (único toque humano — respeita a branch protection) e o
+        <code>auto-release.yml</code> + <code>release.yml</code> (publicam no npm).
+      </p>
+
+      <div class="flow col" id="agentFlow">
+        <div class="stage"><span class="ic">🏷️</span><div><span class="who who-you">você</span><h4>Rotula a issue com <code>polypus-go</code></h4><p>Opt-in por issue. Mantenha também a label <code>accepted</code> para o PR gerado passar no <code>require-issue</code>.</p></div></div>
+        <span class="arrow"></span>
+        <div class="stage"><span class="ic">🧠</span><div><span class="who who-bot">agent.yml · polypus</span><h4>Implementa headless</h4><p>Monta a tarefa da issue + <code>.poly/agents.md</code>/<code>context.md</code>/<code>rules.md</code> e roda <code>polypus run --mode bypass --verify --json --budget</code> com um modelo barato.</p></div></div>
+        <span class="arrow"></span>
+        <div class="stage"><span class="ic">🛡️</span><div><span class="who who-bot">agent.yml</span><h4>Guard-rails</h4><p>Recusa abrir PR se achar segredo no diff; roda só no repositório próprio.</p></div></div>
+        <span class="arrow"></span>
+        <div class="stage"><span class="ic">🧪</span><div><span class="who who-bot">agent.yml</span><h4>Gate de CI</h4><p><code>typecheck</code> + <code>build</code> + <code>test</code> precisam passar. Se falhar, nada de PR.</p></div></div>
+        <span class="arrow"></span>
+        <div class="stage"><span class="ic">🔖</span><div><span class="who who-bot">agent.yml</span><h4>Prepara o release</h4><p><code>scripts/prepare-release.mjs</code> faz o bump <strong>patch</strong> + CHANGELOG e regenera o <code>context.md</code> — o PR já vem <em>release-ready</em>.</p></div></div>
+        <span class="arrow"></span>
+        <div class="stage"><span class="ic">🔀</span><div><span class="who who-bot">agent.yml</span><h4>Abre o PR <code>feat: … (Closes #N)</code></h4><p>Da branch <code>polypus/issue-N</code>. Usa o <code>POLYPUS_PR_TOKEN</code>; se faltar, comenta o link da branch na issue (nunca falha vermelho).</p></div></div>
+        <span class="arrow"></span>
+        <div class="stage"><span class="ic">✅</span><div><span class="who who-you">você</span><h4>Revisa e dá <strong>merge</strong></h4><p>O único gate humano. É aqui que você decide se o que o agente fez vai pro mundo.</p></div></div>
+        <span class="arrow"></span>
+        <div class="stage"><span class="ic">🏁</span><div><span class="who who-gha">auto-release.yml</span><h4>Cria o GitHub Release <code>vX.Y.Z</code></h4><p>Dispara ao mergear um PR de branch <code>polypus/issue-*</code>. Usa o <code>POLYPUS_PR_TOKEN</code> para que o Release acione o passo seguinte.</p></div></div>
+        <span class="arrow"></span>
+        <div class="stage"><span class="ic">📦</span><div><span class="who who-gha">release.yml</span><h4>Publica no npm</h4><p>Valida versão = tag, roda typecheck/test/build e <code>npm publish --provenance</code>. A nova versão fica em <code>@gaberrb/polypus</code>.</p></div></div>
+      </div>
+
+      <!-- Resumo do ciclo, estilo "lifecycle" -->
+      <div class="swarm-note">
+        <h3>Em uma linha</h3>
+        <div class="flow mini">
+          <span class="node sm"><span class="node-ic">📌</span>Issue</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">🏷️</span>polypus-go</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">🤖</span>Implementa</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">🧪</span>CI gate</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">🔀</span>PR</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">✓</span>Merge</span>
+          <span class="arrow"></span>
+          <span class="node sm"><span class="node-ic">📦</span>npm</span>
+        </div>
+      </div>
+
+      <!-- Guia de configuração -->
+      <h2 class="section-title" style="margin-top: 52px">Configuração</h2>
+      <p class="deep-intro">Quatro coisas. A label, a chave do modelo, o token que abre o PR/publica, e (opcional) o modelo e o orçamento.</p>
+
+      <div class="steps">
+        <div class="step">
+          <span class="step-n">1</span>
+          <div>
+            <b>Crie a label <code>polypus-go</code></b>
+            <pre class="codeblock"><code>gh label create polypus-go --color 5be4b1 \
+  --description "Polypus implementa esta issue automaticamente"</code></pre>
+            <p>Aplique-a (junto de <code>accepted</code>) na issue que quiser que o agente implemente.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-n">2</span>
+          <div>
+            <b>Secret <code>OPENROUTER_API_KEY</code></b> — a chave do modelo que escreve o código.
+            <pre class="codeblock"><code>gh secret set OPENROUTER_API_KEY --body "sk-or-v1-..."</code></pre>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-n">3</span>
+          <div>
+            <b>Secret <code>POLYPUS_PR_TOKEN</code></b> — um <strong>Personal Access Token (PAT)</strong> com escopo <code>repo</code>.
+            <p>É o que permite abrir o PR <em>e</em> publicar no npm de forma autônoma. Crie em
+            <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a>:</p>
+            <pre class="codeblock"><code># 1) Fine-grained token (recomendado): Settings → Developer settings →
+#    Personal access tokens → Fine-grained tokens → Generate new token
+#    - Repository access: só o repo GaberRB/polypus
+#    - Permissions: Contents = Read/Write, Pull requests = Read/Write
+# (ou um classic token com o escopo `repo`)
+
+# 2) registre como secret do repositório:
+gh secret set POLYPUS_PR_TOKEN --body "github_pat_..."</code></pre>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-n">4</span>
+          <div>
+            <b>(Opcional) Variables</b> — modelo barato e teto de gasto por execução.
+            <pre class="codeblock"><code>gh variable set POLYPUS_AGENT_MODEL --body "deepseek/deepseek-chat-v3-0324"
+gh variable set POLYPUS_BUDGET_USD  --body "0.50"</code></pre>
+            <p>Sem isso, o padrão é DeepSeek V3 e US$0,50 por execução. Pense em modelos com bom custo/qualidade
+            (DeepSeek, Qwen, GLM…).</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Por que o PAT -->
+      <div class="note-box">
+        <h3 style="margin-top:0">Por que o <code>POLYPUS_PR_TOKEN</code> é obrigatório para o npm?</h3>
+        <p style="margin:0">
+          Um GitHub Release criado pelo <code>GITHUB_TOKEN</code> padrão <strong>não dispara outros workflows</strong>
+          (regra do GitHub para evitar loops). Ou seja: sem um PAT, o <code>auto-release.yml</code> até cria o Release,
+          mas o <code>release.yml</code> (o que publica no npm) <strong>nunca roda</strong>. Com o PAT, o Release
+          dispara o publish normalmente. O <code>auto-release.yml</code> avisa claramente se o token estiver faltando.
+        </p>
+      </div>
+      <div class="note-box warn">
+        <p style="margin:0">
+          <strong>Sem o PAT, nada quebra:</strong> o agente ainda implementa, valida e empurra a branch — e, se não
+          conseguir abrir o PR, comenta o link de comparação na issue. Você só não ganha a publicação 100% automática.
+        </p>
+      </div>
+
+      <!-- Exemplo -->
+      <h2 class="section-title" style="margin-top: 52px">Exemplo</h2>
+      <pre class="codeblock"><code># 1. Crie uma issue descrevendo o que quer (quanto mais claro, melhor)
+# 2. Rotule-a:
+gh issue edit 123 --add-label accepted --add-label polypus-go
+
+# → agent.yml dispara, implementa com DeepSeek, passa no gate de CI,
+#   faz o bump (ex.: 0.4.16 → 0.4.17) e abre:
+#   "feat: &lt;título da issue&gt; (Closes #123)"  na branch polypus/issue-123
+
+# 3. Você revisa o PR e dá merge
+gh pr merge &lt;n&gt; --squash
+
+# → auto-release.yml cria v0.4.17 → release.yml publica:
+#   npm i -g @gaberrb/polypus@0.4.17</code></pre>
+
+      <!-- Guard-rails -->
+      <h2 class="section-title" style="margin-top: 52px">Guard-rails</h2>
+      <div class="cards">
+        <div class="card"><h3>🏠 Repo próprio</h3><p>O job só roda em <code>GaberRB/polypus</code> — forks não disparam a automação.</p></div>
+        <div class="card"><h3>🔑 Scan de segredos</h3><p>Antes de abrir o PR, o diff é varrido por chaves (AWS, GitHub, OpenAI, blocos de chave privada). Achou? Aborta.</p></div>
+        <div class="card"><h3>🧪 Gate de CI</h3><p>Sem <code>typecheck</code> + <code>build</code> + <code>test</code> verdes, não há PR. Código quebrado não chega ao npm.</p></div>
+        <div class="card"><h3>💸 Orçamento</h3><p><code>--budget</code> corta a execução ao atingir o teto em USD, evitando surpresas de custo.</p></div>
+        <div class="card"><h3>🙋 Você no comando</h3><p>O merge é o único caminho até o npm — nenhuma linha não-revisada publica sem o seu OK.</p></div>
+        <div class="card"><h3>🔁 Autocorreção</h3><p>O <code>--verify</code> devolve falhas de teste ao agente até passar ou esgotar as tentativas.</p></div>
+      </div>
+
+      <!-- Fechamento -->
+      <div class="swarm-note" style="margin-top: 40px">
+        <h3>🌱 A ferramenta cuidando da própria evolução</h3>
+        <p>
+          Esta automação é o Polypus usando o Polypus: o mesmo loop ReAct, as mesmas tools, as mesmas permissões
+          que você usa no dia a dia — agora apontados para o próprio repositório. Cada issue aceita vira,
+          potencialmente, uma melhoria publicada — com humano na curva apenas onde importa: <strong>o merge</strong>.
+          Inclusive <em>esta página</em> faz parte dessa história: documentar o agente é parte de deixá-lo crescer com cuidado.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-octo">🐙</div>
+    <p class="footer-by">
+      Feito por
+      <a href="https://github.com/GaberRB" target="_blank" rel="noopener">Gabriel Rios</a>
+    </p>
+    <p class="footer-links">
+      <a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a> ·
+      <a href="https://www.linkedin.com/in/gabriel-riosb/" target="_blank" rel="noopener">LinkedIn</a>
+    </p>
+    <p class="footer-pix">💜 Apoie via PIX: gabrielriosbelmiro@gmail.com</p>
+    <p class="footer-lic">MIT © Gabriel Rios</p>
+  </footer>
+</body>
+</html>

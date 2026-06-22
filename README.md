@@ -207,6 +207,48 @@ worktree (in `bypass` mode, since the worktree is throwaway), and the branches
 are merged back sequentially. Conflicting branches are kept for manual
 inspection rather than force-merged.
 
+## Autonomous agent — the tool self-improving 🤖
+
+Polypus can run **itself** in CI to implement its own issues. Label an issue
+`polypus-go` and the `agent.yml` workflow implements it headlessly, gates on the
+local CI, patch-bumps the version + CHANGELOG, and opens a release-ready PR; when
+you merge it, `auto-release.yml` cuts the GitHub Release and `release.yml`
+publishes the new version to npm. The only human step is the **merge**.
+
+```
+issue + label `polypus-go`
+  → agent.yml: implement (cheap model) → secret scan → CI gate → bump + CHANGELOG → open PR
+  → you merge the PR
+  → auto-release.yml → release.yml → npm publish
+```
+
+**Setup (one-time):**
+
+```bash
+# 1) the trigger label
+gh label create polypus-go --color 5be4b1
+
+# 2) the model key
+gh secret set OPENROUTER_API_KEY --body "sk-or-v1-..."
+
+# 3) a PAT (repo scope) so the agent can open the PR AND the release can publish
+#    (a Release made with the default GITHUB_TOKEN does NOT trigger release.yml)
+gh secret set POLYPUS_PR_TOKEN --body "github_pat_..."
+
+# 4) optional: cheap model + per-run budget
+gh variable set POLYPUS_AGENT_MODEL --body "deepseek/deepseek-chat-v3-0324"
+gh variable set POLYPUS_BUDGET_USD  --body "0.50"
+```
+
+Guard-rails: own-repo only, secret scan on the diff, mandatory CI gate, a spend
+budget, and your merge as the final gate. Without `POLYPUS_PR_TOKEN` nothing
+breaks — the agent still implements and pushes a branch, and comments the branch
+link on the issue instead of failing.
+
+📖 **Full guide with a diagram, examples and the `POLYPUS_PR_TOKEN` walkthrough:**
+[the autonomous-agent page](https://gaberrb.github.io/polypus/agent.html)
+(`docs/agent.html`).
+
 ## Configuration
 
 Stored at `~/.polypus/config.json` (override the directory with `POLYPUS_HOME`).
