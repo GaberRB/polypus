@@ -72,6 +72,7 @@ const en: Catalog = {
   "cli.arg.swarmTask": "high-level task to split across agents",
   "cli.opt.agents": "comma-separated agent names (default: all configured)",
   "cli.opt.maxSubtasks": "maximum number of parallel subtasks",
+  "cli.opt.workers": "number of parallel workers (sets subtask count AND concurrency; lets a single agent fan out)",
 
   // agents
   "agent.exists": 'An agent named "{name}" already exists. Use remove-agent first to replace it.',
@@ -160,7 +161,7 @@ const en: Catalog = {
     "  /plan            switch to plan mode (read-only)",
     "  /review          switch to review mode (confirm each action)",
     "  /bypass          switch to bypass mode (auto-approve)",
-    "  /swarm <task>    run a task as a parallel swarm (needs 3+ agents)",
+    "  /swarm [--workers N] <task>   run a task as a parallel swarm (1+ agents; --workers fans out)",
     "  /allow <glob>    add a path glob to the allow-list",
     "  /allow           show the current allow-list and mode",
     "  /reset           clear the conversation history",
@@ -373,6 +374,7 @@ const ptBR: Catalog = {
   "cli.arg.swarmTask": "tarefa de alto nível para dividir entre os agentes",
   "cli.opt.agents": "nomes de agentes separados por vírgula (padrão: todos)",
   "cli.opt.maxSubtasks": "número máximo de subtarefas paralelas",
+  "cli.opt.workers": "número de workers paralelos (define quantidade de subtarefas E concorrência; deixa 1 agente paralelizar)",
 
   "agent.exists": 'Já existe um agente chamado "{name}". Use remove-agent antes para substituí-lo.',
   "agent.needBaseUrl": 'O provider "{provider}" exige --base-url.',
@@ -458,7 +460,7 @@ const ptBR: Catalog = {
     "  /plan            muda para o modo plan (somente leitura)",
     "  /review          muda para o modo review (confirma cada ação)",
     "  /bypass          muda para o modo bypass (aprova automaticamente)",
-    "  /swarm <task>    roda a tarefa como swarm paralelo (requer 3+ agentes)",
+    "  /swarm [--workers N] <task>   roda a tarefa como swarm paralelo (1+ agentes; --workers paraleliza)",
     "  /allow <glob>    adiciona um glob de caminho à allow-list",
     "  /allow           mostra a allow-list e o modo atuais",
     "  /reset           limpa o histórico da conversa",

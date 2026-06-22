@@ -11,6 +11,7 @@ import type { PolypusConfig } from "../../core/config/schema.js";
 export interface SwarmCliOptions {
   agents?: string;
   maxSubtasks?: string;
+  workers?: string;
 }
 
 /** Minimum number of configured agents for swarm mode to be worthwhile. */
@@ -25,6 +26,12 @@ export interface SwarmSessionOptions {
   /** Subset of agent names to use; defaults to all configured agents. */
   agents?: string[];
   maxSubtasks?: number;
+  /**
+   * Fan-out: number of parallel workers. Sets BOTH the subtask count and the
+   * concurrency, so a single agent can run N subtasks at once (overrides the
+   * per-endpoint concurrency cap). `--max-subtasks` still wins for the count.
+   */
+  workers?: number;
   /** Workspace to run in; defaults to the current working directory. */
   workspace?: string;
 }
@@ -82,8 +89,9 @@ export async function runSwarmSession(
       agents: resolved,
       allow: config.permissions.allow,
       deny: config.permissions.deny,
-      maxSubtasks: opts.maxSubtasks,
-      concurrency: recommendConcurrency(resolved),
+      maxSubtasks: opts.maxSubtasks ?? opts.workers,
+      // --workers overrides the per-endpoint cap so 1 agent fans out to N parallel workers.
+      concurrency: opts.workers ?? recommendConcurrency(resolved),
       idleTimeoutMs: idleTimeoutMs(),
       signal: controller.signal,
       events: {
@@ -130,5 +138,6 @@ export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> 
       ? opts.agents.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined,
     maxSubtasks: opts.maxSubtasks ? Number(opts.maxSubtasks) : undefined,
+    workers: opts.workers ? Number(opts.workers) : undefined,
   });
 }

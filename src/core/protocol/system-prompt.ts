@@ -32,6 +32,7 @@ function basePreamble(ctx: PromptContext): string {
     "- YES, you ARE allowed to create, read, and modify files in this workspace.",
     "- YES, you ARE allowed to run shell commands (subject to the permission mode above).",
     "- Do not ask for permission and do not say you cannot edit files — you can. Just emit the tool calls.",
+    "- Do NOT start long-running servers or watchers (e.g. `npm run dev`, `npm start`, `start /B node …`, `vite`): they never return, block the run and stall you. To verify, run one-shot checks like `npm run build`, `npm test` or `npm run typecheck`.",
     "- Make the changes directly. When the task is fully done, call the `finish` tool with a short summary.",
     t("prompt.language", { language: LOCALE_NAMES[getLocale()] }),
     ctx.projectInstructions ? `\n${t("prompt.projectInstructions")}\n\n${ctx.projectInstructions}` : "",

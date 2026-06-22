@@ -13,7 +13,7 @@ export interface ReplContext {
   /** Run a task with the currently active agent. */
   runTask(task: string): Promise<void>;
   /** Run a task as a swarm across the configured agents (parallel worktrees). */
-  runSwarm(task: string): Promise<void>;
+  runSwarm(task: string, opts?: { workers?: number }): Promise<void>;
   /** Current in-memory config. */
   getConfig(): PolypusConfig;
   /** Re-read config from disk (after add/remove). */
@@ -123,11 +123,24 @@ async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promis
 
     case "swarm": {
       if (!arg) {
-        console.log(pc.yellow(t("repl.needName", { usage: "/swarm <task>" })));
+        console.log(pc.yellow(t("repl.needName", { usage: "/swarm [--workers N] <task>" })));
+        return;
+      }
+      // Parse `--workers N` (or --workers=N) out of the line; the rest is the task.
+      let workers: number | undefined;
+      const swarmTask = arg
+        .replace(/--workers[=\s]+(\d+)/i, (_, n: string) => {
+          workers = Number(n);
+          return "";
+        })
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!swarmTask) {
+        console.log(pc.yellow(t("repl.needName", { usage: "/swarm [--workers N] <task>" })));
         return;
       }
       try {
-        await ctx.runSwarm(arg);
+        await ctx.runSwarm(swarmTask, { workers });
       } catch (e) {
         console.log(pc.red(`✗ ${(e as Error).message}`));
       }
