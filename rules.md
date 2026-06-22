@@ -50,6 +50,8 @@
 - PRs pequenos e focados, com Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).
 - Atualizar o `CHANGELOG.md` (seção `Unreleased`) quando o comportamento muda.
 - Manter `context.md` em dia (`npm run context` regenera o mapa de módulos).
+- **Geração de tarefas:** Ao implementar uma issue, use a skill [`skills/task-generation.md`](.poly/skills/task-generation.md) para quebrar o PRD em tarefas independentes e paralelizáveis, documentando o progresso no PR.
+
 
 ## NÃO esperado
 

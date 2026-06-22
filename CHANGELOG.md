@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.22] - 2026-06-22
+
+### Changed
+- Criar um skill de gerar as tasks a partir do PRD (#83)
+
+### Added
+- **Task Generation Skill:** Nova skill `.poly/skills/task-generation.md` para quebrar um PRD em tarefas independentes e paralelizáveis, documentando o progresso no PR com um checklist e métricas de tokens e custo. (#83)
+
 ## [0.4.21] - 2026-06-22
 
 ### Changed
@@ -347,7 +355,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.21...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.22...HEAD
+[0.4.22]: https://github.com/GaberRB/polypus/compare/v0.4.21...v0.4.22
 [0.4.21]: https://github.com/GaberRB/polypus/compare/v0.4.20...v0.4.21
 [0.4.20]: https://github.com/GaberRB/polypus/compare/v0.4.19...v0.4.20
 [0.4.19]: https://github.com/GaberRB/polypus/compare/v0.4.18...v0.4.19

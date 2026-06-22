@@ -48,6 +48,7 @@ issue → (PRD bot ao rotular accepted) → branch feat|fix|docs/<n>-<slug>
 | [`skills/release-npm.md`](skills/release-npm.md) | Versionar, CHANGELOG, GitHub Release → publish no npm |
 | [`skills/github-pages.md`](skills/github-pages.md) | Atualizar o site (`docs/`): i18n, diagramas interativos |
 | [`skills/coding.md`](skills/coding.md) | Padrões técnicos: tool nova, comando, i18n, testes, providers |
+| [`skills/task-generation.md`](skills/task-generation.md) | Quebrar PRD em tarefas paralelizáveis e documentar no PR |
 
 ## Ambiente
 
