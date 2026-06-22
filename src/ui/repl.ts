@@ -26,12 +26,27 @@ export interface ReplContext {
  * /add wizard use @clack/prompts, which needs sole control of stdin. Keeping a
  * persistent readline open across those would corrupt stdin and drop the REPL.
  */
+const MODES: PermissionMode[] = ["plan", "review", "bypass"];
+
+function cycleMode(current: PermissionMode, direction: number): PermissionMode {
+  const currentIndex = MODES.indexOf(current);
+  const nextIndex = (currentIndex + direction + MODES.length) % MODES.length;
+  return MODES[nextIndex]!;
+}
+
 export async function startRepl(ctx: ReplContext): Promise<void> {
   for (;;) {
     const line = await readLine(promptLabel(ctx.session.mode));
     if (line === null) break; // EOF / Ctrl+D
     const trimmed = line.trim();
     if (!trimmed) continue;
+
+    // Handle Shift+Tab shortcut to cycle modes.
+    if (trimmed === "\x1b[Z") {
+      ctx.session.mode = cycleMode(ctx.session.mode, 1);
+      console.log(pc.dim(t("repl.modeChanged", { mode: ctx.session.mode })));
+      continue;
+    }
 
     if (!trimmed.startsWith("/")) {
       await ctx.runTask(trimmed);
