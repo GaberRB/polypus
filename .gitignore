@@ -4,5 +4,4 @@ dist/
 .DS_Store
 .env
 .polypus/
-.poly/
 coverage/

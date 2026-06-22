@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.21] - 2026-06-22
+
+### Changed
+- The project's `.poly/` workspace (agent operating instructions + skills) is now
+  **tracked in git** instead of gitignored. As the scaffold README says, you can
+  commit `.poly/` to standardize how AI agents work in the repo — and it means
+  skills the autonomous agent creates under `.poly/skills/` become real, reviewable
+  changes (a `.poly`-only run no longer shows up as "no changes"). Only `.poly/`
+  was un-ignored; `.polypus/` stays ignored. (#83 follow-up)
+
 ## [0.4.20] - 2026-06-22
 
 ### Changed
@@ -337,7 +347,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.20...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.21...HEAD
+[0.4.21]: https://github.com/GaberRB/polypus/compare/v0.4.20...v0.4.21
 [0.4.20]: https://github.com/GaberRB/polypus/compare/v0.4.19...v0.4.20
 [0.4.19]: https://github.com/GaberRB/polypus/compare/v0.4.18...v0.4.19
 [0.4.18]: https://github.com/GaberRB/polypus/compare/v0.4.17...v0.4.18
