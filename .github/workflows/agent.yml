@@ -61,8 +61,8 @@ jobs:
             --api-key '${OPENROUTER_API_KEY}' --set-default
       - name: Estimate effort/cost and ask for approval
         run: |
-          gh issue view "$ISSUE" --json title -q .title > issue-title.txt
-          gh issue view "$ISSUE" --json body  -q .body  > issue-body.txt
+          gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --json title -q .title > issue-title.txt
+          gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --json body  -q .body  > issue-body.txt
           { echo "Implement GitHub issue #$ISSUE: $(cat issue-title.txt)"; echo; cat issue-body.txt; } > task.md
           node dist/index.js estimate "$(cat task.md)" --json > est.json || echo '{}' > est.json
           rm -f issue-title.txt issue-body.txt task.md
@@ -87,7 +87,7 @@ jobs:
           ].join("\n");
           fs.writeFileSync("comment.md", body);
           NODE
-          gh issue comment "$ISSUE" --body-file comment.md
+          gh issue comment "$ISSUE" -R "$GITHUB_REPOSITORY" --body-file comment.md
           rm -f est.json comment.md
 
   # 2) Implement — only when the repo OWNER comments `/polypus approve`.
@@ -107,7 +107,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Acknowledge the approval
-        run: gh issue comment "$ISSUE" --body "✅ Aprovado por @${{ github.event.comment.user.login }} — implementando…"
+        # Runs before checkout, so gh can't infer the repo from a git remote —
+        # point it at the repository explicitly.
+        run: gh issue comment "$ISSUE" -R "$GITHUB_REPOSITORY" --body "✅ Aprovado por @${{ github.event.comment.user.login }} — implementando…"
 
       - uses: actions/checkout@v6
         with:
@@ -126,8 +128,8 @@ jobs:
 
       - name: Run Polypus headless to implement the issue
         run: |
-          gh issue view "$ISSUE" --json title -q .title > issue-title.txt
-          gh issue view "$ISSUE" --json body  -q .body  > issue-body.txt
+          gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --json title -q .title > issue-title.txt
+          gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --json body  -q .body  > issue-body.txt
           {
             echo "Implement GitHub issue #$ISSUE: $(cat issue-title.txt)"
             echo
@@ -150,7 +152,7 @@ jobs:
         id: changes
         run: |
           if [ -z "$(git status --porcelain)" ]; then
-            gh issue comment "$ISSUE" --body "🤖 Polypus ran but produced no tracked changes for this issue."
+            gh issue comment "$ISSUE" -R "$GITHUB_REPOSITORY" --body "🤖 Polypus ran but produced no tracked changes for this issue."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -174,7 +176,7 @@ jobs:
       - name: Prepare release (patch bump + changelog + context)
         if: steps.changes.outputs.changed == 'true'
         run: |
-          TITLE=$(gh issue view "$ISSUE" --json title -q .title)
+          TITLE=$(gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --json title -q .title)
           node scripts/prepare-release.mjs "$TITLE" "$ISSUE"
           npm run context
 
@@ -183,7 +185,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.POLYPUS_PR_TOKEN || github.token }}
         run: |
-          TITLE=$(gh issue view "$ISSUE" --json title -q .title)
+          TITLE=$(gh issue view "$ISSUE" -R "$GITHUB_REPOSITORY" --json title -q .title)
           BRANCH="polypus/issue-$ISSUE"
           git config user.name "polypus-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -194,10 +196,10 @@ jobs:
           git push -u origin "$BRANCH"
           VERSION=$(node -p "require('./package.json').version")
           BODY=$(printf 'Autonomous implementation by Polypus for #%s, approved via comment and gated on the local CI.\n\nModel: `%s`. Includes a patch bump to **v%s** + CHANGELOG. **Merging this PR auto-releases v%s to npm.**\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$VERSION" "$VERSION" "$ISSUE")
-          if gh pr create --base main --head "$BRANCH" --title "feat: $TITLE (Closes #$ISSUE)" --body "$BODY"; then
+          if gh pr create -R "$GITHUB_REPOSITORY" --base main --head "$BRANCH" --title "feat: $TITLE (Closes #$ISSUE)" --body "$BODY"; then
             echo "✓ Pull request opened."
           else
             COMPARE="${{ github.server_url }}/${{ github.repository }}/compare/main...$BRANCH?expand=1"
             echo "::warning::Could not open the PR automatically — posting the branch link on the issue."
-            gh issue comment "$ISSUE" --body "🤖 Polypus pushed an implementation to \`$BRANCH\` (CI gate passed) but couldn't open the PR automatically. Open it here: $COMPARE"
+            gh issue comment "$ISSUE" -R "$GITHUB_REPOSITORY" --body "🤖 Polypus pushed an implementation to \`$BRANCH\` (CI gate passed) but couldn't open the PR automatically. Open it here: $COMPARE"
           fi
