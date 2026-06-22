@@ -52,6 +52,31 @@ describe("resolveMentions", () => {
     expect(res.task).toBe("just do the thing");
   });
 
+  it("lists the current directory for a bare @ mention", async () => {
+    const ws = workspace();
+    writeFileSync(join(ws, "top.ts"), "t\n");
+    mkdirSync(join(ws, "lib"));
+    const res = await resolveMentions("what's in @ here?", policy(ws));
+    expect(res.injected).toEqual(["."]);
+    expect(res.task).toContain("top.ts");
+    expect(res.task).toContain("lib/");
+  });
+
+  it("treats a trailing bare @ as a current-directory listing", async () => {
+    const ws = workspace();
+    writeFileSync(join(ws, "only.ts"), "x\n");
+    const res = await resolveMentions("list everything @", policy(ws));
+    expect(res.injected).toEqual(["."]);
+    expect(res.task).toContain("only.ts");
+  });
+
+  it("does not treat an email-like @ as a mention", async () => {
+    const ws = workspace();
+    const res = await resolveMentions("ping me at user@host", policy(ws));
+    expect(res.injected).toEqual([]);
+    expect(res.task).toBe("ping me at user@host");
+  });
+
   it("skips a path denied by the allow/deny-list", async () => {
     const ws = workspace();
     writeFileSync(join(ws, "secret.env"), "TOKEN=abc\n");
