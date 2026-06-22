@@ -1,27 +1,30 @@
 name: agent
 
-# Autonomous implementation: when an issue is labeled `polypus-go`, Polypus first
-# ESTIMATES the effort/cost and posts it as an issue comment, then waits for your
-# APPROVAL (the `implement` job uses an Environment gate). Once approved, it runs
-# headless, gates on the local CI, patch-bumps the version, and opens a PR.
+# Autonomous implementation, gated by an admin comment.
+#   1. Label an issue `polypus-go` → the `estimate` job posts the cost estimate
+#      as an issue comment and asks the owner to approve.
+#   2. The repo OWNER comments `/polypus approve` on the issue → the `implement`
+#      job runs: implements headless, gates on the local CI, patch-bumps the
+#      version, and opens a PR (which, on merge, auto-releases to npm).
+#
+# Only the OWNER's `/polypus approve` comment can start an implementation — no
+# Environment/reviewer config needed. There is no spend cap: the estimate plus
+# your approval comment are the control.
 #
 # Setup:
-#   - Secret  OPENROUTER_API_KEY  — model API key (required).
-#   - Secret  POLYPUS_PR_TOKEN    — optional PAT (repo scope) to open the PR / trigger publish.
+#   - Secret OPENROUTER_API_KEY — model API key (required).
+#   - Secret POLYPUS_PR_TOKEN   — PAT (repo scope) to open the PR / trigger publish.
 #   - Variable POLYPUS_AGENT_MODEL — OpenRouter model id (optional; cheap default below).
-#   - Environment `autonomous-agent` with required reviewers — this is the APPROVAL gate.
-#       Settings → Environments → New environment → add yourself as a required reviewer.
-#       Without reviewers the implement job runs immediately (no gate).
-#   - Create a `polypus-go` label and add it to an issue (keep `accepted` too).
-# There is intentionally no spend cap: the estimate + your approval are the control.
 
 on:
   issues:
     types: [labeled]
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue number to implement"
+        description: "Issue number to estimate"
         required: true
 
 permissions:
@@ -33,14 +36,13 @@ env:
   AGENT_MODEL: ${{ vars.POLYPUS_AGENT_MODEL || 'deepseek/deepseek-chat-v3-0324' }}
 
 jobs:
-  # 1) Estimate the effort/cost and post it on the issue. Outputs the step budget.
+  # 1) Estimate the effort/cost and ask the owner to approve via a comment.
   estimate:
     if: >
       github.repository == 'GaberRB/polypus' &&
-      (github.event_name == 'workflow_dispatch' || github.event.label.name == 'polypus-go')
+      ((github.event_name == 'issues' && github.event.label.name == 'polypus-go') ||
+       github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    outputs:
-      maxsteps: ${{ steps.est.outputs.maxsteps }}
     env:
       ISSUE: ${{ github.event.issue.number || github.event.inputs.issue }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
@@ -57,26 +59,17 @@ jobs:
         run: |
           node dist/index.js add-agent ci --provider openrouter --model "$AGENT_MODEL" \
             --api-key '${OPENROUTER_API_KEY}' --set-default
-      - name: Estimate effort/cost and comment on the issue
-        id: est
+      - name: Estimate effort/cost and ask for approval
         run: |
           gh issue view "$ISSUE" --json title -q .title > issue-title.txt
           gh issue view "$ISSUE" --json body  -q .body  > issue-body.txt
-          {
-            echo "Implement GitHub issue #$ISSUE: $(cat issue-title.txt)"
-            echo
-            cat issue-body.txt
-          } > task.md
+          { echo "Implement GitHub issue #$ISSUE: $(cat issue-title.txt)"; echo; cat issue-body.txt; } > task.md
           node dist/index.js estimate "$(cat task.md)" --json > est.json || echo '{}' > est.json
           rm -f issue-title.txt issue-body.txt task.md
           node <<'NODE'
           const fs = require("fs");
           let e = {};
           try { e = (JSON.parse(fs.readFileSync("est.json", "utf8")).estimate) || {}; } catch {}
-          const steps = Number(e.estimatedSteps) || 30;
-          // Generous step budget derived from the estimate (no spend cap by design).
-          const maxsteps = Math.min(250, Math.max(60, steps * 2));
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `maxsteps=${maxsteps}\n`);
           const body = [
             "🧮 **Estimativa do Polypus** (modelo `" + (process.env.AGENT_MODEL || "") + "`)",
             "",
@@ -89,27 +82,33 @@ jobs:
             e.rationale ? "\n> " + e.rationale : "",
             e.risks ? "\n> ⚠ " + e.risks : "",
             "",
-            "▶ Para continuar, **aprove o job `implement`** na execução desta Action " +
-              "(" + process.env.RUN_URL + "). Sem aprovação, nada é implementado.",
+            "▶ Para **aprovar e implementar**, comente **`/polypus approve`** nesta issue.",
+            "_Apenas o dono do repositório (admin) pode aprovar. Sem aprovação, nada é implementado._",
           ].join("\n");
           fs.writeFileSync("comment.md", body);
           NODE
           gh issue comment "$ISSUE" --body-file comment.md
           rm -f est.json comment.md
-        env:
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-  # 2) Implement — gated by the `autonomous-agent` Environment (manual approval).
+  # 2) Implement — only when the repo OWNER comments `/polypus approve`.
   implement:
-    needs: estimate
-    environment: autonomous-agent
+    if: >
+      github.repository == 'GaberRB/polypus' &&
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      github.event.comment.author_association == 'OWNER' &&
+      startsWith(github.event.comment.body, '/polypus approve') &&
+      contains(github.event.issue.labels.*.name, 'polypus-go')
     runs-on: ubuntu-latest
     env:
-      ISSUE: ${{ github.event.issue.number || github.event.inputs.issue }}
-      MAX_STEPS: ${{ needs.estimate.outputs.maxsteps }}
+      ISSUE: ${{ github.event.issue.number }}
+      MAX_STEPS: ${{ vars.POLYPUS_MAX_STEPS || '120' }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Acknowledge the approval
+        run: gh issue comment "$ISSUE" --body "✅ Aprovado por @${{ github.event.comment.user.login }} — implementando…"
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -151,7 +150,7 @@ jobs:
         id: changes
         run: |
           if [ -z "$(git status --porcelain)" ]; then
-            gh issue comment "$ISSUE" --body "🤖 Polypus ran but produced no changes for this issue."
+            gh issue comment "$ISSUE" --body "🤖 Polypus ran but produced no tracked changes for this issue."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -178,7 +177,6 @@ jobs:
           TITLE=$(gh issue view "$ISSUE" --json title -q .title)
           node scripts/prepare-release.mjs "$TITLE" "$ISSUE"
           npm run context
-          echo "Prepared $(node -p "require('./package.json').version") — merging the PR will auto-release to npm."
 
       - name: Open the pull request
         if: steps.changes.outputs.changed == 'true'
@@ -195,11 +193,11 @@ jobs:
             -m "Autonomous implementation by Polypus (model: $AGENT_MODEL)."
           git push -u origin "$BRANCH"
           VERSION=$(node -p "require('./package.json').version")
-          BODY=$(printf 'Autonomous implementation by Polypus for #%s, generated headlessly and gated on the local CI (typecheck/build/test).\n\nModel: `%s`. Includes a patch bump to **v%s** + CHANGELOG. **Merging this PR auto-releases v%s to npm** (auto-release.yml → release.yml). Please review before merging.\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$VERSION" "$VERSION" "$ISSUE")
+          BODY=$(printf 'Autonomous implementation by Polypus for #%s, approved via comment and gated on the local CI.\n\nModel: `%s`. Includes a patch bump to **v%s** + CHANGELOG. **Merging this PR auto-releases v%s to npm.**\n\nCloses #%s' "$ISSUE" "$AGENT_MODEL" "$VERSION" "$VERSION" "$ISSUE")
           if gh pr create --base main --head "$BRANCH" --title "feat: $TITLE (Closes #$ISSUE)" --body "$BODY"; then
             echo "✓ Pull request opened."
           else
             COMPARE="${{ github.server_url }}/${{ github.repository }}/compare/main...$BRANCH?expand=1"
             echo "::warning::Could not open the PR automatically — posting the branch link on the issue."
-            gh issue comment "$ISSUE" --body "🤖 Polypus pushed an implementation to \`$BRANCH\` and it passed the CI gate, but the workflow couldn't open the PR automatically. Open it here: $COMPARE"
+            gh issue comment "$ISSUE" --body "🤖 Polypus pushed an implementation to \`$BRANCH\` (CI gate passed) but couldn't open the PR automatically. Open it here: $COMPARE"
           fi
