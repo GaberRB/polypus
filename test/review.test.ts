@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildReviewPrompt, clampDiff, reviewDiff, MAX_DIFF_CHARS } from "../src/core/agent/review.js";
+import {
+  buildReviewPrompt,
+  clampDiff,
+  reviewDiff,
+  reviewDiffStructured,
+  parseStructuredReview,
+  MAX_DIFF_CHARS,
+} from "../src/core/agent/review.js";
 import type { ChatRequest, ChatResponse, Provider } from "../src/core/providers/types.js";
 
 class StubProvider implements Provider {
@@ -60,5 +67,46 @@ describe("reviewDiff", () => {
     const systems = provider.last?.messages.filter((m) => m.role === "system") ?? [];
     expect(systems.length).toBe(2);
     expect(systems.some((m) => m.content.includes("no telemetry"))).toBe(true);
+  });
+});
+
+describe("parseStructuredReview", () => {
+  it("parses a clean JSON object", () => {
+    const r = parseStructuredReview('{"blocking":[{"file":"x.ts","issue":"npe"}],"warnings":[],"suggestions":[]}');
+    expect(r.blocking).toEqual([{ file: "x.ts", issue: "npe" }]);
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("tolerates code fences and surrounding prose", () => {
+    const r = parseStructuredReview('Here you go:\n```json\n{"blocking":[{"issue":"bug"}]}\n```\nthanks');
+    expect(r.blocking).toEqual([{ issue: "bug" }]);
+  });
+
+  it("coerces bare strings and `message` keys into findings", () => {
+    const r = parseStructuredReview('{"blocking":["plain bug","  ",{"message":"m","file":"a.ts"}]}');
+    expect(r.blocking).toEqual([{ issue: "plain bug" }, { file: "a.ts", issue: "m" }]);
+  });
+
+  it("returns empty groups when there is no JSON", () => {
+    expect(parseStructuredReview("no json here")).toEqual({ blocking: [], warnings: [], suggestions: [] });
+  });
+
+  it("returns empty groups on malformed JSON", () => {
+    expect(parseStructuredReview("{ blocking: [")).toEqual({ blocking: [], warnings: [], suggestions: [] });
+  });
+});
+
+describe("reviewDiffStructured", () => {
+  it("parses the model's JSON into typed findings", async () => {
+    const provider = new StubProvider('{"blocking":[{"file":"x.ts","issue":"npe"}]}');
+    const r = await reviewDiffStructured(diff, meta, provider);
+    expect(r.blocking).toEqual([{ file: "x.ts", issue: "npe" }]);
+  });
+
+  it("short-circuits an empty diff without calling the model", async () => {
+    const provider = new StubProvider('{"blocking":[{"issue":"x"}]}');
+    const r = await reviewDiffStructured("   ", meta, provider);
+    expect(provider.calls).toBe(0);
+    expect(r).toEqual({ blocking: [], warnings: [], suggestions: [] });
   });
 });
