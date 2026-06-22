@@ -64,6 +64,8 @@ const en: Catalog = {
   "cli.opt.verify": "after the agent finishes, run project checks (typecheck/build/test) and iterate until they pass",
   "cli.opt.budget": "stop the run when the estimated session cost reaches this USD amount (OpenRouter pricing)",
   "cli.cmd.usage": "Show token/cost analytics aggregated per day",
+  "cli.cmd.estimate": "Estimate the effort/cost to implement a task (no changes made)",
+  "cli.arg.estimateTask": "task to estimate",
   "cli.cmd.sessions": "List saved sessions that can be resumed",
   "cli.opt.continue": "resume the most recent saved session",
   "cli.opt.resume": "resume a specific saved session by id",
@@ -119,6 +121,13 @@ const en: Catalog = {
   "usage.empty": "No usage recorded yet. Run a task to start tracking.",
   "usage.total": "total",
   "usage.runs": "runs",
+
+  // estimate
+  "estimate.header": "Effort estimate:",
+  "estimate.complexity": "complexity",
+  "estimate.steps": "steps",
+  "estimate.tokens": "tokens",
+  "estimate.cost": "estimated cost",
 
   // sessions
   "sessions.header": "Saved sessions (most recent first):",
@@ -355,6 +364,8 @@ const ptBR: Catalog = {
   "cli.opt.verify": "após o agente terminar, roda as checagens do projeto (typecheck/build/test) e itera até passar",
   "cli.opt.budget": "interrompe a execução quando o custo estimado da sessão atingir este valor em USD (preços do OpenRouter)",
   "cli.cmd.usage": "Mostra analytics de tokens/custo agregados por dia",
+  "cli.cmd.estimate": "Estima o esforço/custo para implementar uma tarefa (sem alterar nada)",
+  "cli.arg.estimateTask": "tarefa a estimar",
   "cli.cmd.sessions": "Lista as sessões salvas que podem ser retomadas",
   "cli.opt.continue": "retoma a sessão salva mais recente",
   "cli.opt.resume": "retoma uma sessão salva específica pelo id",
@@ -408,6 +419,13 @@ const ptBR: Catalog = {
   "usage.empty": "Nenhum uso registrado ainda. Rode uma tarefa para começar a medir.",
   "usage.total": "total",
   "usage.runs": "execuções",
+
+  // estimate
+  "estimate.header": "Estimativa de esforço:",
+  "estimate.complexity": "complexidade",
+  "estimate.steps": "passos",
+  "estimate.tokens": "tokens",
+  "estimate.cost": "custo estimado",
 
   // sessions
   "sessions.header": "Sessões salvas (mais recentes primeiro):",
