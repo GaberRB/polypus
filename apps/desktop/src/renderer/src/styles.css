@@ -271,3 +271,89 @@ body {
   word-break: break-word;
   font-family: inherit;
 }
+
+/* View tabs + shared button */
+.tabs {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.tab {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab-on {
+  background: var(--panel-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn {
+  background: rgba(167, 139, 250, 0.2);
+  color: var(--violet);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* RAG panel (#121) */
+.rag {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 18px;
+  gap: 12px;
+}
+
+.rag-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rag-title {
+  font-weight: 600;
+}
+
+.rag-hint {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.rag-search {
+  display: flex;
+  gap: 8px;
+}
+
+.rag-search .composer-input {
+  flex: 1;
+}
+
+.rag-out {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--panel-2);
+}

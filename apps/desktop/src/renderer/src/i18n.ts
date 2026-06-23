@@ -25,7 +25,16 @@ export type StringKey =
   | "mode.review.hint"
   | "mode.bypass.hint"
   | "settings.theme"
-  | "settings.lang";
+  | "settings.lang"
+  | "tab.chat"
+  | "tab.rag"
+  | "rag.title"
+  | "rag.reindex"
+  | "rag.indexing"
+  | "rag.searchPlaceholder"
+  | "rag.search"
+  | "rag.searching"
+  | "rag.hint";
 
 const STRINGS: Record<Lang, Record<StringKey, string>> = {
   "pt-BR": {
@@ -49,6 +58,15 @@ const STRINGS: Record<Lang, Record<StringKey, string>> = {
     "mode.bypass.hint": "aplica tudo sem perguntar",
     "settings.theme": "Tema",
     "settings.lang": "Idioma",
+    "tab.chat": "Chat",
+    "tab.rag": "Índice (RAG)",
+    "rag.title": "Índice semântico do projeto",
+    "rag.reindex": "Reindexar",
+    "rag.indexing": "indexando…",
+    "rag.searchPlaceholder": "buscar por significado… (ex.: onde validamos permissões)",
+    "rag.search": "Buscar",
+    "rag.searching": "buscando…",
+    "rag.hint": "Reindexe e busque trechos relevantes do repositório por significado.",
   },
   en: {
     "nav.projects": "Projects",
@@ -71,6 +89,15 @@ const STRINGS: Record<Lang, Record<StringKey, string>> = {
     "mode.bypass.hint": "applies everything without asking",
     "settings.theme": "Theme",
     "settings.lang": "Language",
+    "tab.chat": "Chat",
+    "tab.rag": "Index (RAG)",
+    "rag.title": "Project semantic index",
+    "rag.reindex": "Reindex",
+    "rag.indexing": "indexing…",
+    "rag.searchPlaceholder": "search by meaning… (e.g. where do we validate permissions)",
+    "rag.search": "Search",
+    "rag.searching": "searching…",
+    "rag.hint": "Reindex and search the repo for relevant chunks by meaning.",
   },
 };
 

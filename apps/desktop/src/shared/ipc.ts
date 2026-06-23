@@ -14,6 +14,8 @@ export const IPC = {
   estimate: "polypus:estimate",
   review: "polypus:review",
   run: "polypus:run",
+  index: "polypus:index",
+  retrieve: "polypus:retrieve",
 } as const;
 
 /** Every bridge call resolves to a Result so the renderer never sees a throw. */

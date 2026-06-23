@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { Chat } from "./Chat";
 import { ModeSelector } from "./ModeSelector";
+import { RagPanel } from "./RagPanel";
 import { useSettings } from "./settings";
 import type { Mode } from "../../shared/ipc";
+
+type View = "chat" | "rag";
 
 /**
  * Cowork app shell — three panes (sidebar · main · context), matching the
@@ -14,6 +17,7 @@ export function App(): JSX.Element {
   const version = window.polypus?.version ?? "0.1.0";
   const bridgeReady = window.polypus?.ping?.() === "pong";
   const [mode, setMode] = useState<Mode>("review");
+  const [view, setView] = useState<View>("chat");
 
   return (
     <div className="shell">
@@ -56,10 +60,23 @@ export function App(): JSX.Element {
       <main className="main">
         <header className="main-head">
           <span className="prompt">🐙 polypus</span>
-          <span className="muted">› {t("header.chat")}</span>
+          <span className="tabs">
+            <button
+              className={`tab${view === "chat" ? " tab-on" : ""}`}
+              onClick={() => setView("chat")}
+            >
+              {t("tab.chat")}
+            </button>
+            <button
+              className={`tab${view === "rag" ? " tab-on" : ""}`}
+              onClick={() => setView("rag")}
+            >
+              {t("tab.rag")}
+            </button>
+          </span>
         </header>
 
-        <Chat mode={mode} />
+        {view === "chat" ? <Chat mode={mode} /> : <RagPanel />}
       </main>
 
       <aside className="context">
