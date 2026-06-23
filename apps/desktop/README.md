@@ -40,6 +40,19 @@ npm run build      # type-checks + bundles main/preload/renderer into out/
 npm run preview    # preview the production build
 ```
 
+## Ponte core↔UI (#114)
+
+O renderer fala com o core via `window.polypus` (preload, `contextIsolation`). A v1
+da ponte reusa os comandos **headless JSON**: o processo main spawna o CLI do
+Polypus e devolve o JSON parseado. Operações: `estimate`, `review`, `run`.
+
+- Aponte o CLI com `POLYPUS_CLI` (ex.: `POLYPUS_CLI=../../dist/index.js`) para rodar
+  via Node; sem isso, usa `polypus` no PATH.
+- Toda chamada resolve para um `Result<T>` (`{ ok, data } | { ok:false, error }`),
+  então o renderer nunca vê exceção.
+- Streaming de tokens ao vivo e as demais superfícies (agents, sessions, usage,
+  retrieval) chegam quando `src/core` for consumido como biblioteca.
+
 ## Notas
 
 - `contextIsolation` ligado; o renderer só fala com o main via o bridge tipado em
