@@ -3,8 +3,12 @@ import { readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { configDir } from "./store.js";
 
-const RECENT_PROJECTS_PATH = join(configDir(), "recent-projects.json");
 const MAX_RECENT_PROJECTS = 20;
+
+// Resolved lazily so it honours POLYPUS_HOME at call time (and stays testable).
+function recentProjectsPath(): string {
+  return join(configDir(), "recent-projects.json");
+}
 
 export interface RecentProject {
   path: string;
@@ -12,21 +16,18 @@ export interface RecentProject {
 }
 
 async function loadRecentProjects(): Promise<RecentProject[]> {
-  if (!existsSync(RECENT_PROJECTS_PATH)) return [];
+  const file = recentProjectsPath();
+  if (!existsSync(file)) return [];
   try {
-    const data = await readFile(RECENT_PROJECTS_PATH, "utf8");
-    return JSON.parse(data);
+    const data = await readFile(file, "utf8");
+    return JSON.parse(data) as RecentProject[];
   } catch {
     return [];
   }
 }
 
 async function saveRecentProjects(projects: RecentProject[]): Promise<void> {
-  await writeFile(
-    RECENT_PROJECTS_PATH,
-    JSON.stringify(projects, null, 2) + "\n",
-    "utf8",
-  );
+  await writeFile(recentProjectsPath(), JSON.stringify(projects, null, 2) + "\n", "utf8");
 }
 
 export async function addRecentProject(path: string): Promise<void> {

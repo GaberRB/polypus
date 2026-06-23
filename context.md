@@ -59,7 +59,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_85 módulos em `src/`._
+_87 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -139,6 +139,7 @@ _85 módulos em `src/`._
 ### `src/core/providers`
 - `anthropic.ts`
 - `defaults.ts`
+- `health.ts`
 - `ollama.ts` — Discovery helpers for a local Ollama instance.
 - `openai-compatible.ts`
 - `openrouter.ts` — Discovery + filtering for OpenRouter's public model catalog.
@@ -167,6 +168,9 @@ _85 módulos em `src/`._
 - `search-file.ts`
 - `types.ts`
 - `write-file.ts`
+
+### `src/core/util`
+- `git-info.ts`
 
 ### `src/ui`
 - `banner.ts`
