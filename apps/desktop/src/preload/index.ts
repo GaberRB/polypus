@@ -27,6 +27,12 @@ const api = {
   /** Run a task headless in the given permission mode (`polypus run --json`). */
   run: (task: string, mode: Mode): Promise<Result<RunResult>> =>
     ipcRenderer.invoke(IPC.run, task, mode),
+
+  /** Build/update the repo's semantic index (`polypus index`). Returns its status text. */
+  index: (dir?: string): Promise<Result<string>> => ipcRenderer.invoke(IPC.index, dir),
+  /** Query the index for relevant chunks (`polypus retrieve <query>`). */
+  retrieve: (query: string, dir?: string): Promise<Result<string>> =>
+    ipcRenderer.invoke(IPC.retrieve, query, dir),
 };
 
 export type PolypusApi = typeof api;

@@ -29,6 +29,27 @@ function runCli(args: string[]): Promise<Result<unknown>> {
   });
 }
 
+/**
+ * Run a CLI command that emits plain text (not JSON), e.g. `index`/`retrieve`.
+ * Returns stdout (or stderr, which is where `index` prints its status). Never rejects.
+ */
+function runCliText(args: string[], cwd?: string): Promise<Result<string>> {
+  return new Promise((resolve) => {
+    const { cmd, baseArgs } = cli();
+    execFile(
+      cmd,
+      [...baseArgs, ...args],
+      { cwd: cwd || process.cwd(), maxBuffer: 64 * 1024 * 1024 },
+      (err, stdout, stderr) => {
+        const out = (stdout?.trim() ? stdout : stderr) || "";
+        if (err && !out.trim()) resolve({ ok: false, error: err.message });
+        else if (err) resolve({ ok: false, error: out.trim() });
+        else resolve({ ok: true, data: out.trim() });
+      },
+    );
+  });
+}
+
 /** Wire the IPC handlers. Call once after the app is ready. */
 export function registerBridge(): void {
   ipcMain.handle(IPC.estimate, (_e, task: string) => runCli(["estimate", task, "--json"]));
@@ -37,4 +58,9 @@ export function registerBridge(): void {
     const m = mode === "plan" || mode === "review" || mode === "bypass" ? mode : "review";
     return runCli(["run", task, "--json", "--mode", m]);
   });
+  // RAG (#121): build/query the repo index for the given project dir.
+  ipcMain.handle(IPC.index, (_e, dir?: string) => runCliText(["index"], dir));
+  ipcMain.handle(IPC.retrieve, (_e, query: string, dir?: string) =>
+    runCliText(["retrieve", query], dir),
+  );
 }
