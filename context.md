@@ -168,6 +168,9 @@ _85 módulos em `src/`._
 - `types.ts`
 - `write-file.ts`
 
+### `src/core/util`
+- `git-info.ts`
+
 ### `src/ui`
 - `banner.ts`
 - `cancel.ts`
