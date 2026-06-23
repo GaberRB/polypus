@@ -59,7 +59,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_84 módulos em `src/`._
+_85 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -166,6 +166,9 @@ _84 módulos em `src/`._
 - `search-file.ts`
 - `types.ts`
 - `write-file.ts`
+
+### `src/core/util`
+- `git-info.ts`
 
 ### `src/ui`
 - `banner.ts`
