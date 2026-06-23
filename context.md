@@ -59,7 +59,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_76 módulos em `src/`._
+_84 módulos em `src/`._
 
 ### `src/cli`
 - `index.ts`
@@ -74,6 +74,8 @@ _76 módulos em `src/`._
 - `models.ts`
 - `prd.ts`
 - `remove-agent.ts`
+- `repo-index.ts`
+- `retrieve.ts`
 - `review.ts`
 - `run.ts`
 - `sessions.ts`
@@ -142,6 +144,13 @@ _76 módulos em `src/`._
 - `registry.ts`
 - `types.ts` — Unified chat/tool abstraction shared by every provider and both tool paths.
 
+### `src/core/retrieval`
+- `chunker.ts` — A contiguous slice of a file, the unit that gets embedded and retrieved.
+- `embedder.ts`
+- `indexer.ts`
+- `retriever.ts`
+- `store.ts`
+
 ### `src/core/scaffold`
 - `init.ts`
 - `templates.ts`
@@ -152,6 +161,7 @@ _76 módulos em `src/`._
 - `list-dir.ts`
 - `read-file.ts`
 - `registry.ts`
+- `retrieve.ts`
 - `run-command.ts`
 - `search-file.ts`
 - `types.ts`

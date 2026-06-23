@@ -51,6 +51,33 @@ export type Permissions = z.infer<typeof Permissions>;
 export const Locale = z.enum(["pt-BR", "en"]);
 export type Locale = z.infer<typeof Locale>;
 
+/**
+ * Embeddings backend used by the repository index (`polypus index` / retrieval).
+ * Only `ollama` and `openai-compatible` expose an embeddings endpoint — OpenRouter
+ * does not, so it is intentionally excluded here.
+ */
+export const EmbeddingsConfig = z.object({
+  provider: z.enum(["ollama", "openai-compatible"]),
+  /** Required for `openai-compatible`; defaults to the local Ollama URL otherwise. */
+  baseUrl: z.string().url().optional(),
+  /** Embedding model, e.g. "nomic-embed-text" (Ollama) or "text-embedding-3-small". */
+  model: z.string().min(1),
+  /** Prefer an env reference like "${OPENAI_API_KEY}". Ollama needs none. */
+  apiKey: z.string().optional(),
+});
+export type EmbeddingsConfig = z.infer<typeof EmbeddingsConfig>;
+
+/** Semantic-retrieval (RAG) settings for context selection. */
+export const RetrievalConfig = z.object({
+  /** When true, `polypus run` auto-injects the top matches for the task. Off by default. */
+  auto: z.boolean().default(false),
+  /** How many chunks to retrieve. */
+  topK: z.number().int().positive().max(50).default(6),
+  /** Cap on injected characters so retrieval never blows the context window. */
+  maxChars: z.number().int().positive().default(8000),
+});
+export type RetrievalConfig = z.infer<typeof RetrievalConfig>;
+
 export const PolypusConfig = z.object({
   version: z.literal(1).default(1),
   /** Interface language. Defaults to pt-BR. */
@@ -58,6 +85,9 @@ export const PolypusConfig = z.object({
   defaultAgent: z.string().optional(),
   agents: z.array(AgentConfig).default([]),
   permissions: Permissions.default({}),
+  /** Embeddings backend for the repository index (optional until `polypus index` is used). */
+  embeddings: EmbeddingsConfig.optional(),
+  retrieval: RetrievalConfig.default({}),
 });
 export type PolypusConfig = z.infer<typeof PolypusConfig>;
 
