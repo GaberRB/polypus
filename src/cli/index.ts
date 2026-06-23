@@ -104,6 +104,7 @@ function buildProgram(): Command {
     .option("--mode <mode>", t("cli.opt.mode"))
     .option("--max-steps <n>", t("cli.opt.maxSteps"))
     .option("--json", t("cli.opt.json"))
+    .option("--stream", t("cli.opt.stream"))
     .option("--verify", t("cli.opt.verify"))
     .option("--budget <usd>", t("cli.opt.budget"))
     .option("--continue", t("cli.opt.continue"))
