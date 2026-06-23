@@ -59,7 +59,10 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_87 módulos em `src/`._
+_88 módulos em `src/`._
+
+### `src`
+- `lib.ts` — Public library surface for embedders of Polypus (e.g. the Cowork desktop app).
 
 ### `src/cli`
 - `index.ts`

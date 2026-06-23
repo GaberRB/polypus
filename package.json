@@ -1,10 +1,17 @@
 {
   "name": "@gaberrb/polypus",
-  "version": "0.4.33",
+  "version": "0.4.34",
   "description": "Agentic coding harness that makes any AI API (with or without native tool-calling) generate and apply code. OpenRouter, Ollama, and any OpenAI-compatible endpoint.",
   "type": "module",
   "bin": {
     "polypus": "./dist/index.js"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./lib": {
+      "types": "./dist/lib.d.ts",
+      "default": "./dist/lib.js"
+    }
   },
   "files": [
     "dist",
