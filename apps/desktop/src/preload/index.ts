@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import {
   IPC,
   type EstimateResult,
+  type Mode,
   type Result,
   type ReviewResult,
   type RunResult,
@@ -23,8 +24,9 @@ const api = {
     ipcRenderer.invoke(IPC.estimate, task),
   /** Review a PR diff (`polypus review --json`). */
   review: (pr: string): Promise<Result<ReviewResult>> => ipcRenderer.invoke(IPC.review, pr),
-  /** Run a task headless in bypass mode (`polypus run --json`). */
-  run: (task: string): Promise<Result<RunResult>> => ipcRenderer.invoke(IPC.run, task),
+  /** Run a task headless in the given permission mode (`polypus run --json`). */
+  run: (task: string, mode: Mode): Promise<Result<RunResult>> =>
+    ipcRenderer.invoke(IPC.run, task, mode),
 };
 
 export type PolypusApi = typeof api;

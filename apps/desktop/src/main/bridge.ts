@@ -33,7 +33,8 @@ function runCli(args: string[]): Promise<Result<unknown>> {
 export function registerBridge(): void {
   ipcMain.handle(IPC.estimate, (_e, task: string) => runCli(["estimate", task, "--json"]));
   ipcMain.handle(IPC.review, (_e, pr: string) => runCli(["review", String(pr), "--json"]));
-  ipcMain.handle(IPC.run, (_e, task: string) =>
-    runCli(["run", task, "--json", "--mode", "bypass"]),
-  );
+  ipcMain.handle(IPC.run, (_e, task: string, mode: string) => {
+    const m = mode === "plan" || mode === "review" || mode === "bypass" ? mode : "review";
+    return runCli(["run", task, "--json", "--mode", m]);
+  });
 }

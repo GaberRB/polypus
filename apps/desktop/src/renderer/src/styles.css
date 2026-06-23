@@ -164,6 +164,42 @@ body {
   font-size: 12px;
 }
 
+/* Mode selector (#116) */
+.ctx-row-modes {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.modes {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.mode-btn {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mode-btn:hover {
+  color: var(--text);
+}
+
+.mode-on {
+  background: rgba(167, 139, 250, 0.2);
+  color: var(--violet);
+}
+
 /* Chat / execução pane (#115) */
 .chat {
   display: flex;
