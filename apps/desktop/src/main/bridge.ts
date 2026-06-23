@@ -13,19 +13,31 @@ async function lib<T>(fn: () => Promise<T>): Promise<Result<T>> {
 }
 
 /**
- * How to invoke the Polypus CLI. Set `POLYPUS_CLI` to a built entry
- * (e.g. ../../dist/index.js) to run it with Node; otherwise `polypus` on PATH.
+ * How to invoke the Polypus CLI. Prefer the CLI bundled with the installed
+ * `@gaberrb/polypus` dependency, run via Electron-as-Node — so neither a global
+ * `polypus` nor an external `node` is required. `POLYPUS_CLI` overrides the path.
  */
-function cli(): { cmd: string; baseArgs: string[] } {
+function cli(): { cmd: string; baseArgs: string[]; env: NodeJS.ProcessEnv } {
   const override = process.env.POLYPUS_CLI;
-  return override ? { cmd: "node", baseArgs: [override] } : { cmd: "polypus", baseArgs: [] };
+  if (override) return { cmd: "node", baseArgs: [override], env: process.env };
+  try {
+    // exports "." → dist/index.js (the CLI). Run it with Electron's own Node.
+    const entry = require.resolve("@gaberrb/polypus");
+    return {
+      cmd: process.execPath,
+      baseArgs: [entry],
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
+    };
+  } catch {
+    return { cmd: "polypus", baseArgs: [], env: process.env };
+  }
 }
 
 /** Run a headless `--json` CLI command and parse stdout. Never rejects. */
 function runCli(args: string[]): Promise<Result<unknown>> {
   return new Promise((resolve) => {
-    const { cmd, baseArgs } = cli();
-    execFile(cmd, [...baseArgs, ...args], { maxBuffer: 64 * 1024 * 1024 }, (err, stdout) => {
+    const { cmd, baseArgs, env } = cli();
+    execFile(cmd, [...baseArgs, ...args], { env, maxBuffer: 64 * 1024 * 1024 }, (err, stdout) => {
       if (err && !stdout) {
         resolve({ ok: false, error: err.message });
         return;
@@ -45,11 +57,11 @@ function runCli(args: string[]): Promise<Result<unknown>> {
  */
 function runCliText(args: string[], cwd?: string): Promise<Result<string>> {
   return new Promise((resolve) => {
-    const { cmd, baseArgs } = cli();
+    const { cmd, baseArgs, env } = cli();
     execFile(
       cmd,
       [...baseArgs, ...args],
-      { cwd: cwd || process.cwd(), maxBuffer: 64 * 1024 * 1024 },
+      { cwd: cwd || process.cwd(), env, maxBuffer: 64 * 1024 * 1024 },
       (err, stdout, stderr) => {
         const out = (stdout?.trim() ? stdout : stderr) || "";
         if (err && !out.trim()) resolve({ ok: false, error: err.message });
