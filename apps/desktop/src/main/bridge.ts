@@ -1,6 +1,16 @@
 import { execFile } from "node:child_process";
 import { ipcMain } from "electron";
-import { IPC, type Result } from "../shared/ipc";
+import { addRecentProject, listRecentProjects, listSessions } from "@gaberrb/polypus/lib";
+import { IPC, type RecentProject, type Result, type SessionSummary } from "../shared/ipc";
+
+/** Wrap an in-process core call so the renderer always gets a Result (never a throw). */
+async function lib<T>(fn: () => Promise<T>): Promise<Result<T>> {
+  try {
+    return { ok: true, data: await fn() };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
 
 /**
  * How to invoke the Polypus CLI. Set `POLYPUS_CLI` to a built entry
@@ -63,4 +73,9 @@ export function registerBridge(): void {
   ipcMain.handle(IPC.retrieve, (_e, query: string, dir?: string) =>
     runCliText(["retrieve", query], dir),
   );
+
+  // Sidebar (#117): recent projects + sessions, in-process via @gaberrb/polypus/lib.
+  ipcMain.handle(IPC.recentList, (): Promise<Result<RecentProject[]>> => lib(listRecentProjects));
+  ipcMain.handle(IPC.recentAdd, (_e, path: string) => lib(() => addRecentProject(path)));
+  ipcMain.handle(IPC.sessionsList, (): Promise<Result<SessionSummary[]>> => lib(listSessions));
 }
