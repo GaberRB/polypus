@@ -5,6 +5,7 @@
  */
 export function App(): JSX.Element {
   const version = window.polypus?.version ?? "0.1.0";
+  const bridgeReady = window.polypus?.ping?.() === "pong";
 
   return (
     <div className="shell">
@@ -52,6 +53,7 @@ export function App(): JSX.Element {
         <div className="ctx-row"><span className="muted">Agente</span><span>—</span></div>
         <div className="ctx-row"><span className="muted">Modo</span><span className="pill">review</span></div>
         <div className="ctx-row"><span className="muted">Custo</span><span>$0.00</span></div>
+        <div className="ctx-row"><span className="muted">Ponte</span><span>{bridgeReady ? "pronta" : "—"}</span></div>
         <div className="ctx-foot muted">v{version}</div>
       </aside>
     </div>

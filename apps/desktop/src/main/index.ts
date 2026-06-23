@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { app, BrowserWindow } from "electron";
+import { registerBridge } from "./bridge";
 
 /** Create the main Cowork window and load the renderer (dev server or built file). */
 function createWindow(): void {
@@ -30,6 +31,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  registerBridge();
   createWindow();
   // macOS: re-create a window when the dock icon is clicked and none are open.
   app.on("activate", () => {
