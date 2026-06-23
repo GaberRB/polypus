@@ -138,6 +138,7 @@ _85 módulos em `src/`._
 ### `src/core/providers`
 - `anthropic.ts`
 - `defaults.ts`
+- `health.ts`
 - `ollama.ts` — Discovery helpers for a local Ollama instance.
 - `openai-compatible.ts`
 - `openrouter.ts` — Discovery + filtering for OpenRouter's public model catalog.
