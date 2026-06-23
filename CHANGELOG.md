@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.31] - 2026-06-23
+
+### Changed
+- core: store de projetos recentes (~/.polypus/recent-projects.json) (#124)
+
 ## [0.4.30] - 2026-06-23
 
 ### Changed
@@ -421,7 +426,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.30...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.31...HEAD
+[0.4.31]: https://github.com/GaberRB/polypus/compare/v0.4.30...v0.4.31
 [0.4.30]: https://github.com/GaberRB/polypus/compare/v0.4.29...v0.4.30
 [0.4.29]: https://github.com/GaberRB/polypus/compare/v0.4.28...v0.4.29
 [0.4.28]: https://github.com/GaberRB/polypus/compare/v0.4.27...v0.4.28
