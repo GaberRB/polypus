@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.35] - 2026-06-23
+
+### Changed
+- core: modo run --json --stream (eventos NDJSON ao vivo) para o Cowork (#115)
+
 ## [0.4.34] - 2026-06-23
 
 ### Changed
@@ -444,7 +449,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.34...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.35...HEAD
+[0.4.35]: https://github.com/GaberRB/polypus/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/GaberRB/polypus/compare/v0.4.33...v0.4.34
 [0.4.33]: https://github.com/GaberRB/polypus/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/GaberRB/polypus/compare/v0.4.31...v0.4.32

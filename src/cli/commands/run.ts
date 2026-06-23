@@ -27,7 +27,7 @@ import {
 import { loadHooks } from "../../core/agent/hooks.js";
 import { loadCustomTools } from "../../core/tools/custom.js";
 import { loadMcpTools } from "../../core/mcp/index.js";
-import { createJsonCollector } from "./json-output.js";
+import { createJsonCollector, createNdjsonStreamer } from "./json-output.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
 import { runSwarmSession } from "./swarm.js";
@@ -42,6 +42,8 @@ export interface RunOptions {
   maxSteps?: string;
   /** Headless mode: emit a single JSON object instead of the colored TUI. */
   json?: boolean;
+  /** With --json: emit NDJSON events live (one per line) instead of one object. */
+  stream?: boolean;
   /** After the agent finishes, run project checks and iterate until they pass. */
   verify?: boolean;
   /** Abort the run when the estimated session cost reaches this USD amount. */
@@ -127,10 +129,16 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
         ),
       );
     }
-    await executeTask(task, resolved, workspace, session, opts.json ?? false, opts.verify ?? false, {
-      embeddings: config.embeddings,
-      retrieval: config.retrieval,
-    });
+    await executeTask(
+      task,
+      resolved,
+      workspace,
+      session,
+      opts.json ?? false,
+      opts.verify ?? false,
+      { embeddings: config.embeddings, retrieval: config.retrieval },
+      opts.stream ?? false,
+    );
     if (session.budget !== undefined && !opts.json) {
       console.log(pc.dim(t("budget.session", { spent: fmtUsd(session.costUsd), budget: fmtUsd(session.budget) })));
     }
@@ -187,6 +195,7 @@ async function executeTask(
   json = false,
   verify = false,
   retrievalCfg?: { embeddings?: EmbeddingsConfig; retrieval: RetrievalConfig },
+  stream = false,
 ): Promise<void> {
   // Inject @file / @dir mentions into the task as explicit context before sending.
   const mention = await resolveMentions(task, {
@@ -211,12 +220,16 @@ async function executeTask(
   const spinner = new Spinner();
   const controller = new AbortController();
   const cancel = listenForCancel(controller); // ESC / Ctrl+C aborts the task
-  const collector = json ? createJsonCollector() : undefined;
+  // --json buffers a single final object; --json --stream emits NDJSON live.
+  const streamer = json && stream
+    ? createNdjsonStreamer((e) => process.stdout.write(JSON.stringify(e) + "\n"))
+    : undefined;
+  const collector = json && !stream ? createJsonCollector() : undefined;
 
   // Cost estimation + budget enforcement (no-op when pricing is unknown).
   const pricing = await resolveModelPricing(resolved.config);
   let budgetHit = false;
-  const baseEvents = collector ? collector.events : renderEvents(spinner);
+  const baseEvents = streamer ? streamer.events : collector ? collector.events : renderEvents(spinner);
   const events: AgentEvents = {
     ...baseEvents,
     onUsage(u) {
@@ -318,6 +331,10 @@ async function executeTask(
     costUsd: runCost,
   });
 
+  if (streamer) {
+    streamer.finalize(result);
+    return;
+  }
   if (collector) {
     process.stdout.write(JSON.stringify(collector.build(result)) + "\n");
     return;
