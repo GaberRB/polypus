@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { Chat } from "./Chat";
+import { ModeSelector } from "./ModeSelector";
+import type { Mode } from "../../shared/ipc";
 
 /**
  * Cowork app shell — three panes (sidebar · main · context), matching the
- * wireframe in #112. The main pane now hosts the chat/execução screen (#115);
- * the remaining surfaces (aprovação #116, sidebar #117, …) land next.
+ * wireframe in #112. The main pane hosts the chat/execução screen (#115) and the
+ * context panel carries the permission-mode selector (#116). Remaining surfaces
+ * (sidebar #117, onboarding #118, …) land next.
  */
 export function App(): JSX.Element {
   const version = window.polypus?.version ?? "0.1.0";
   const bridgeReady = window.polypus?.ping?.() === "pong";
+  const [mode, setMode] = useState<Mode>("review");
 
   return (
     <div className="shell">
@@ -37,13 +42,13 @@ export function App(): JSX.Element {
           <span className="muted">› chat / execução</span>
         </header>
 
-        <Chat />
+        <Chat mode={mode} />
       </main>
 
       <aside className="context">
         <div className="ctx-row"><span className="muted">Projeto</span><span>—</span></div>
         <div className="ctx-row"><span className="muted">Agente</span><span>—</span></div>
-        <div className="ctx-row"><span className="muted">Modo</span><span className="pill">review</span></div>
+        <div className="ctx-row ctx-row-modes"><span className="muted">Modo</span><ModeSelector mode={mode} onChange={setMode} /></div>
         <div className="ctx-row"><span className="muted">Custo</span><span>$0.00</span></div>
         <div className="ctx-row"><span className="muted">Ponte</span><span>{bridgeReady ? "pronta" : "—"}</span></div>
         <div className="ctx-foot muted">v{version}</div>

@@ -6,6 +6,9 @@
  * is consumed as a library; see #112.
  */
 
+/** Permission mode for a run (mirrors src/core PermissionMode). */
+export type Mode = "plan" | "review" | "bypass";
+
 /** Channel names (kept here so main/preload can't drift). */
 export const IPC = {
   estimate: "polypus:estimate",

@@ -1,5 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from "react";
-import type { Result, RunResult } from "../../shared/ipc";
+import type { Mode, Result, RunResult } from "../../shared/ipc";
 
 interface Msg {
   id: number;
@@ -9,11 +9,11 @@ interface Msg {
 
 /**
  * Chat/execução pane (#115). Sends a task to the agent through the bridge
- * (`window.polypus.run`) and renders the outcome legibly. Live token streaming
- * and the per-step timeline land once a streaming bridge exists; for now the
- * final structured result is shown.
+ * (`window.polypus.run`) in the selected permission mode (#116) and renders the
+ * outcome legibly. Live token streaming and the per-step timeline land once a
+ * streaming bridge exists; for now the final structured result is shown.
  */
-export function Chat(): JSX.Element {
+export function Chat({ mode }: { mode: Mode }): JSX.Element {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
@@ -29,7 +29,7 @@ export function Chat(): JSX.Element {
     setInput("");
     setRunning(true);
     try {
-      const res: Result<RunResult> | undefined = await window.polypus?.run(task);
+      const res: Result<RunResult> | undefined = await window.polypus?.run(task, mode);
       if (!res) {
         push("error", "Ponte indisponível (window.polypus). Rode pelo Electron.");
       } else if (!res.ok) {
