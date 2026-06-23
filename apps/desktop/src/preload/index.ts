@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import {
   IPC,
   type EstimateResult,
@@ -8,6 +8,7 @@ import {
   type ReviewResult,
   type RunResult,
   type SessionSummary,
+  type StreamEvent,
 } from "../shared/ipc";
 
 /**
@@ -42,6 +43,18 @@ const api = {
     ipcRenderer.invoke(IPC.recentAdd, path),
   /** Saved sessions that can be resumed. */
   sessions: (): Promise<Result<SessionSummary[]>> => ipcRenderer.invoke(IPC.sessionsList),
+
+  /**
+   * Run a task with live NDJSON streaming (`run --json --stream`). Calls `onEvent`
+   * for each event (step, assistant_delta, tool_call/result, …, result, end,
+   * error). Returns an unsubscribe to detach the listener.
+   */
+  runStream(task: string, mode: Mode, onEvent: (e: StreamEvent) => void): () => void {
+    const listener = (_e: IpcRendererEvent, ev: StreamEvent): void => onEvent(ev);
+    ipcRenderer.on(IPC.runEvent, listener);
+    ipcRenderer.send(IPC.runStart, { task, mode });
+    return () => ipcRenderer.removeListener(IPC.runEvent, listener);
+  },
 };
 
 export type PolypusApi = typeof api;

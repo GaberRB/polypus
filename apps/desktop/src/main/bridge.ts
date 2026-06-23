@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { ipcMain } from "electron";
 import { addRecentProject, listRecentProjects, listSessions } from "@gaberrb/polypus/lib";
 import { IPC, type RecentProject, type Result, type SessionSummary } from "../shared/ipc";
@@ -90,4 +90,47 @@ export function registerBridge(): void {
   ipcMain.handle(IPC.recentList, (): Promise<Result<RecentProject[]>> => lib(listRecentProjects));
   ipcMain.handle(IPC.recentAdd, (_e, path: string) => lib(() => addRecentProject(path)));
   ipcMain.handle(IPC.sessionsList, (): Promise<Result<SessionSummary[]>> => lib(listSessions));
+
+  // Streaming run (#115): spawn `run --json --stream` and forward each NDJSON
+  // line to the renderer as it arrives, plus terminal end/error events.
+  ipcMain.on(IPC.runStart, (e, payload: { task: string; mode?: string; dir?: string }) => {
+    const { cmd, baseArgs, env } = cli();
+    const m =
+      payload.mode === "plan" || payload.mode === "review" || payload.mode === "bypass"
+        ? payload.mode
+        : "review";
+    const send = (ev: unknown): void => {
+      if (!e.sender.isDestroyed()) e.sender.send(IPC.runEvent, ev);
+    };
+
+    const child = spawn(cmd, [...baseArgs, "run", payload.task, "--json", "--stream", "--mode", m], {
+      cwd: payload.dir || process.cwd(),
+      env,
+    });
+
+    let buf = "";
+    let stderr = "";
+    child.stdout.on("data", (d: Buffer) => {
+      buf += d.toString();
+      let nl: number;
+      while ((nl = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if (!line) continue;
+        try {
+          send(JSON.parse(line));
+        } catch {
+          /* ignore non-JSON noise */
+        }
+      }
+    });
+    child.stderr.on("data", (d: Buffer) => {
+      stderr += d.toString();
+    });
+    child.on("error", (err) => send({ type: "error", message: err.message }));
+    child.on("close", (code) => {
+      if (code !== 0 && stderr.trim()) send({ type: "error", message: stderr.trim() });
+      send({ type: "end", code });
+    });
+  });
 }

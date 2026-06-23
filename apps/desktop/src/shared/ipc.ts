@@ -19,7 +19,30 @@ export const IPC = {
   recentList: "polypus:recent:list",
   recentAdd: "polypus:recent:add",
   sessionsList: "polypus:sessions:list",
+  runStart: "polypus:run:start",
+  runEvent: "polypus:run:event",
 } as const;
+
+/**
+ * A streamed run event (from `run --json --stream`), plus the bridge's own
+ * `end`/`error` terminal events. Mirrors src/cli StreamEvent.
+ */
+export interface StreamEvent {
+  type:
+    | "step"
+    | "assistant_delta"
+    | "assistant"
+    | "tool_call"
+    | "tool_result"
+    | "correction"
+    | "reprompt"
+    | "compaction"
+    | "usage"
+    | "result"
+    | "end"
+    | "error";
+  [key: string]: unknown;
+}
 
 /** A recently opened project folder (mirrors src/core recent-projects). */
 export interface RecentProject {

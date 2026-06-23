@@ -272,6 +272,50 @@ body {
   font-family: inherit;
 }
 
+/* Live tool-call timeline (#115 streaming) */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.tool {
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+}
+
+.tool-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.tool-status {
+  width: 1em;
+  display: inline-block;
+}
+
+.tool-name {
+  color: var(--violet);
+}
+
+.tool-arg {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360px;
+}
+
+.tool-out {
+  font-size: 12px;
+  margin-top: 2px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* View tabs + shared button */
 .tabs {
   display: inline-flex;
