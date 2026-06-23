@@ -163,3 +163,51 @@ body {
   padding: 1px 8px;
   font-size: 12px;
 }
+
+/* Chat / execução pane (#115) */
+.chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.thread {
+  flex: 1;
+  overflow: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.msg {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.msg-user {
+  align-self: flex-end;
+  background: rgba(167, 139, 250, 0.14);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.msg-agent {
+  align-self: flex-start;
+}
+
+.msg-error {
+  align-self: flex-start;
+  border-color: #b4506a;
+  color: #ffb4c4;
+}
+
+.msg-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+}

@@ -1,7 +1,9 @@
+import { Chat } from "./Chat";
+
 /**
  * Cowork app shell — three panes (sidebar · main · context), matching the
- * wireframe in #112. Everything here is a placeholder; real screens land in the
- * follow-up issues (chat/execução #115, aprovação #116, sidebar #117, …).
+ * wireframe in #112. The main pane now hosts the chat/execução screen (#115);
+ * the remaining surfaces (aprovação #116, sidebar #117, …) land next.
  */
 export function App(): JSX.Element {
   const version = window.polypus?.version ?? "0.1.0";
@@ -32,20 +34,10 @@ export function App(): JSX.Element {
       <main className="main">
         <header className="main-head">
           <span className="prompt">🐙 polypus</span>
-          <span className="muted">› esqueleto inicial (#113)</span>
+          <span className="muted">› chat / execução</span>
         </header>
 
-        <section className="conversation">
-          <p className="empty">
-            A tela de chat/execução com streaming legível chega no #115.
-            <br />
-            Aqui vão os passos do agente, diffs e aprovações.
-          </p>
-        </section>
-
-        <footer className="composer">
-          <input className="composer-input" placeholder="digite uma tarefa…" disabled />
-        </footer>
+        <Chat />
       </main>
 
       <aside className="context">
