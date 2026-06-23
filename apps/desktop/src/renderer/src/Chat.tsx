@@ -1,4 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from "react";
+import { useSettings } from "./settings";
 import type { Mode, Result, RunResult } from "../../shared/ipc";
 
 interface Msg {
@@ -14,6 +15,7 @@ interface Msg {
  * streaming bridge exists; for now the final structured result is shown.
  */
 export function Chat({ mode }: { mode: Mode }): JSX.Element {
+  const { t } = useSettings();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
@@ -31,7 +33,7 @@ export function Chat({ mode }: { mode: Mode }): JSX.Element {
     try {
       const res: Result<RunResult> | undefined = await window.polypus?.run(task, mode);
       if (!res) {
-        push("error", "Ponte indisponível (window.polypus). Rode pelo Electron.");
+        push("error", t("chat.bridgeUnavailable"));
       } else if (!res.ok) {
         push("error", res.error);
       } else {
@@ -60,9 +62,7 @@ export function Chat({ mode }: { mode: Mode }): JSX.Element {
   return (
     <div className="chat">
       <div className="thread">
-        {messages.length === 0 && (
-          <p className="empty">Digite uma tarefa para o agente começar.</p>
-        )}
+        {messages.length === 0 && <p className="empty">{t("chat.empty")}</p>}
         {messages.map((m) => (
           <div key={m.id} className={`msg msg-${m.role}`}>
             <pre className="msg-text">{m.text}</pre>
@@ -70,7 +70,7 @@ export function Chat({ mode }: { mode: Mode }): JSX.Element {
         ))}
         {running && (
           <div className="msg msg-agent">
-            <span className="muted">⠹ executando…</span>
+            <span className="muted">⠹ {t("chat.running")}</span>
           </div>
         )}
       </div>
@@ -78,7 +78,7 @@ export function Chat({ mode }: { mode: Mode }): JSX.Element {
       <div className="composer">
         <textarea
           className="composer-input"
-          placeholder="digite uma tarefa…  (Enter envia · Shift+Enter nova linha · @arquivo p/ contexto)"
+          placeholder={t("chat.placeholder")}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKey}

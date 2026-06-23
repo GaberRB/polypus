@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme="dark"] {
   --bg: #0f0e17;
   --panel: #16151f;
   --panel-2: #1d1b29;
@@ -6,6 +7,16 @@
   --text: #e7e5ef;
   --muted: #9a97ad;
   --violet: #a78bfa;
+}
+
+[data-theme="light"] {
+  --bg: #f6f5fb;
+  --panel: #ffffff;
+  --panel-2: #eeecf6;
+  --border: #d9d6e6;
+  --text: #1c1a26;
+  --muted: #6b6880;
+  --violet: #7c3aed;
 }
 
 * {
@@ -93,6 +104,19 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.toggles {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.toggle {
+  flex: 1;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  text-align: center;
 }
 
 .main {

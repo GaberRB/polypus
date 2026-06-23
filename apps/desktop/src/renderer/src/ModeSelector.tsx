@@ -1,25 +1,29 @@
+import { useSettings } from "./settings";
 import type { Mode } from "../../shared/ipc";
+import type { StringKey } from "./i18n";
 
-const MODES: { id: Mode; hint: string }[] = [
-  { id: "plan", hint: "só planeja, não altera nada" },
-  { id: "review", hint: "pausa e pede aprovação a cada mudança" },
-  { id: "bypass", hint: "aplica tudo sem perguntar" },
-];
+const MODES: Mode[] = ["plan", "review", "bypass"];
+const HINT: Record<Mode, StringKey> = {
+  plan: "mode.plan.hint",
+  review: "mode.review.hint",
+  bypass: "mode.bypass.hint",
+};
 
 /** Segmented control for the permission mode (plan/review/bypass). */
 export function ModeSelector({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }): JSX.Element {
+  const { t } = useSettings();
   return (
-    <span className="modes" role="group" aria-label="modo de permissão">
-      {MODES.map((m) => (
+    <span className="modes" role="group" aria-label={t("ctx.mode")}>
+      {MODES.map((id) => (
         <button
-          key={m.id}
+          key={id}
           type="button"
-          className={`mode-btn${m.id === mode ? " mode-on" : ""}`}
-          title={m.hint}
-          aria-pressed={m.id === mode}
-          onClick={() => onChange(m.id)}
+          className={`mode-btn${id === mode ? " mode-on" : ""}`}
+          title={t(HINT[id])}
+          aria-pressed={id === mode}
+          onClick={() => onChange(id)}
         >
-          {m.id}
+          {id}
         </button>
       ))}
     </span>
