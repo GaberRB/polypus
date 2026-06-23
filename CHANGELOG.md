@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.34] - 2026-06-23
+
+### Changed
+- core: biblioteca embarcavel (@gaberrb/polypus/lib) para o Cowork (#136)
+
 ## [0.4.33] - 2026-06-23
 
 ### Changed
@@ -439,7 +444,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.33...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.34...HEAD
+[0.4.34]: https://github.com/GaberRB/polypus/compare/v0.4.33...v0.4.34
 [0.4.33]: https://github.com/GaberRB/polypus/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/GaberRB/polypus/compare/v0.4.31...v0.4.32
 [0.4.31]: https://github.com/GaberRB/polypus/compare/v0.4.30...v0.4.31
