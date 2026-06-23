@@ -3,9 +3,11 @@ import {
   IPC,
   type EstimateResult,
   type Mode,
+  type RecentProject,
   type Result,
   type ReviewResult,
   type RunResult,
+  type SessionSummary,
 } from "../shared/ipc";
 
 /**
@@ -33,6 +35,13 @@ const api = {
   /** Query the index for relevant chunks (`polypus retrieve <query>`). */
   retrieve: (query: string, dir?: string): Promise<Result<string>> =>
     ipcRenderer.invoke(IPC.retrieve, query, dir),
+
+  /** Recently opened project folders (in-process via the core lib). */
+  recentProjects: (): Promise<Result<RecentProject[]>> => ipcRenderer.invoke(IPC.recentList),
+  addRecentProject: (path: string): Promise<Result<void>> =>
+    ipcRenderer.invoke(IPC.recentAdd, path),
+  /** Saved sessions that can be resumed. */
+  sessions: (): Promise<Result<SessionSummary[]>> => ipcRenderer.invoke(IPC.sessionsList),
 };
 
 export type PolypusApi = typeof api;

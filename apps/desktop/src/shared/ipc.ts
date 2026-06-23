@@ -16,7 +16,26 @@ export const IPC = {
   run: "polypus:run",
   index: "polypus:index",
   retrieve: "polypus:retrieve",
+  recentList: "polypus:recent:list",
+  recentAdd: "polypus:recent:add",
+  sessionsList: "polypus:sessions:list",
 } as const;
+
+/** A recently opened project folder (mirrors src/core recent-projects). */
+export interface RecentProject {
+  path: string;
+  lastOpenedAt: string;
+}
+
+/** A saved session summary (mirrors src/core SessionSummary). */
+export interface SessionSummary {
+  id: string;
+  updatedAt: string;
+  title: string;
+  agentName: string;
+  mode: string;
+  messageCount: number;
+}
 
 /** Every bridge call resolves to a Result so the renderer never sees a throw. */
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
