@@ -1,12 +1,15 @@
 const RESET = "\x1b[0m";
-const isTTY = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 const FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-const violet = (s: string) => (isTTY ? `\x1b[38;2;167;139;250m${s}${RESET}` : s);
-const dim = (s: string) => (isTTY ? `\x1b[2m${s}${RESET}` : s);
+
+/** Minimal writable surface a Spinner needs; lets tests inject a fake stream. */
+export interface SpinnerStream {
+  write(data: string): unknown;
+  isTTY?: boolean;
+}
 
 /**
  * Single-line animated "thinking" indicator with an octopus icon and elapsed
- * time, e.g. `⠹ 🐙 pensando… (3s)`. No-op when stdout is not a TTY so piped
+ * time, e.g. `⠹ 🐙 pensando… (3s)`. No-op when the stream is not a TTY so piped
  * output and logs stay clean.
  */
 export class Spinner {
@@ -15,6 +18,20 @@ export class Spinner {
   private startedAt = 0;
   private label = "";
   private suffix = "";
+  private readonly out: SpinnerStream;
+  private readonly tty: boolean;
+
+  constructor(out: SpinnerStream = process.stdout) {
+    this.out = out;
+    this.tty = Boolean(out.isTTY) && !process.env.NO_COLOR;
+  }
+
+  private violet(s: string): string {
+    return this.tty ? `\x1b[38;2;167;139;250m${s}${RESET}` : s;
+  }
+  private dim(s: string): string {
+    return this.tty ? `\x1b[2m${s}${RESET}` : s;
+  }
 
   /** Extra dim text appended after the elapsed time (e.g. token count). */
   setSuffix(suffix: string): void {
@@ -24,7 +41,7 @@ export class Spinner {
   /** Start (or, if already running, just update the label). */
   start(label: string): void {
     this.label = label;
-    if (!isTTY) return;
+    if (!this.tty) return;
     if (this.timer) return; // already animating; label updated above
     this.startedAt = Date.now();
     this.render();
@@ -33,20 +50,23 @@ export class Spinner {
     this.timer.unref?.();
   }
 
-  /** Erase the spinner line and stop animating. */
+  /**
+   * Erase the spinner line and stop animating. Idempotent: when the spinner is
+   * not running this is a no-op — it must NOT emit the erase sequence, or it
+   * would clobber unrelated output (e.g. text streamed between stop() calls).
+   */
   stop(): void {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = undefined;
-    }
-    if (isTTY) process.stdout.write("\r\x1b[K");
+    if (!this.timer) return;
+    clearInterval(this.timer);
+    this.timer = undefined;
+    this.out.write("\r\x1b[K");
   }
 
   private render(): void {
-    const f = violet(FRAMES[this.frame = (this.frame + 1) % FRAMES.length]!);
+    const f = this.violet(FRAMES[(this.frame = (this.frame + 1) % FRAMES.length)]!);
     const secs = Math.floor((Date.now() - this.startedAt) / 1000);
-    const time = secs > 0 ? dim(` (${secs}s)`) : "";
-    const suffix = this.suffix ? dim(` · ${this.suffix}`) : "";
-    process.stdout.write(`\r\x1b[K${f} 🐙 ${dim(this.label + "…")}${time}${suffix}`);
+    const time = secs > 0 ? this.dim(` (${secs}s)`) : "";
+    const suffix = this.suffix ? this.dim(` · ${this.suffix}`) : "";
+    this.out.write(`\r\x1b[K${f} 🐙 ${this.dim(this.label + "…")}${time}${suffix}`);
   }
 }

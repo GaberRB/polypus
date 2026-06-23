@@ -7,10 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.29] - 2026-06-22
+## [0.4.29] - 2026-06-23
 
 ### Changed
-- Índice do repositório + retrieval semântico (RAG) para seleção de contexto (#49)
+- Corrige saída ilegível quando o agente responde/pergunta no meio do run (spinner vs streaming) (#110)
 
 ## [0.4.28] - 2026-06-22
 
