@@ -48,7 +48,7 @@ jobs:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -111,7 +111,7 @@ jobs:
         # point it at the repository explicitly.
         run: gh issue comment "$ISSUE" -R "$GITHUB_REPOSITORY" --body "✅ Aprovado por @${{ github.event.comment.user.login }} — implementando…"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
