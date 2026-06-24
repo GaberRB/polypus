@@ -25,6 +25,11 @@ nativo e qualquer endpoint OpenAI-compatible. Roda um agente, ou divide a tarefa
    param sozinhas; respostas truncadas e erros recebem **autocorreção**.
 5. **Swarm.** Um agente líder decompõe a tarefa; workers rodam em paralelo em worktrees e os
    branches são mesclados ao final.
+6. **Retrieval (RAG).** `polypus index` constrói um índice semântico do repositório (chunking
+   + embeddings via Ollama/OpenAI-compatible) em `~/.polypus/index/<repo-hash>/`; `polypus
+   retrieve` e a injeção opt-in de contexto selecionam trechos por significado.
+7. **Streaming headless.** `run --json --stream` emite eventos NDJSON ao vivo (tokens, tool
+   calls, resultado) para UIs externas; `run --json` mantém o objeto único final.
 
 ## Automação (GitHub Actions)
 
@@ -37,15 +42,33 @@ nativo e qualquer endpoint OpenAI-compatible. Roda um agente, ou divide a tarefa
   patch bump + CHANGELOG** (`scripts/prepare-release.mjs`) e abre um PR com `Closes #N`.
   Modelo barato configurável (`POLYPUS_AGENT_MODEL`), guard-rails de repo próprio + scan de
   segredos no diff.
-- `auto-release.yml` — ao **mergear** um PR de branch `polypus/issue-*` na main, cria o
-  GitHub Release da versão do `package.json` (com `POLYPUS_PR_TOKEN`), fechando o ciclo
-  issue→PR→release.
+- `auto-release.yml` — gateado por **versão**: em **push na main**, cria o GitHub Release
+  quando a versão do `package.json` ainda não tem release/tag (idempotente, com
+  `POLYPUS_PR_TOKEN`). Cobre PRs do agente, manuais e dependabot.
 - `release.yml` — publica no npm ao publicar um GitHub Release.
 
 ## Comandos principais
 
-`polypus setup` · `run` · `swarm` · `models` · `add-agent`/`list-agents` · `prd <issue#>` ·
-`review <pr#>`.
+`polypus setup` · `run` (`--json`/`--stream`/`--verify`/`--budget`) · `swarm` · `models` ·
+`add-agent`/`list-agents` · `index`/`retrieve` (RAG) · `prd <issue#>` · `review <pr#> [--json]` ·
+`estimate`.
+
+## Biblioteca embarcável (`@gaberrb/polypus/lib`)
+
+Além do CLI, o pacote publica um entry de biblioteca (`dist/lib.js` + `dist/lib.d.ts`, via
+`exports`) com APIs do core para hosts embarcarem o Polypus in-process: config/agentes
+(`loadConfig`/`saveConfig`/`upsertAgent`), `setEnvVar`, `chatOnce`, `testConnection`,
+sessions/recent-projects/git-info, e o catálogo de modelos do OpenRouter
+(`listOpenRouterModels`/`filterModels`).
+
+## Polypus Cowork (desktop)
+
+App desktop em `apps/desktop/` (**Electron + React + Vite**, pacote próprio
+`@gaberrb/polypus-cowork`) que reusa o core via o entry de biblioteca e os comandos headless.
+Navegação **Chat / Cowork / Code**, sidebar (projetos/sessões), **Settings** (chaves no
+`~/.polypus/.env` + Model Picker do OpenRouter + testar conexão), seletor de pasta de projeto,
+execução com **streaming ao vivo** (timeline de tool calls + tokens), painel de **RAG** e tema
+claro/escuro + i18n. (`cd apps/desktop && npm i && npm run dev`.)
 
 ## Rodar e testar
 
