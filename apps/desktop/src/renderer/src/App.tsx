@@ -1,59 +1,103 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Chat } from "./Chat";
-import { ModeSelector } from "./ModeSelector";
+import { PlainChat } from "./PlainChat";
 import { RagPanel } from "./RagPanel";
 import { Sidebar } from "./Sidebar";
-import { useSettings } from "./settings";
+import { ModeSelector } from "./ModeSelector";
+import { SettingsModal } from "./SettingsModal";
 import type { Mode } from "../../shared/ipc";
 
-type View = "chat" | "rag";
+type Tab = "chat" | "cowork" | "code";
+
+function baseName(p: string): string {
+  return p.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || p;
+}
 
 /**
- * Cowork app shell — three panes (sidebar · main · context), matching the
- * wireframe in #112. Hosts the sidebar (#117), chat/execução (#115), the
- * permission-mode selector (#116), the RAG panel (#121) and theme/i18n (#119).
+ * Cowork shell, mirroring claude_desktop.png: top tabs (Chat/Cowork/Code) + a
+ * sidebar + a work area whose top bar carries the project folder, mode and model
+ * selectors. Chat = plain talk; Code = project agent (streaming); Cowork = base.
  */
 export function App(): JSX.Element {
-  const { t } = useSettings();
-  const version = window.polypus?.version ?? "0.1.0";
-  const bridgeReady = window.polypus?.ping?.() === "pong";
+  const [tab, setTab] = useState<Tab>("code");
   const [mode, setMode] = useState<Mode>("review");
-  const [view, setView] = useState<View>("chat");
+  const [project, setProject] = useState<string | null>(null);
+  const [agentLabel, setAgentLabel] = useState("sem agente");
+  const [showSettings, setShowSettings] = useState(false);
+  const [codeView, setCodeView] = useState<"chat" | "rag">("chat");
+
+  const loadAgent = async (): Promise<void> => {
+    const res = await window.polypus?.getConfig();
+    if (res?.ok) {
+      const def = res.data.agents.find((a) => a.name === res.data.defaultAgent) ?? res.data.agents[0];
+      setAgentLabel(def ? `${def.provider}/${def.model}` : "sem agente");
+    }
+  };
+  useEffect(() => {
+    void loadAgent();
+  }, []);
+
+  const chooseFolder = async (): Promise<void> => {
+    const res = await window.polypus?.chooseFolder();
+    if (res?.ok && res.data) setProject(res.data);
+  };
+
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "chat", label: "Chat" },
+    { id: "cowork", label: "Cowork" },
+    { id: "code", label: "Code" },
+  ];
 
   return (
-    <div className="shell">
-      <Sidebar />
+    <div className="shell-2col">
+      <Sidebar onSettings={() => setShowSettings(true)} onPickProject={setProject} />
 
-      <main className="main">
-        <header className="main-head">
-          <span className="prompt">🐙 polypus</span>
-          <span className="tabs">
-            <button
-              className={`tab${view === "chat" ? " tab-on" : ""}`}
-              onClick={() => setView("chat")}
-            >
-              {t("tab.chat")}
+      <div className="workarea">
+        <header className="topbar">
+          <div className="toptabs">
+            {TABS.map((x) => (
+              <button key={x.id} className={`toptab${tab === x.id ? " on" : ""}`} onClick={() => setTab(x.id)}>
+                {x.label}
+              </button>
+            ))}
+          </div>
+          <div className="topbar-right">
+            {tab === "code" && (
+              <button className="chip" onClick={chooseFolder} title={project ?? ""}>
+                📁 {project ? baseName(project) : "Escolher pasta"}
+              </button>
+            )}
+            {tab !== "chat" && <ModeSelector mode={mode} onChange={setMode} />}
+            <button className="chip" onClick={() => setShowSettings(true)} title="Personalizar">
+              {agentLabel} ▾
             </button>
-            <button
-              className={`tab${view === "rag" ? " tab-on" : ""}`}
-              onClick={() => setView("rag")}
-            >
-              {t("tab.rag")}
-            </button>
-          </span>
+          </div>
         </header>
 
-        {view === "chat" ? <Chat mode={mode} /> : <RagPanel />}
-      </main>
+        <div className="content">
+          {tab === "chat" && <PlainChat />}
 
-      <aside className="context">
-        <div className="ctx-row"><span className="muted">{t("ctx.project")}</span><span>—</span></div>
-        <div className="ctx-row"><span className="muted">{t("ctx.agent")}</span><span>—</span></div>
-        <div className="ctx-row ctx-row-modes"><span className="muted">{t("ctx.mode")}</span><ModeSelector mode={mode} onChange={setMode} /></div>
-        <div className="ctx-row"><span className="muted">{t("ctx.cost")}</span><span>$0.00</span></div>
-        <div className="ctx-row"><span className="muted">{t("ctx.bridge")}</span><span>{bridgeReady ? t("ctx.bridgeReady") : "—"}</span></div>
-        <div className="ctx-foot muted">v{version}</div>
-      </aside>
+          {tab === "code" && (
+            <>
+              <div className="subtabs">
+                <button className={`subtab${codeView === "chat" ? " on" : ""}`} onClick={() => setCodeView("chat")}>
+                  Conversa
+                </button>
+                <button className={`subtab${codeView === "rag" ? " on" : ""}`} onClick={() => setCodeView("rag")}>
+                  Índice (RAG)
+                </button>
+              </div>
+              {codeView === "chat" ? <Chat mode={mode} dir={project ?? undefined} /> : <RagPanel />}
+            </>
+          )}
+
+          {tab === "cowork" && (
+            <div className="placeholder muted">Cowork (multi-agente / swarm) — em breve.</div>
+          )}
+        </div>
+      </div>
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onSaved={loadAgent} />}
     </div>
   );
 }

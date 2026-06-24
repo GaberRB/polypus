@@ -21,7 +21,57 @@ export const IPC = {
   sessionsList: "polypus:sessions:list",
   runStart: "polypus:run:start",
   runEvent: "polypus:run:event",
+  configGet: "polypus:config:get",
+  configSaveAgent: "polypus:config:saveAgent",
+  configSetDefault: "polypus:config:setDefault",
+  modelsList: "polypus:models:list",
+  dialogFolder: "polypus:dialog:folder",
+  chatSend: "polypus:chat:send",
+  configTestAgent: "polypus:config:testAgent",
 } as const;
+
+/** A plain chat message (Chat tab — no tools, no filesystem). */
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+/** A configured agent (no raw key — `hasKey` tells the UI if one is set). */
+export interface Agent {
+  name: string;
+  provider: string;
+  model: string;
+  baseUrl?: string;
+  toolMode: string;
+  hasKey: boolean;
+}
+
+export interface ConfigSnapshot {
+  agents: Agent[];
+  defaultAgent?: string;
+}
+
+/** What Settings sends to create/update an agent (apiKey is the raw key). */
+export interface SaveAgentInput {
+  name: string;
+  provider: string;
+  model: string;
+  baseUrl?: string;
+  apiKey?: string;
+  setDefault?: boolean;
+}
+
+/** An OpenRouter catalog model (mirrors src/core OpenRouterModel). */
+export interface OpenRouterModel {
+  id: string;
+  name: string;
+  promptPrice: number;
+  completionPrice: number;
+  contextLength: number;
+  supportsTools: boolean;
+  free: boolean;
+  popularity: number;
+}
 
 /**
  * A streamed run event (from `run --json --stream`), plus the bridge's own
