@@ -6,6 +6,8 @@ import {
   AgentConfig,
   DEFAULT_CONFIG,
   PolypusConfig,
+  type ProviderKind,
+  type ToolMode,
 } from "./schema.js";
 import { t } from "../i18n/index.js";
 
@@ -53,6 +55,37 @@ export function findAgent(
   name: string,
 ): AgentConfig | undefined {
   return config.agents.find((a) => a.name === name);
+}
+
+export interface UpsertAgentInput {
+  name: string;
+  provider: ProviderKind;
+  model: string;
+  apiKey?: string;
+  baseUrl?: string;
+  toolMode?: ToolMode;
+  setDefault?: boolean;
+}
+
+/**
+ * Add or replace an agent by name (validated via the schema). Sets it as the
+ * default when asked or when it's the only agent. Mutates and returns `config`
+ * (caller persists with `saveConfig`). Shared by the CLI and host UIs (Cowork).
+ */
+export function upsertAgent(config: PolypusConfig, input: UpsertAgentInput): PolypusConfig {
+  const agent = AgentConfig.parse({
+    name: input.name,
+    provider: input.provider,
+    model: input.model,
+    apiKey: input.apiKey,
+    baseUrl: input.baseUrl,
+    toolMode: input.toolMode ?? "auto",
+  });
+  const idx = config.agents.findIndex((a) => a.name === agent.name);
+  if (idx === -1) config.agents.push(agent);
+  else config.agents[idx] = agent;
+  if (input.setDefault || config.agents.length === 1) config.defaultAgent = agent.name;
+  return config;
 }
 
 /**
