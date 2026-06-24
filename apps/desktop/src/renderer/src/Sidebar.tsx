@@ -11,7 +11,13 @@ function baseName(path: string): string {
  * Sidebar (#117): recent projects and resumable sessions, loaded in-process via
  * the core lib through the bridge (window.polypus). Plus theme/idioma toggles.
  */
-export function Sidebar(): JSX.Element {
+export function Sidebar({
+  onSettings,
+  onPickProject,
+}: {
+  onSettings: () => void;
+  onPickProject: (path: string) => void;
+}): JSX.Element {
   const { t, theme, setTheme, lang, setLang } = useSettings();
   const [projects, setProjects] = useState<RecentProject[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
@@ -36,7 +42,7 @@ export function Sidebar(): JSX.Element {
         <div className="nav-group">{t("nav.projects")}</div>
         {projects.length === 0 && <div className="nav-empty muted">—</div>}
         {projects.map((p) => (
-          <button key={p.path} className="nav-item" title={p.path}>
+          <button key={p.path} className="nav-item" title={p.path} onClick={() => onPickProject(p.path)}>
             {baseName(p.path)}
           </button>
         ))}
@@ -67,8 +73,7 @@ export function Sidebar(): JSX.Element {
             🌐 {lang}
           </button>
         </div>
-        <button className="nav-item">{t("nav.new")}</button>
-        <button className="nav-item">{t("nav.config")}</button>
+        <button className="nav-item" onClick={onSettings}>{t("nav.config")}</button>
       </div>
     </aside>
   );

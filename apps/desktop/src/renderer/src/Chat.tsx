@@ -27,7 +27,7 @@ function deriveArg(args: unknown): string | undefined {
  * #110 class of bug can't happen in the renderer). Diffs with per-hunk approval
  * are #116.
  */
-export function Chat({ mode }: { mode: Mode }): JSX.Element {
+export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
   const { t } = useSettings();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -100,7 +100,7 @@ export function Chat({ mode }: { mode: Mode }): JSX.Element {
       setRunning(false);
       return;
     }
-    unsubRef.current = window.polypus.runStream(task, mode, (ev) => handle(agentId, ev));
+    unsubRef.current = window.polypus.runStream(task, mode, (ev) => handle(agentId, ev), dir);
   };
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {

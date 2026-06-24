@@ -1,12 +1,16 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import {
   IPC,
+  type ChatMessage,
+  type ConfigSnapshot,
   type EstimateResult,
   type Mode,
+  type OpenRouterModel,
   type RecentProject,
   type Result,
   type ReviewResult,
   type RunResult,
+  type SaveAgentInput,
   type SessionSummary,
   type StreamEvent,
 } from "../shared/ipc";
@@ -49,12 +53,24 @@ const api = {
    * for each event (step, assistant_delta, tool_call/result, …, result, end,
    * error). Returns an unsubscribe to detach the listener.
    */
-  runStream(task: string, mode: Mode, onEvent: (e: StreamEvent) => void): () => void {
+  runStream(task: string, mode: Mode, onEvent: (e: StreamEvent) => void, dir?: string): () => void {
     const listener = (_e: IpcRendererEvent, ev: StreamEvent): void => onEvent(ev);
     ipcRenderer.on(IPC.runEvent, listener);
-    ipcRenderer.send(IPC.runStart, { task, mode });
+    ipcRenderer.send(IPC.runStart, { task, mode, dir });
     return () => ipcRenderer.removeListener(IPC.runEvent, listener);
   },
+
+  // Settings / model picker / folder picker (#112).
+  getConfig: (): Promise<Result<ConfigSnapshot>> => ipcRenderer.invoke(IPC.configGet),
+  saveAgent: (input: SaveAgentInput): Promise<Result<void>> =>
+    ipcRenderer.invoke(IPC.configSaveAgent, input),
+  setDefaultAgent: (name: string): Promise<Result<void>> =>
+    ipcRenderer.invoke(IPC.configSetDefault, name),
+  listModels: (): Promise<Result<OpenRouterModel[]>> => ipcRenderer.invoke(IPC.modelsList),
+  chooseFolder: (): Promise<Result<string | undefined>> => ipcRenderer.invoke(IPC.dialogFolder),
+  chat: (messages: ChatMessage[]): Promise<Result<string>> => ipcRenderer.invoke(IPC.chatSend, messages),
+  testAgent: (name: string): Promise<Result<{ ok: boolean; message: string }>> =>
+    ipcRenderer.invoke(IPC.configTestAgent, name),
 };
 
 export type PolypusApi = typeof api;
