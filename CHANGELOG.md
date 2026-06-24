@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.36] - 2026-06-24
+
+### Changed
+- core: expor config/agentes, model picker e chat cru na lib (#143)
+
 ## [0.4.35] - 2026-06-23
 
 ### Changed
@@ -449,7 +454,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.35...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.36...HEAD
+[0.4.36]: https://github.com/GaberRB/polypus/compare/v0.4.35...v0.4.36
 [0.4.35]: https://github.com/GaberRB/polypus/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/GaberRB/polypus/compare/v0.4.33...v0.4.34
 [0.4.33]: https://github.com/GaberRB/polypus/compare/v0.4.32...v0.4.33
