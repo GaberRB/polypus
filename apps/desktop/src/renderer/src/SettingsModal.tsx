@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
 import { ModelPicker } from "./ModelPicker";
+import { McpPanel } from "./McpPanel";
+import { useSettings } from "./settings";
 import type { ConfigSnapshot } from "../../shared/ipc";
 
 const PROVIDERS = ["openrouter", "ollama", "openai-compatible", "anthropic"] as const;
 
-/**
- * Settings ("Personalizar"): configure providers + API keys (saved to
- * ~/.polypus/.env), pick the model (ModelPicker for OpenRouter), test the
- * connection and set the default agent.
- */
-export function SettingsModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }): JSX.Element {
+export function SettingsModal({
+  onClose,
+  onSaved,
+  project,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+  project?: string;
+}): JSX.Element {
+  const { t } = useSettings();
+  const [settingsTab, setSettingsTab] = useState<"agents" | "mcp">("agents");
   const [cfg, setCfg] = useState<ConfigSnapshot | null>(null);
   const [provider, setProvider] = useState<string>("openrouter");
   const [name, setName] = useState("openrouter");
@@ -27,6 +34,12 @@ export function SettingsModal({ onClose, onSaved }: { onClose: () => void; onSav
   useEffect(() => {
     void reload();
   }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const save = async (): Promise<void> => {
     if (!model.trim()) {
@@ -68,11 +81,31 @@ export function SettingsModal({ onClose, onSaved }: { onClose: () => void; onSav
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <strong>Personalizar — agentes e chaves</strong>
+          <strong>Personalizar</strong>
+          <div className="settings-tabs">
+            <button
+              className={`settings-tab${settingsTab === "agents" ? " on" : ""}`}
+              onClick={() => setSettingsTab("agents")}
+            >
+              {t("settings.agents")}
+            </button>
+            <button
+              className={`settings-tab${settingsTab === "mcp" ? " on" : ""}`}
+              onClick={() => setSettingsTab("mcp")}
+            >
+              {t("settings.mcp")}
+            </button>
+          </div>
           <button className="icon-btn" onClick={onClose}>✕</button>
         </div>
 
-        <div className="settings-body">
+        {settingsTab === "mcp" ? (
+          <div className="settings-body">
+            <McpPanel dir={project ?? null} />
+          </div>
+        ) : null}
+
+        <div className="settings-body" style={{ display: settingsTab === "agents" ? undefined : "none" }}>
           <div className="field">
             <label>Provider</label>
             <select

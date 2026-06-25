@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useSettings } from "./settings";
-import type { Mode, StreamEvent } from "../../shared/ipc";
+import { PolypusMascot } from "./PolypusMascot";
+import type { DirEntry, LoadedSession, Mode, ModelPrice, StreamEvent } from "../../shared/ipc";
 
 interface ToolItem {
   name: string;
@@ -27,16 +28,50 @@ function deriveArg(args: unknown): string | undefined {
  * #110 class of bug can't happen in the renderer). Diffs with per-hunk approval
  * are #116.
  */
-export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
+export function Chat({
+  mode,
+  dir,
+  initialSession,
+}: {
+  mode: Mode;
+  dir?: string;
+  initialSession?: LoadedSession;
+}): JSX.Element {
   const { t } = useSettings();
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    if (!initialSession) return [];
+    let id = 1;
+    return initialSession.messages.flatMap((m): Msg[] => {
+      const text = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+      if (m.role === "user") return [{ id: id++, role: "user", text }];
+      if (m.role === "assistant") return [{ id: id++, role: "agent", text, tools: [], done: true }];
+      return [];
+    });
+  });
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
-  const nextId = useRef(1);
+  const [atFiles, setAtFiles] = useState<DirEntry[]>([]);
+  const [atQuery, setAtQuery] = useState("");
+  const [showAtPicker, setShowAtPicker] = useState(false);
+  const [promptTokens, setPromptTokens] = useState(0);
+  const [completionTokens, setCompletionTokens] = useState(0);
+  const [modelPrice, setModelPrice] = useState<ModelPrice | null>(null);
+  const nextId = useRef(initialSession ? initialSession.messages.length + 1 : 1);
   const unsubRef = useRef<(() => void) | null>(null);
+  // Synchronous guard — prevents double-send when Enter is pressed twice before re-render.
+  const sendingRef = useRef(false);
+  // Session ID received from session_start event — used to resume on follow-ups.
+  const sessionIdRef = useRef<string | undefined>(initialSession?.id);
 
   // Detach the stream listener on unmount.
   useEffect(() => () => unsubRef.current?.(), []);
+
+  // Fetch model price once on mount for cost estimation.
+  useEffect(() => {
+    void window.polypus?.getModelPrice().then((res) => {
+      if (res?.ok && res.data) setModelPrice(res.data);
+    });
+  }, []);
 
   /** Update the in-flight agent message immutably. */
   const patchAgent = (id: number, fn: (m: Extract<Msg, { role: "agent" }>) => Extract<Msg, { role: "agent" }>): void =>
@@ -44,6 +79,10 @@ export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
 
   const handle = (agentId: number, ev: StreamEvent): void => {
     switch (ev.type) {
+      case "session_start":
+        // Store session ID so the next send can resume this conversation.
+        if (ev.sessionId) sessionIdRef.current = ev.sessionId;
+        break;
       case "assistant_delta":
         patchAgent(agentId, (m) => ({ ...m, text: m.text + String(ev.text ?? "") }));
         break;
@@ -68,6 +107,11 @@ export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
           return { ...m, tools };
         });
         break;
+      case "usage":
+        // ev carries cumulative totals — overwrite (not add) each event.
+        if (ev.promptTokens !== undefined) setPromptTokens(Number(ev.promptTokens));
+        if (ev.completionTokens !== undefined) setCompletionTokens(Number(ev.completionTokens));
+        break;
       case "result":
         patchAgent(agentId, (m) => ({ ...m, done: true }));
         break;
@@ -84,7 +128,8 @@ export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
 
   const send = (): void => {
     const task = input.trim();
-    if (!task || running) return;
+    if (!task || sendingRef.current || running || !dir) return;
+    sendingRef.current = true;
     const userId = nextId.current++;
     const agentId = nextId.current++;
     setMessages((prev) => [
@@ -93,27 +138,75 @@ export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
       { id: agentId, role: "agent", text: "", tools: [], done: false },
     ]);
     setInput("");
+    setPromptTokens(0);
+    setCompletionTokens(0);
     setRunning(true);
 
     if (!window.polypus?.runStream) {
       handle(agentId, { type: "error", message: t("chat.bridgeUnavailable") });
       setRunning(false);
+      sendingRef.current = false;
       return;
     }
-    unsubRef.current = window.polypus.runStream(task, mode, (ev) => handle(agentId, ev), dir);
+    unsubRef.current = window.polypus.runStream(task, mode, (ev) => handle(agentId, ev), dir, sessionIdRef.current);
+    sendingRef.current = false;
   };
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (showAtPicker) {
+      if (e.key === "Escape") { e.preventDefault(); setShowAtPicker(false); return; }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
     }
   };
 
+  const onInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    const val = e.target.value;
+    setInput(val);
+    const match = /@(\w*)$/.exec(val);
+    if (match && dir) {
+      const q = match[1] ?? "";
+      setAtQuery(q);
+      if (!showAtPicker) {
+        void window.polypus?.dirList(dir).then((res) => {
+          if (res?.ok) setAtFiles(res.data.filter((f) => f.type === "file"));
+        });
+        setShowAtPicker(true);
+      }
+    } else {
+      setShowAtPicker(false);
+      setAtQuery("");
+    }
+  };
+
+  const selectAtFile = async (file: DirEntry): Promise<void> => {
+    setShowAtPicker(false);
+    const res = await window.polypus?.fileRead(file.path);
+    if (!res?.ok) return;
+    const block = `\`\`\`${file.name}\n${res.data}\n\`\`\``;
+    setInput((prev) => prev.replace(/@\w*$/, block));
+  };
+
+  const filteredAtFiles = atFiles.filter((f) =>
+    !atQuery || f.name.toLowerCase().includes(atQuery.toLowerCase()),
+  );
+
   return (
     <div className="chat">
       <div className="thread">
-        {messages.length === 0 && <p className="empty">{t("chat.empty")}</p>}
+        {initialSession && messages.length > 0 && (
+          <div className="muted" style={{ fontSize: "12px", textAlign: "center", padding: "8px 0 4px" }}>
+            — sessão retomada: {initialSession.title} —
+          </div>
+        )}
+        {!dir && (
+          <p className="empty" style={{ textAlign: "center", padding: "24px 12px" }}>
+            📁 {t("chat.noProject")}
+          </p>
+        )}
+        {messages.length === 0 && dir && <p className="empty">{t("chat.empty")}</p>}
         {messages.map((m) =>
           m.role === "agent" ? (
             <div key={m.id} className="msg msg-agent">
@@ -123,7 +216,9 @@ export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
                     <div className="tool" key={i}>
                       <span className="tool-head">
                         <span className="tool-status">
-                          {tool.ok === undefined ? "⠹" : tool.ok ? "✓" : "✗"}
+                          {tool.ok === undefined
+                            ? <PolypusMascot size="sm" />
+                            : tool.ok ? "✓" : "✗"}
                         </span>
                         <span className="tool-name">{tool.name}</span>
                         {tool.arg && <span className="muted tool-arg">{tool.arg}</span>}
@@ -135,7 +230,10 @@ export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
               )}
               {m.text && <pre className="msg-text">{m.text}</pre>}
               {!m.done && !m.text && m.tools.length === 0 && (
-                <span className="muted">⠹ {t("chat.running")}</span>
+                <div className="thinking-state">
+                  <PolypusMascot size="lg" />
+                  <span>{t("chat.running")}</span>
+                </div>
               )}
             </div>
           ) : (
@@ -146,17 +244,99 @@ export function Chat({ mode, dir }: { mode: Mode; dir?: string }): JSX.Element {
         )}
       </div>
 
-      <div className="composer">
-        <textarea
-          className="composer-input"
-          placeholder={t("chat.placeholder")}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKey}
-          disabled={running}
-          rows={2}
-        />
+      <UsageBar promptTokens={promptTokens} completionTokens={completionTokens} price={modelPrice} />
+
+      <div className="composer" style={{ position: "relative" }}>
+        {showAtPicker && filteredAtFiles.length > 0 && (
+          <div className="at-picker">
+            {filteredAtFiles.slice(0, 12).map((f) => (
+              <button
+                key={f.path}
+                className="at-picker-item"
+                onMouseDown={(e) => { e.preventDefault(); void selectAtFile(f); }}
+              >
+                <span className="at-picker-icon">·</span>
+                {f.name}
+              </button>
+            ))}
+          </div>
+        )}
+        {showAtPicker && filteredAtFiles.length === 0 && atQuery && (
+          <div className="at-picker">
+            <div className="at-picker-empty">Nenhum arquivo encontrado para "{atQuery}"</div>
+          </div>
+        )}
+        <div className="composer-row">
+          <textarea
+            className="composer-input"
+            placeholder={t("chat.placeholder")}
+            value={input}
+            onChange={onInputChange}
+            onKeyDown={onKey}
+            disabled={running || !dir}
+            rows={2}
+          />
+          {running && (
+            <button
+              className="stop-btn"
+              title="Cancelar"
+              onClick={() => {
+                unsubRef.current?.();
+                unsubRef.current = null;
+                window.polypus?.stopRun?.();
+                setRunning(false);
+              }}
+            >
+              ■
+            </button>
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function fmtTokens(n: number): string {
+  if (n === 0) return "0";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}
+
+function fmtCost(usd: number): string {
+  if (usd < 0.0001) return "<$0.0001";
+  if (usd < 0.01) return `$${usd.toFixed(4)}`;
+  return `$${usd.toFixed(3)}`;
+}
+
+function UsageBar({
+  promptTokens,
+  completionTokens,
+  price,
+}: {
+  promptTokens: number;
+  completionTokens: number;
+  price: ModelPrice | null;
+}): JSX.Element | null {
+  const total = promptTokens + completionTokens;
+  if (total === 0) return null;
+  const costUsd =
+    price
+      ? (promptTokens * price.promptPrice + completionTokens * price.completionPrice) / 1_000_000
+      : null;
+  return (
+    <div className="usage-bar">
+      <span>↑ {fmtTokens(promptTokens)}</span>
+      <span className="usage-sep">·</span>
+      <span>↓ {fmtTokens(completionTokens)}</span>
+      <span className="usage-sep">·</span>
+      <span>{fmtTokens(total)} tokens</span>
+      {costUsd !== null && (
+        <>
+          <span className="usage-sep">·</span>
+          <span className="usage-cost">{fmtCost(costUsd)}</span>
+        </>
+      )}
     </div>
   );
 }

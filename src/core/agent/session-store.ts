@@ -14,6 +14,8 @@ export interface SessionRecord {
   agentName: string;
   mode: PermissionMode;
   messages: Message[];
+  /** Absolute path of the project folder this session belongs to. */
+  projectDir?: string;
 }
 
 export interface SessionSummary {
@@ -23,6 +25,7 @@ export interface SessionSummary {
   agentName: string;
   mode: PermissionMode;
   messageCount: number;
+  projectDir?: string;
 }
 
 export function sessionsDir(): string {
@@ -59,8 +62,8 @@ export async function loadSession(id: string): Promise<SessionRecord | undefined
   }
 }
 
-/** List saved sessions, most recently updated first. */
-export async function listSessions(): Promise<SessionSummary[]> {
+/** List saved sessions, most recently updated first. Optionally filter by project dir. */
+export async function listSessions(projectDir?: string): Promise<SessionSummary[]> {
   let files: string[];
   try {
     files = (await readdir(sessionsDir())).filter((f) => f.endsWith(".json"));
@@ -71,6 +74,9 @@ export async function listSessions(): Promise<SessionSummary[]> {
   for (const f of files) {
     try {
       const r = JSON.parse(await readFile(join(sessionsDir(), f), "utf8")) as SessionRecord;
+      // When a projectDir filter is given, skip sessions from other projects.
+      // Sessions without projectDir (legacy) are also excluded to avoid cross-project contamination.
+      if (projectDir !== undefined && r.projectDir !== projectDir) continue;
       summaries.push({
         id: r.id,
         updatedAt: r.updatedAt,
@@ -78,12 +84,23 @@ export async function listSessions(): Promise<SessionSummary[]> {
         agentName: r.agentName,
         mode: r.mode,
         messageCount: r.messages?.length ?? 0,
+        projectDir: r.projectDir,
       });
     } catch {
       /* skip corrupt session files */
     }
   }
   return summaries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/** Delete a session file by id. No-op if the file does not exist. */
+export async function deleteSession(id: string): Promise<void> {
+  try {
+    const { unlink } = await import("node:fs/promises");
+    await unlink(sessionPath(id));
+  } catch {
+    /* already gone */
+  }
 }
 
 /** The most recently updated session, if any (used by `run --continue`). */

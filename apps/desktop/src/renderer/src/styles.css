@@ -7,6 +7,10 @@
   --text: #e7e5ef;
   --muted: #9a97ad;
   --violet: #a78bfa;
+  --error: #b4506a;
+  --error-light: #ffb4c4;
+  --success: #4caf82;
+  --warning: #f0a500;
 }
 
 [data-theme="light"] {
@@ -17,6 +21,10 @@
   --text: #1c1a26;
   --muted: #6b6880;
   --violet: #7c3aed;
+  --error: #c0394f;
+  --error-light: #e07088;
+  --success: #2d8f61;
+  --warning: #b87800;
 }
 
 * {
@@ -28,6 +36,7 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
 body {
@@ -52,6 +61,7 @@ body {
   flex-direction: column;
   padding: 14px;
   gap: 10px;
+  overflow: hidden;
 }
 
 .context {
@@ -75,6 +85,8 @@ body {
   flex-direction: column;
   gap: 4px;
   flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .nav-group {
@@ -152,6 +164,7 @@ body {
 .composer {
   padding: 14px 18px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .composer-input {
@@ -261,8 +274,8 @@ body {
 
 .msg-error {
   align-self: flex-start;
-  border-color: #b4506a;
-  color: #ffb4c4;
+  border-color: var(--error);
+  color: var(--error-light);
 }
 
 .msg-text {
@@ -407,12 +420,14 @@ body {
   display: grid;
   grid-template-columns: 240px 1fr;
   height: 100%;
+  overflow: hidden;
 }
 
 .workarea {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 .topbar {
@@ -422,6 +437,7 @@ body {
   gap: 12px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .toptabs {
@@ -488,6 +504,7 @@ body {
   display: flex;
   gap: 4px;
   padding: 8px 16px 0;
+  flex-shrink: 0;
 }
 
 .subtab {
@@ -661,4 +678,757 @@ select {
 .model-meta {
   font-size: 12px;
   white-space: nowrap;
+}
+
+/* ── Cowork tab ────────────────────────────────────────────────────── */
+.cowork-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.cowork-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.cowork-heading {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cowork-no-folder {
+  margin: 0;
+}
+
+.cowork-input {
+  width: 100%;
+  max-width: 600px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  resize: none;
+  min-height: 90px;
+}
+
+.cowork-input:focus {
+  outline: none;
+  border-color: var(--violet);
+}
+
+.cowork-input:disabled {
+  opacity: 0.5;
+}
+
+.cowork-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cowork-dir-label {
+  font-size: 13px;
+}
+
+.cowork-run-btn {
+  min-width: 100px;
+}
+
+.cowork-run {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.cowork-task-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.cowork-task-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.cowork-thread {
+  flex: 1;
+  overflow: auto;
+  padding: 18px;
+}
+
+.cowork-agent-text {
+  margin-top: 8px;
+}
+
+.cowork-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.cowork-summary {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── MCP panel ─────────────────────────────────────────────────────── */
+.mcp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mcp-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mcp-status {
+  font-size: 12px;
+}
+
+.mcp-no-project {
+  margin: 0;
+}
+
+.mcp-server-block {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.mcp-server-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.mcp-server-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mcp-server-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.mcp-server-cmd {
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcp-tool-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0 4px;
+  font-size: 12px;
+}
+
+.mcp-confirm-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.mcp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.mcp-env-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.mcp-add-btn {
+  align-self: flex-start;
+}
+
+/* ── Settings tab switcher ─────────────────────────────────────────── */
+.settings-tabs {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.settings-tab {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-radius: 6px;
+  padding: 3px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.settings-tab:hover {
+  color: var(--text);
+}
+
+.settings-tab.on {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+/* ── Topbar warning chip (no agent configured) ─────────────────────── */
+.chip-warn {
+  border-color: var(--error);
+  color: var(--error-light);
+}
+
+/* ── Polypus mascot — CSS sprite with dash animation ──────────────── */
+
+/* Viewport: clips the sprite movement, overflow hidden */
+.polypus-vp {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.polypus-vp-lg {
+  font-size: 22px;
+  width: 8em;    /* 176px — room for body + 4em dash */
+  height: 2.6em; /* 57px  */
+}
+
+.polypus-vp-sm {
+  font-size: 11px;
+  width: 5em;    /* 55px */
+  height: 2.2em; /* 24px */
+}
+
+/* Horizontal mover — translateX only */
+.polypus-mover {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  transform-origin: left center;
+}
+
+.polypus-vp-lg .polypus-mover {
+  animation: polypus-move-lg 3.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.polypus-vp-sm .polypus-mover {
+  animation: polypus-move-sm 3.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Squash/stretch + direction wrapper */
+.polypus-squash {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: center center;
+  animation: polypus-squash-anim 3.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Body: dome-shaped head */
+.polypus-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 1.6em;
+  height: 1.05em;
+  background: var(--accent, #7c6af5);
+  border-radius: 50% 50% 40% 40%;
+  padding: 0 0.22em;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Eyes */
+.polypus-eye {
+  display: block;
+  width: 0.4em;
+  height: 0.4em;
+  background: #fff;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.polypus-eye::after {
+  content: '';
+  position: absolute;
+  width: 0.2em;
+  height: 0.2em;
+  background: #1a0d4d;
+  border-radius: 50%;
+  top: 0.1em;
+  left: 0.1em;
+}
+
+/* Tentacles */
+.polypus-legs {
+  display: flex;
+  gap: 0.14em;
+  margin-top: -0.08em;
+}
+
+.polypus-leg {
+  display: block;
+  width: 0.3em;
+  height: 0.75em;
+  background: var(--accent, #7c6af5);
+  border-radius: 0 0 0.3em 0.3em;
+  transform-origin: top center;
+}
+
+.polypus-leg:nth-child(1) { animation: leg-wave 0.48s 0.00s ease-in-out infinite alternate; }
+.polypus-leg:nth-child(2) { animation: leg-wave 0.48s 0.10s ease-in-out infinite alternate; }
+.polypus-leg:nth-child(3) { animation: leg-wave 0.48s 0.20s ease-in-out infinite alternate; }
+.polypus-leg:nth-child(4) { animation: leg-wave 0.48s 0.30s ease-in-out infinite alternate; }
+
+@keyframes leg-wave {
+  from { transform: rotate(-12deg) scaleY(0.85); }
+  to   { transform: rotate(12deg)  scaleY(1.0);  }
+}
+
+/* ── Movement keyframes ───────────────────────────────────────────── */
+@keyframes polypus-move-lg {
+  /* Idle at left */
+  0%,  10%  { transform: translateX(0.2em); }
+  /* Anticipation — tiny lean back */
+  14%       { transform: translateX(-0.1em); }
+  /* Dash RIGHT — spring forward */
+  16%, 38%  { transform: translateX(4.2em); }
+  /* Overshoot + settle */
+  42%       { transform: translateX(4.5em); }
+  46%, 58%  { transform: translateX(4.2em); }
+  /* Anticipation to go back */
+  62%       { transform: translateX(4.5em); }
+  /* Dash LEFT */
+  64%, 86%  { transform: translateX(0.2em); }
+  /* Overshoot + settle */
+  90%       { transform: translateX(-0.1em); }
+  94%, 100% { transform: translateX(0.2em); }
+}
+
+@keyframes polypus-move-sm {
+  0%,  10%  { transform: translateX(0.2em); }
+  14%       { transform: translateX(-0.1em); }
+  16%, 38%  { transform: translateX(2.4em); }
+  42%       { transform: translateX(2.6em); }
+  46%, 58%  { transform: translateX(2.4em); }
+  62%       { transform: translateX(2.6em); }
+  64%, 86%  { transform: translateX(0.2em); }
+  90%       { transform: translateX(-0.1em); }
+  94%, 100% { transform: translateX(0.2em); }
+}
+
+/* ── Squash/stretch + direction flip ─────────────────────────────── */
+@keyframes polypus-squash-anim {
+  /* Idle */
+  0%,  10%  { transform: scaleX(1)     scaleY(1);    }
+  /* Lean back squash */
+  14%       { transform: scaleX(1.25)  scaleY(0.78); }
+  /* Stretch mid-dash right */
+  16%, 38%  { transform: scaleX(0.62)  scaleY(1.28); }
+  /* Land squash */
+  42%       { transform: scaleX(1.3)   scaleY(0.75); }
+  /* Settle */
+  46%       { transform: scaleX(1)     scaleY(1);    }
+  /* Face left */
+  52%, 58%  { transform: scaleX(-1)    scaleY(1);    }
+  /* Lean back (now going left) */
+  62%       { transform: scaleX(-1.25) scaleY(0.78); }
+  /* Stretch mid-dash left */
+  64%, 86%  { transform: scaleX(-0.62) scaleY(1.28); }
+  /* Land squash */
+  90%       { transform: scaleX(-1.3)  scaleY(0.75); }
+  /* Settle facing left */
+  94%       { transform: scaleX(-1)    scaleY(1);    }
+  /* Flip back right */
+  98%, 100% { transform: scaleX(1)     scaleY(1);    }
+}
+
+/* Centered thinking block in empty thread */
+.thinking-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── Composer row (textarea + stop button) ────────────────────────── */
+.composer-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.composer-row .composer-input {
+  flex: 1;
+}
+
+.stop-btn {
+  flex-shrink: 0;
+  background: rgba(180, 80, 106, 0.15);
+  color: #ffb4c4;
+  border: 1px solid rgba(180, 80, 106, 0.4);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.stop-btn:hover {
+  background: rgba(180, 80, 106, 0.28);
+}
+
+/* ── @ file picker ────────────────────────────────────────────────── */
+.at-picker {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 9;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.at-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.at-picker-item:hover {
+  background: var(--panel-2);
+}
+
+.at-picker-icon {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+/* ── Usage bar (token + cost telemetry) ───────────────────────────── */
+.usage-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.usage-bar .usage-sep {
+  opacity: 0.3;
+}
+
+.usage-bar .usage-cost {
+  color: var(--accent, #7c6af5);
+  font-weight: 500;
+}
+
+/* ── Sidebar session items with hover actions ──────────────────────── */
+.nav-item-row {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  position: relative;
+}
+
+.nav-item-row:hover {
+  background: var(--panel-2);
+}
+
+.nav-item-row .nav-item {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 8px;
+}
+
+.nav-item-row .nav-item:hover {
+  background: transparent;
+}
+
+.nav-item-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding-right: 4px;
+  flex-shrink: 0;
+}
+
+.nav-item-row:hover .nav-item-actions {
+  display: flex;
+}
+
+.nav-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.nav-action-btn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.nav-confirm-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: var(--muted);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.nav-confirm-row button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.nav-confirm-row .btn-danger {
+  color: #ffb4c4;
+}
+
+.nav-confirm-row .btn-danger:hover {
+  background: rgba(180, 80, 106, 0.2);
+}
+
+.nav-confirm-row .btn-cancel {
+  color: var(--muted);
+}
+
+.nav-confirm-row .btn-cancel:hover {
+  background: var(--border);
+}
+
+/* ── File tree ─────────────────────────────────────────────────────── */
+.file-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.file-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree-node:hover {
+  background: var(--panel-2);
+}
+
+.file-tree-children {
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+  margin-left: 10px;
+}
+
+.file-tree-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ── File viewer drawer ────────────────────────────────────────────── */
+.file-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.file-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(520px, 90vw);
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 21;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+}
+
+.file-drawer.open {
+  transform: translateX(0);
+}
+
+.file-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+.file-drawer-title {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, monospace;
+}
+
+.file-drawer-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.file-drawer-body pre {
+  margin: 0;
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  color: var(--text);
+}
+
+/* ── Sidebar MCP indicator ─────────────────────────────────────────── */
+.mcp-indicator {
+  font-size: 12px;
+  color: var(--violet);
+  cursor: pointer;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  font: inherit;
+  text-align: left;
+}
+
+.mcp-indicator:hover {
+  background: var(--panel-2);
+}
+
+/* ── Transitions on interactive elements ────────────────────────── */
+.btn,
+.icon-btn,
+.toptab,
+.nav-item,
+.at-picker-item,
+.settings-tab,
+.nav-action-btn,
+.mcp-indicator {
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+/* ── Focus outlines (WCAG AA 2.4.7) ────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+
+/* ── @ picker empty state ───────────────────────────────────────── */
+.at-picker-empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── prefers-reduced-motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .polypus-mover,
+  .polypus-squash,
+  .polypus-leg,
+  .file-drawer,
+  .file-drawer-backdrop {
+    animation: none !important;
+    transition: none !important;
+  }
 }

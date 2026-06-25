@@ -248,6 +248,9 @@ async function executeTask(
   const streamer = json && stream
     ? createNdjsonStreamer((e) => process.stdout.write(JSON.stringify(e) + "\n"))
     : undefined;
+
+  // Emit session ID immediately so the caller can wire --resume for follow-ups.
+  if (streamer) process.stdout.write(JSON.stringify({ type: "session_start", sessionId: session.id }) + "\n");
   const collector = json && !stream ? createJsonCollector() : undefined;
 
   // Cost estimation + budget enforcement (no-op when pricing is unknown).
@@ -364,6 +367,7 @@ async function executeTask(
     agentName: session.agentName,
     mode: session.mode,
     messages: session.history,
+    projectDir: process.cwd(),
   }).catch(() => {/* best-effort persistence */});
 
   // Account for estimated spend and persist analytics (best-effort).
