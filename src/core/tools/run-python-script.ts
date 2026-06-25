@@ -19,10 +19,12 @@ export const runPythonScriptTool: Tool = {
   spec: {
     name: "run_python_script",
     description:
-      "Run an inline Python 3 script in the workspace to read or transform structured files " +
-      "(CSV, JSON, XML, YAML, spreadsheets, SQL dumps). The script runs with the workspace as its " +
-      "working directory — open files by relative path and print the values you need to stdout. " +
-      "Prefer read_file for plain text; use this when parsing a structured file by hand would be brittle.",
+      "Run an inline Python 3 script in the workspace to read or transform structured files using the " +
+      "standard library (JSON, CSV, XML, SQLite). The script runs with the workspace as its working " +
+      "directory — open files by relative path and print the values you need to stdout. Formats that " +
+      "need third-party packages (e.g. YAML, .xlsx) work only if that package is installed in the " +
+      "environment. Prefer read_file for plain text; use this when parsing a structured file by hand " +
+      "would be brittle.",
     parameters: {
       type: "object",
       properties: {
@@ -152,7 +154,11 @@ function runOnce(bin: string, script: string, cwd: string): Promise<ToolResult> 
         return finish({ ok: true, output: clamp(out || "(no output)") });
       }
       const body = `${stdout}${stderr}`.trim();
-      finish({ ok: false, output: clamp(`Python script failed (exit ${code ?? "?"}):\n${body}`) });
+      const hint = moduleHint(body);
+      finish({
+        ok: false,
+        output: clamp(`Python script failed (exit ${code ?? "?"}):\n${body}${hint ? `\n\n${hint}` : ""}`),
+      });
     });
 
     // Feed the script over stdin. Wrap in try/catch because writing to a process
@@ -165,6 +171,22 @@ function runOnce(bin: string, script: string, cwd: string): Promise<ToolResult> 
       /* the error/close handlers settle the result */
     }
   });
+}
+
+// pip package names that differ from the importable module name, for a better hint.
+const PIP_NAMES: Record<string, string> = { yaml: "pyyaml", PIL: "pillow", cv2: "opencv-python", bs4: "beautifulsoup4" };
+
+/**
+ * If the failure is a missing third-party module, turn the raw traceback into an
+ * actionable hint instead of leaving the model to guess. The description steers
+ * the model to stdlib formats, but it can still reach for e.g. `import yaml`.
+ */
+export function moduleHint(body: string): string | null {
+  const m = body.match(/ModuleNotFoundError: No module named '([\w.]+)'/);
+  if (!m) return null;
+  const mod = m[1]!.split(".")[0]!;
+  const pkg = PIP_NAMES[mod] ?? mod;
+  return `Hint: the Python module '${mod}' is not installed. Run \`pip install ${pkg}\`, or use a standard-library format (json, csv, xml, sqlite3) instead.`;
 }
 
 function clamp(s: string): string {

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `run_python_script`: description now scopes the supported formats to the Python standard library
+  (JSON, CSV, XML, SQLite) and notes that YAML/.xlsx need third-party packages. (#151)
+
+### Added
+- `run_python_script`: a missing third-party module now yields an actionable hint
+  (`pip install <pkg>`, mapping e.g. `yaml` → `pyyaml`) instead of a bare traceback. (#151)
+
 ## [0.4.37] - 2026-06-25
 
 ### Added

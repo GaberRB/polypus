@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { runPythonScriptTool, findInterpreter } from "../src/core/tools/run-python-script.js";
+import { runPythonScriptTool, findInterpreter, moduleHint } from "../src/core/tools/run-python-script.js";
 import { PermissionEngine } from "../src/core/permissions/modes.js";
 import type { PermissionMode } from "../src/core/config/schema.js";
 
@@ -93,5 +93,36 @@ describe("run_python_script tool", () => {
     expect(res.output).toContain("[truncated]");
     // Bounded to the clamp size plus the short marker.
     expect(res.output.length).toBeLessThan(20_100);
+  });
+
+  whenPython("appends an install hint for a missing module at runtime", async () => {
+    // Use a module that cannot exist, so the path is deterministic regardless of
+    // which packages the CI image happens to ship (e.g. PyYAML is often present).
+    const res = await runPythonScriptTool.run(
+      { script: "import polypus_definitely_missing_xyz" },
+      ctx(workspace()),
+    );
+    expect(res.ok).toBe(false);
+    expect(res.output).toMatch(/module 'polypus_definitely_missing_xyz' is not installed/);
+  });
+});
+
+describe("moduleHint", () => {
+  it("maps the import name to the real pip package", () => {
+    const hint = moduleHint("ModuleNotFoundError: No module named 'yaml'");
+    expect(hint).toMatch(/module 'yaml' is not installed/);
+    expect(hint).toMatch(/pip install pyyaml/); // not `pip install yaml`
+  });
+
+  it("falls back to the module name when there is no pip alias", () => {
+    expect(moduleHint("ModuleNotFoundError: No module named 'requests'")).toMatch(/pip install requests/);
+  });
+
+  it("strips submodule paths to the top-level package", () => {
+    expect(moduleHint("ModuleNotFoundError: No module named 'foo.bar'")).toMatch(/module 'foo' is not installed/);
+  });
+
+  it("returns null for unrelated failures", () => {
+    expect(moduleHint("NameError: name 'x' is not defined")).toBeNull();
   });
 });
