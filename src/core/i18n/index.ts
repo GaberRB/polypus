@@ -120,6 +120,8 @@ const en: Catalog = {
   "run.confirm": "Allow {summary}?",
   "run.reprompt": "↻ no tool call — reinforcing instructions (attempt {attempt})",
   "run.autocorrect": "↻ tool failed — auto-correcting with extra context",
+  "run.hint.pythonMissing":
+    "↳ Python 3 isn't installed — install it from python.org and run the task again to use run_python_script.",
   "run.cancelled": "■ cancelled",
   "compaction.done": "context compacted: ~{before} → ~{after} tokens",
   "tools.customLoaded": "loaded custom tool(s): {names}",
@@ -439,6 +441,8 @@ const ptBR: Catalog = {
   "run.confirm": "Permitir {summary}?",
   "run.reprompt": "↻ nenhuma chamada de tool — reforçando instruções (tentativa {attempt})",
   "run.autocorrect": "↻ tool falhou — autocorrigindo com contexto extra",
+  "run.hint.pythonMissing":
+    "↳ Python 3 não está instalado — instale em python.org e rode a tarefa de novo para usar o run_python_script.",
   "run.cancelled": "■ cancelado",
   "compaction.done": "contexto compactado: ~{before} → ~{after} tokens",
   "tools.customLoaded": "tool(s) customizada(s) carregada(s): {names}",
