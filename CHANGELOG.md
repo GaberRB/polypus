@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (JSON, CSV, XML, SQLite) and notes that YAML/.xlsx need third-party packages. (#151)
 
 ### Added
+- `read_file` now accepts optional `start_line`/`end_line` (1-based, inclusive) to read just a slice
+  of a large file, returned with line numbers; without them the whole-file behavior is unchanged. (#157)
 - `run_python_script`: a missing third-party module now yields an actionable hint
   (`pip install <pkg>`, mapping e.g. `yaml` → `pyyaml`) instead of a bare traceback. (#151)
 
