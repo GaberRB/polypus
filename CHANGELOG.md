@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `run_python_script`: also tries the Windows Python launcher (`py -3`) when `python3`/`python` aren't
+  on PATH, so it works on installs that only ship the launcher. (#152)
 - `run_python_script`: description now scopes the supported formats to the Python standard library
   (JSON, CSV, XML, SQLite) and notes that YAML/.xlsx need third-party packages. (#151)
 

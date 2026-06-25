@@ -10,9 +10,10 @@ const TIMEOUT_MS = 120_000;
 // memory for the whole timeout window — this mirrors run_command's maxBuffer guard.
 const OUTPUT_HARD_LIMIT = 10 * 1024 * 1024;
 
-// Interpreters to try, in order. `python3` first because on many systems `python`
-// is missing or still points at Python 2.
-const INTERPRETERS = ["python3", "python"] as const;
+// Interpreters to try, in order, as argv prefixes. `python3` first because on many
+// systems `python` is missing or still points at Python 2; `py -3` covers Windows
+// installs where only the Python launcher is on PATH.
+const INTERPRETERS: readonly (readonly string[])[] = [["python3"], ["python"], ["py", "-3"]];
 
 export const runPythonScriptTool: Tool = {
   mutating: true,
@@ -54,31 +55,31 @@ export const runPythonScriptTool: Tool = {
 // Cache the working interpreter for the process lifetime — probing spawns a child,
 // so doing it on every call is wasteful. Negative results are not cached, so a
 // Python install done mid-session is still picked up.
-let cachedInterpreter: string | null = null;
+let cachedInterpreter: readonly string[] | null = null;
 
 async function runPython(script: string, cwd: string): Promise<ToolResult> {
-  const bin = findInterpreter();
-  if (!bin) {
+  const argv = findInterpreter();
+  if (!argv) {
     return {
       ok: false,
-      output: "Python not found (tried python3, python). Install Python 3 to use run_python_script.",
+      output: "Python not found (tried python3, python, py -3). Install Python 3 to use run_python_script.",
     };
   }
-  return runOnce(bin, script, cwd);
+  return runOnce(argv, script, cwd);
 }
 
 /**
- * Probe each candidate with `--version` and return the first that actually runs.
- * A plain ENOENT fallback is not enough on Windows, where `python3` is often the
- * Microsoft Store App Execution Alias: it is not missing (no ENOENT) but exits
- * non-zero without running Python, so we must verify rather than assume.
+ * Probe each candidate with `--version` and return the argv prefix of the first that
+ * actually runs. A plain ENOENT fallback is not enough on Windows, where `python3` is
+ * often the Microsoft Store App Execution Alias: it is not missing (no ENOENT) but
+ * exits non-zero without running Python, so we must verify rather than assume.
  * Exported so the test uses the exact same detection as the tool.
  */
-export function findInterpreter(): string | null {
+export function findInterpreter(): readonly string[] | null {
   if (cachedInterpreter) return cachedInterpreter;
-  for (const bin of INTERPRETERS) {
-    const r = spawnSync(bin, ["--version"], { windowsHide: true });
-    if (!r.error && r.status === 0) return (cachedInterpreter = bin);
+  for (const argv of INTERPRETERS) {
+    const r = spawnSync(argv[0]!, [...argv.slice(1), "--version"], { windowsHide: true });
+    if (!r.error && r.status === 0) return (cachedInterpreter = argv);
   }
   return null;
 }
@@ -88,9 +89,9 @@ export function findInterpreter(): string | null {
  * source through stdin instead of building a `python -c "…"` string removes the shell
  * entirely, so there is no quoting/escaping or command-injection surface.
  */
-function runOnce(bin: string, script: string, cwd: string): Promise<ToolResult> {
+function runOnce(argv: readonly string[], script: string, cwd: string): Promise<ToolResult> {
   return new Promise((resolve) => {
-    const child = spawn(bin, ["-"], { cwd, windowsHide: true });
+    const child = spawn(argv[0]!, [...argv.slice(1), "-"], { cwd, windowsHide: true });
     let stdout = "";
     let stderr = "";
     let total = 0;
