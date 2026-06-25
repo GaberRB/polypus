@@ -7,37 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- Interactive runs now surface an actionable hint when a tool fails on a missing prerequisite
-  (e.g. `run_python_script` without Python installed), in addition to feeding the raw error to the
-  agent for auto-correction. Bilingual. (#154)
+## [0.5.0] - 2026-06-25
+
+Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 
 ### Added
-- New tool `code_outline`: list a TS/JS file's top-level symbols (functions, classes, interfaces, types,
-  enums, function consts) with line numbers — a quick map without reading the whole file. (#162)
+- New tool `read_file` slicing: optional `start_line`/`end_line` (1-based, inclusive) to read just a
+  part of a large file, returned with line numbers; without them the whole-file behavior is unchanged. (#157)
 - New tool `apply_patch`: apply a unified diff (the `@@` hunk format from `git diff`) to a workspace
   file in one shot — context-anchored (tolerates small line drift), all-or-nothing (nothing is written
   if a hunk doesn't match), gated like a write. Dependency-free parser/applier. (#158)
-
-### Changed
-- `run_python_script`: the per-script timeout is configurable with `POLYPUS_PYTHON_TIMEOUT_MS`
-  (default 120000), mirroring the `POLYPUS_SWARM_*_TIMEOUT_MS` convention. (#153)
-- `run_python_script`: also tries the Windows Python launcher (`py -3`) when `python3`/`python` aren't
-  on PATH, so it works on installs that only ship the launcher. (#152)
-- `run_python_script`: description now scopes the supported formats to the Python standard library
-  (JSON, CSV, XML, SQLite) and notes that YAML/.xlsx need third-party packages. (#151)
-
-### Added
-- New tool `find_files`: list workspace files matching a glob (e.g. `src/**/*.test.ts`) without reading
-  their contents, respecting the allow/deny-list and skipping node_modules/.git. (#161)
 - New tools `delete_file` and `move_file`: native file management gated by the same allow/deny-list as
   writes. `delete_file` refuses non-empty directories; `move_file` creates the destination's parents. (#159)
 - New tool `file_stats`: report a path's size, type (file/dir/symlink) and last-modified time without
   reading its contents. (#160)
-- `read_file` now accepts optional `start_line`/`end_line` (1-based, inclusive) to read just a slice
-  of a large file, returned with line numbers; without them the whole-file behavior is unchanged. (#157)
+- New tool `find_files`: list workspace files matching a glob (e.g. `src/**/*.test.ts`) without reading
+  their contents, respecting the allow/deny-list and skipping node_modules/.git. (#161)
+- New tool `code_outline`: list a TS/JS file's top-level symbols (functions, classes, interfaces, types,
+  enums, function consts) with line numbers — a quick map without reading the whole file. (#162)
 - `run_python_script`: a missing third-party module now yields an actionable hint
   (`pip install <pkg>`, mapping e.g. `yaml` → `pyyaml`) instead of a bare traceback. (#151)
+
+### Changed
+- `run_python_script`: description now scopes the supported formats to the Python standard library
+  (JSON, CSV, XML, SQLite) and notes that YAML/.xlsx need third-party packages. (#151)
+- `run_python_script`: also tries the Windows Python launcher (`py -3`) when `python3`/`python` aren't
+  on PATH, so it works on installs that only ship the launcher. (#152)
+- `run_python_script`: the per-script timeout is configurable with `POLYPUS_PYTHON_TIMEOUT_MS`
+  (default 120000), mirroring the `POLYPUS_SWARM_*_TIMEOUT_MS` convention. (#153)
+- Interactive runs now surface an actionable hint when a tool fails on a missing prerequisite
+  (e.g. `run_python_script` without Python installed), in addition to feeding the raw error to the
+  agent for auto-correction. Bilingual. (#154)
+
+### Docs
+- `.poly/skills/python-tool.md`: a skill teaching the agent to use `run_python_script` well. (#155)
 
 ## [0.4.37] - 2026-06-25
 
@@ -491,7 +494,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.37...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/GaberRB/polypus/compare/v0.4.37...v0.5.0
 [0.4.37]: https://github.com/GaberRB/polypus/compare/v0.4.36...v0.4.37
 [0.4.36]: https://github.com/GaberRB/polypus/compare/v0.4.35...v0.4.36
 [0.4.35]: https://github.com/GaberRB/polypus/compare/v0.4.34...v0.4.35
