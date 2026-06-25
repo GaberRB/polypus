@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New tool `code_outline`: list a TS/JS file's top-level symbols (functions, classes, interfaces, types,
+  enums, function consts) with line numbers — a quick map without reading the whole file. (#162)
 - New tool `apply_patch`: apply a unified diff (the `@@` hunk format from `git diff`) to a workspace
   file in one shot — context-anchored (tolerates small line drift), all-or-nothing (nothing is written
   if a hunk doesn't match), gated like a write. Dependency-free parser/applier. (#158)

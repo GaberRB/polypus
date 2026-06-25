@@ -1,5 +1,6 @@
 import type { ToolSpec } from "../providers/types.js";
 import { applyPatchTool } from "./apply-patch.js";
+import { codeOutlineTool } from "./code-outline.js";
 import { deleteFileTool } from "./delete-file.js";
 import { editFileTool } from "./edit-file.js";
 import { fileStatsTool } from "./file-stats.js";
@@ -20,6 +21,7 @@ export const TOOLS: Record<string, Tool> = {
   [listDirTool.spec.name]: listDirTool,
   [fileStatsTool.spec.name]: fileStatsTool,
   [findFilesTool.spec.name]: findFilesTool,
+  [codeOutlineTool.spec.name]: codeOutlineTool,
   [searchTool.spec.name]: searchTool,
   [retrieveTool.spec.name]: retrieveTool,
   [writeFileTool.spec.name]: writeFileTool,
