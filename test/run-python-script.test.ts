@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { runPythonScriptTool, findInterpreter, moduleHint } from "../src/core/tools/run-python-script.js";
+import { runPythonScriptTool, findInterpreter, moduleHint, resolveTimeoutMs } from "../src/core/tools/run-python-script.js";
 import { PermissionEngine } from "../src/core/permissions/modes.js";
 import type { PermissionMode } from "../src/core/config/schema.js";
 
@@ -104,6 +104,22 @@ describe("run_python_script tool", () => {
     );
     expect(res.ok).toBe(false);
     expect(res.output).toMatch(/module 'polypus_definitely_missing_xyz' is not installed/);
+  });
+});
+
+describe("resolveTimeoutMs", () => {
+  it("defaults to 120000 when unset", () => {
+    expect(resolveTimeoutMs(undefined)).toBe(120_000);
+  });
+  it("uses a valid positive integer from the env", () => {
+    expect(resolveTimeoutMs("5000")).toBe(5000);
+  });
+  it("falls back to the default for non-positive, non-integer or garbage values", () => {
+    expect(resolveTimeoutMs("0")).toBe(120_000);
+    expect(resolveTimeoutMs("-1")).toBe(120_000);
+    expect(resolveTimeoutMs("1.5")).toBe(120_000);
+    expect(resolveTimeoutMs("abc")).toBe(120_000);
+    expect(resolveTimeoutMs("")).toBe(120_000);
   });
 });
 

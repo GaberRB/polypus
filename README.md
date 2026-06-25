@@ -207,6 +207,8 @@ polypus swarm "your task"
 
 Similarly, `POLYPUS_SWARM_IDLE_TIMEOUT_MS` controls the idle timeout for individual workers (default: 5 minutes).
 
+The `run_python_script` tool has its own per-script timeout, configurable with `POLYPUS_PYTHON_TIMEOUT_MS` (default: 120000, i.e. 2 minutes). An absent or invalid value falls back to the default.
+
 ## Swarm (parallel agents)
 
 ```bash
