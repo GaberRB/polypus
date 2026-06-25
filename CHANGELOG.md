@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.37] - 2026-06-25
+
+### Changed
+- Alguns harness usam python para ler arquivos complexod (#149)
+
+### Added
+- New tool `run_python_script`: execute Python scripts to read structured files (e.g., CSV, JSON, XML, YAML). (#149)
+
 ## [0.4.36] - 2026-06-24
 
 ### Changed
@@ -454,7 +462,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.36...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.37...HEAD
+[0.4.37]: https://github.com/GaberRB/polypus/compare/v0.4.36...v0.4.37
 [0.4.36]: https://github.com/GaberRB/polypus/compare/v0.4.35...v0.4.36
 [0.4.35]: https://github.com/GaberRB/polypus/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/GaberRB/polypus/compare/v0.4.33...v0.4.34
