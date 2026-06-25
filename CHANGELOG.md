@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Interactive runs now surface an actionable hint when a tool fails on a missing prerequisite
+  (e.g. `run_python_script` without Python installed), in addition to feeding the raw error to the
+  agent for auto-correction. Bilingual. (#154)
+
 ### Added
 - New tool `code_outline`: list a TS/JS file's top-level symbols (functions, classes, interfaces, types,
   enums, function consts) with line numbers — a quick map without reading the whole file. (#162)

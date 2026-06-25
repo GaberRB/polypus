@@ -490,6 +490,12 @@ function renderEvents(spinner: Spinner): AgentEvents {
       spinner.stop();
       const head = result.output.split("\n")[0] ?? "";
       console.log((result.ok ? pc.green("    ✓ ") : pc.red("    ✗ ")) + pc.dim(head.slice(0, 120)));
+      // The agent gets the raw error for auto-correction, but a missing prerequisite
+      // is really the user's to fix — surface an actionable hint in the terminal.
+      if (!result.ok) {
+        const hint = prerequisiteHint(result.output);
+        if (hint) console.log(pc.yellow("      " + t(hint)));
+      }
     },
     onReprompt(attempt) {
       spinner.stop();
@@ -504,4 +510,12 @@ function renderEvents(spinner: Spinner): AgentEvents {
       console.log(pc.yellow("    ↻ " + t("run.autocorrect")));
     },
   };
+}
+
+/** Map a known missing-prerequisite tool failure to an actionable, localized hint key. */
+const PREREQ_HINTS: { re: RegExp; key: string }[] = [
+  { re: /Python not found/, key: "run.hint.pythonMissing" },
+];
+export function prerequisiteHint(output: string): string | null {
+  return PREREQ_HINTS.find((h) => h.re.test(output))?.key ?? null;
 }
