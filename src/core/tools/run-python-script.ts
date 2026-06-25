@@ -4,7 +4,18 @@ import type { Tool, ToolResult } from "./types.js";
 
 const Args = z.object({ script: z.string().min(1) });
 const MAX_OUTPUT = 20_000;
-const TIMEOUT_MS = 120_000;
+const DEFAULT_TIMEOUT_MS = 120_000;
+
+/**
+ * Resolve the per-script timeout from POLYPUS_PYTHON_TIMEOUT_MS, mirroring the
+ * POLYPUS_SWARM_*_TIMEOUT_MS convention. Falls back to the default for an absent,
+ * non-numeric or non-positive value so a bad env var can never disable the guard.
+ */
+export function resolveTimeoutMs(raw: string | undefined = process.env.POLYPUS_PYTHON_TIMEOUT_MS): number {
+  if (raw === undefined) return DEFAULT_TIMEOUT_MS;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_TIMEOUT_MS;
+}
 // Hard cap on bytes read from the child before we kill it. We only ever keep
 // MAX_OUTPUT, but a runaway `while True: print(...)` would otherwise balloon
 // memory for the whole timeout window — this mirrors run_command's maxBuffer guard.
@@ -91,6 +102,7 @@ export function findInterpreter(): readonly string[] | null {
  */
 function runOnce(argv: readonly string[], script: string, cwd: string): Promise<ToolResult> {
   return new Promise((resolve) => {
+    const timeoutMs = resolveTimeoutMs();
     const child = spawn(argv[0]!, [...argv.slice(1), "-"], { cwd, windowsHide: true });
     let stdout = "";
     let stderr = "";
@@ -118,13 +130,13 @@ function runOnce(argv: readonly string[], script: string, cwd: string): Promise<
       ok: false,
       output: overflowed
         ? "Python script produced too much output (>10 MB) and was aborted."
-        : `Python script timed out after ${TIMEOUT_MS / 1000}s.`,
+        : `Python script timed out after ${Math.round(timeoutMs / 1000)}s.`,
     });
 
     const timer = setTimeout(() => {
       timedOut = true;
       killAndGuard();
-    }, TIMEOUT_MS);
+    }, timeoutMs);
 
     const onData = (buf: Buffer, sink: "out" | "err") => {
       total += buf.length;
