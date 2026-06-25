@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- New tool `apply_patch`: apply a unified diff (the `@@` hunk format from `git diff`) to a workspace
+  file in one shot — context-anchored (tolerates small line drift), all-or-nothing (nothing is written
+  if a hunk doesn't match), gated like a write. Dependency-free parser/applier. (#158)
+
 ### Changed
 - `run_python_script`: the per-script timeout is configurable with `POLYPUS_PYTHON_TIMEOUT_MS`
   (default 120000), mirroring the `POLYPUS_SWARM_*_TIMEOUT_MS` convention. (#153)
