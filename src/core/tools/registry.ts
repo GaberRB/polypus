@@ -4,6 +4,7 @@ import { listDirTool } from "./list-dir.js";
 import { readFileTool } from "./read-file.js";
 import { retrieveTool } from "./retrieve.js";
 import { runCommandTool } from "./run-command.js";
+import { runPythonScriptTool } from "./run-python-script.js";
 import { searchTool } from "./search-file.js";
 import { FINISH_TOOL, type Tool } from "./types.js";
 import { writeFileTool } from "./write-file.js";
@@ -17,6 +18,7 @@ export const TOOLS: Record<string, Tool> = {
   [writeFileTool.spec.name]: writeFileTool,
   [editFileTool.spec.name]: editFileTool,
   [runCommandTool.spec.name]: runCommandTool,
+  [runPythonScriptTool.spec.name]: runPythonScriptTool,
 };
 
 /** Tool specs advertised to the model, including the `finish` sentinel. */

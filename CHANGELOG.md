@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.37] - 2026-06-25
+
+### Added
+- New tool `run_python_script`: runs an inline Python 3 script (fed over stdin, no shell) to read or transform structured files such as CSV, JSON, XML, YAML and spreadsheets. Gated by the permission mode like `run_command`, with a 120s timeout and output clamp. (#149)
+
 ## [0.4.36] - 2026-06-24
 
 ### Changed
@@ -454,7 +459,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.36...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.4.37...HEAD
+[0.4.37]: https://github.com/GaberRB/polypus/compare/v0.4.36...v0.4.37
 [0.4.36]: https://github.com/GaberRB/polypus/compare/v0.4.35...v0.4.36
 [0.4.35]: https://github.com/GaberRB/polypus/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/GaberRB/polypus/compare/v0.4.33...v0.4.34
