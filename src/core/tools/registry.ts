@@ -2,6 +2,7 @@ import type { ToolSpec } from "../providers/types.js";
 import { deleteFileTool } from "./delete-file.js";
 import { editFileTool } from "./edit-file.js";
 import { fileStatsTool } from "./file-stats.js";
+import { findFilesTool } from "./find-files.js";
 import { listDirTool } from "./list-dir.js";
 import { moveFileTool } from "./move-file.js";
 import { readFileTool } from "./read-file.js";
@@ -17,6 +18,7 @@ export const TOOLS: Record<string, Tool> = {
   [readFileTool.spec.name]: readFileTool,
   [listDirTool.spec.name]: listDirTool,
   [fileStatsTool.spec.name]: fileStatsTool,
+  [findFilesTool.spec.name]: findFilesTool,
   [searchTool.spec.name]: searchTool,
   [retrieveTool.spec.name]: retrieveTool,
   [writeFileTool.spec.name]: writeFileTool,
