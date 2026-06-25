@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (JSON, CSV, XML, SQLite) and notes that YAML/.xlsx need third-party packages. (#151)
 
 ### Added
+- New tool `find_files`: list workspace files matching a glob (e.g. `src/**/*.test.ts`) without reading
+  their contents, respecting the allow/deny-list and skipping node_modules/.git. (#161)
 - New tools `delete_file` and `move_file`: native file management gated by the same allow/deny-list as
   writes. `delete_file` refuses non-empty directories; `move_file` creates the destination's parents. (#159)
 - New tool `file_stats`: report a path's size, type (file/dir/symlink) and last-modified time without
