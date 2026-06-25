@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (JSON, CSV, XML, SQLite) and notes that YAML/.xlsx need third-party packages. (#151)
 
 ### Added
+- New tools `delete_file` and `move_file`: native file management gated by the same allow/deny-list as
+  writes. `delete_file` refuses non-empty directories; `move_file` creates the destination's parents. (#159)
 - New tool `file_stats`: report a path's size, type (file/dir/symlink) and last-modified time without
   reading its contents. (#160)
 - `read_file` now accepts optional `start_line`/`end_line` (1-based, inclusive) to read just a slice
