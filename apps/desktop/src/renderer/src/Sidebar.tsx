@@ -93,6 +93,8 @@ function SessionItem({ session, isActive, onLoad, onDeleted, deleteLabel }: Sess
 // ── Sidebar ───────────────────────────────────────────────────────────────
 
 export function Sidebar({
+  collapsed = false,
+  onToggleCollapse,
   onSettings,
   onPickProject,
   onLoadSession,
@@ -101,6 +103,8 @@ export function Sidebar({
   project,
   activeSessionId,
 }: {
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
   onSettings: () => void;
   onPickProject: (path: string) => void;
   onLoadSession: (id: string) => void;
@@ -112,6 +116,8 @@ export function Sidebar({
   const { t, theme, setTheme, lang, setLang } = useSettings();
   const [projects, setProjects] = useState<RecentProject[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionSearch, setSessionSearch] = useState("");
   const [rootEntries, setRootEntries] = useState<DirEntry[] | null>(null);
   const [mcpCount, setMcpCount] = useState(0);
   const [filesOpen, setFilesOpen] = useState(false);
@@ -124,9 +130,11 @@ export function Sidebar({
 
   // Reload sessions whenever the active project changes.
   useEffect(() => {
+    setSessionsLoading(true);
     void window.polypus?.sessions(project ?? undefined).then((s) => {
       if (s?.ok) setSessions(s.data.filter(isRealSession));
       else setSessions([]);
+      setSessionsLoading(false);
     });
   }, [project]);
 
@@ -159,13 +167,23 @@ export function Sidebar({
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${collapsed ? " sidebar--collapsed" : ""}`} aria-label="Navegação">
+      <button
+        className="sidebar-collapse-btn"
+        aria-label={collapsed ? "Expandir sidebar" : "Recolher sidebar"}
+        aria-expanded={!collapsed}
+        onClick={onToggleCollapse}
+        title={collapsed ? "Expandir (Cmd+B)" : "Recolher (Cmd+B)"}
+      >
+        {collapsed ? "▸" : "◂"}
+      </button>
+
       <div className="brand">
         <span className="logo" aria-hidden>🐙</span>
-        <span>Polypus Cowork</span>
+        {!collapsed && <span className="brand-text">Polypus Cowork</span>}
       </div>
 
-      <nav className="nav">
+      {collapsed ? null : <nav className="nav">
         {/* Projects */}
         <div className="nav-group">{t("nav.projects")}</div>
         {projects.length === 0 ? (
@@ -186,14 +204,30 @@ export function Sidebar({
             style={{ display: "inline-flex", fontSize: "11px" }}
             title={t("nav.newSession")}
             onClick={onNewSession}
+            aria-label={t("nav.newSession")}
           >
             ＋
           </button>
         </div>
-        {sessions.length === 0 ? (
+        {sessions.length > 5 && (
+          <input
+            className="composer-input"
+            style={{ fontSize: 12, padding: "5px 8px", marginBottom: 4 }}
+            placeholder="Buscar sessão…"
+            value={sessionSearch}
+            onChange={(e) => setSessionSearch(e.target.value)}
+            aria-label="Buscar sessões"
+          />
+        )}
+        {sessionsLoading && Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className="skeleton" style={{ height: 28, margin: "2px 0" }} />
+        ))}
+        {!sessionsLoading && sessions.length === 0 ? (
           <div className="nav-empty muted">{t("nav.emptySessions")}</div>
         ) : (
-          sessions.map((s) => (
+          sessions
+            .filter((s) => !sessionSearch || (s.title ?? s.id).toLowerCase().includes(sessionSearch.toLowerCase()))
+            .map((s) => (
             <SessionItem
               key={s.id}
               session={s}
@@ -235,26 +269,35 @@ export function Sidebar({
             {t("nav.mcpServers").replace("{{n}}", String(mcpCount))}
           </button>
         )}
-      </nav>
+      </nav>}
 
       <div className="sidebar-foot">
-        <div className="toggles">
-          <button
-            className="nav-item toggle"
-            title={t("settings.theme")}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? "🌙" : "☀️"} {t("settings.theme")}
-          </button>
-          <button
-            className="nav-item toggle"
-            title={t("settings.lang")}
-            onClick={() => setLang(lang === "pt-BR" ? "en" : "pt-BR")}
-          >
-            🌐 {lang}
-          </button>
-        </div>
-        <button className="nav-item" onClick={onSettings}>{t("nav.config")}</button>
+        {!collapsed && (
+          <div className="toggles">
+            <button
+              className="nav-item toggle"
+              title={t("settings.theme")}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? "🌙" : "☀️"} {t("settings.theme")}
+            </button>
+            <button
+              className="nav-item toggle"
+              title={t("settings.lang")}
+              onClick={() => setLang(lang === "pt-BR" ? "en" : "pt-BR")}
+            >
+              🌐 {lang}
+            </button>
+          </div>
+        )}
+        <button
+          className="nav-item"
+          onClick={onSettings}
+          title={t("nav.config")}
+          aria-label={t("nav.config")}
+        >
+          {collapsed ? "⚙" : t("nav.config")}
+        </button>
       </div>
     </aside>
   );

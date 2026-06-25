@@ -67,7 +67,17 @@ export function FileViewer({ path, onClose }: Props): JSX.Element | null {
           </button>
         </div>
         <div className="file-drawer-body">
-          {loading && <span className="muted">{t("file.loading")}</span>}
+          {loading && (
+            <div style={{ padding: "8px 0" }}>
+              {Array.from({ length: 8 }, (_, i) => (
+                <div
+                  key={i}
+                  className="skeleton"
+                  style={{ height: 14, marginBottom: 6, width: `${60 + (i % 3) * 15}%` }}
+                />
+              ))}
+            </div>
+          )}
           {error && <span className="muted">{t("file.error")} {error}</span>}
           {content !== null && <pre>{content}</pre>}
         </div>

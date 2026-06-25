@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Chat } from "./Chat";
+import { CommandPalette, type Command } from "./CommandPalette";
 import { Cowork } from "./Cowork";
 import { FileViewer } from "./FileViewer";
+import { Onboarding, needsOnboarding } from "./Onboarding";
 import { PlainChat } from "./PlainChat";
 import { RagPanel } from "./RagPanel";
 import { Sidebar } from "./Sidebar";
 import { ModeSelector } from "./ModeSelector";
 import { SettingsModal } from "./SettingsModal";
+import { ToastProvider } from "./Toast";
 import type { LoadedSession, Mode } from "../../shared/ipc";
 
 type Tab = "chat" | "cowork" | "code";
@@ -43,7 +46,7 @@ function ProjectSwitchWarning({
           <button className="btn" onClick={onCancel} style={{ background: "transparent" }}>
             Cancelar
           </button>
-          <button className="btn" onClick={() => onConfirm(dontShow)} style={{ background: "var(--accent, #7c6af5)" }}>
+          <button className="btn" onClick={() => onConfirm(dontShow)} style={{ background: "var(--accent)" }}>
             Trocar projeto
           </button>
         </div>
@@ -52,11 +55,6 @@ function ProjectSwitchWarning({
   );
 }
 
-/**
- * Cowork shell, mirroring claude_desktop.png: top tabs (Chat/Cowork/Code) + a
- * sidebar + a work area whose top bar carries the project folder, mode and model
- * selectors. Chat = plain talk; Code = project agent (streaming); Cowork = base.
- */
 export function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>("code");
   const [mode, setMode] = useState<Mode>(
@@ -73,6 +71,11 @@ export function App(): JSX.Element {
   const [sessionKey, setSessionKey] = useState(0);
   const [pendingProject, setPendingProject] = useState<string | null>(null);
   const [showProjectWarning, setShowProjectWarning] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem("polypus.sidebarCollapsed") === "true",
+  );
+  const [showCmdPalette, setShowCmdPalette] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => needsOnboarding());
 
   const loadAgent = async (): Promise<void> => {
     const res = await window.polypus?.getConfig();
@@ -131,6 +134,55 @@ export function App(): JSX.Element {
     setSessionKey((k) => k + 1);
   };
 
+  const toggleSidebar = (): void => {
+    setSidebarCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem("polypus.sidebarCollapsed", String(next));
+      return next;
+    });
+  };
+
+  // Global keyboard shortcuts
+  const cmdPaletteRef = useRef(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent): void => {
+      const meta = e.metaKey || e.ctrlKey;
+      // Don't fire when typing in inputs/textareas
+      const target = e.target as HTMLElement;
+      const inInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+
+      if (meta && e.key === "k") {
+        e.preventDefault();
+        setShowCmdPalette((v) => !v);
+        return;
+      }
+      if (inInput) return;
+      if (meta && e.key === "n") { e.preventDefault(); handleNewSession(); }
+      if (meta && e.key === ",") { e.preventDefault(); setShowSettings(true); }
+      if (meta && e.key === "b") { e.preventDefault(); toggleSidebar(); }
+      if (meta && e.key === "1") { e.preventDefault(); setTab("chat"); }
+      if (meta && e.key === "2") { e.preventDefault(); setTab("cowork"); }
+      if (meta && e.key === "3") { e.preventDefault(); setTab("code"); }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  cmdPaletteRef.current = showCmdPalette;
+
+  const commands: Command[] = [
+    { id: "new-session", label: "Nova sessão", icon: "＋", group: "Sessão", action: handleNewSession, keywords: ["new", "session", "reset"] },
+    { id: "open-settings", label: "Abrir configurações", icon: "⚙", group: "App", action: () => setShowSettings(true), keywords: ["settings", "config", "api", "chave"] },
+    { id: "choose-project", label: "Escolher pasta do projeto", icon: "📁", group: "Projeto", action: () => void chooseFolder(), keywords: ["folder", "pasta", "projeto", "open"] },
+    { id: "toggle-sidebar", label: "Toggle sidebar", icon: sidebarCollapsed ? "▸" : "◂", group: "App", action: toggleSidebar, keywords: ["sidebar", "collapse", "hide"] },
+    { id: "tab-chat", label: "Ir para aba Chat", icon: "💬", group: "Navegação", action: () => setTab("chat"), keywords: ["chat", "conversa"] },
+    { id: "tab-cowork", label: "Ir para aba Cowork", icon: "⚡", group: "Navegação", action: () => setTab("cowork"), keywords: ["cowork", "task"] },
+    { id: "tab-code", label: "Ir para aba Code", icon: "⌥", group: "Navegação", action: () => setTab("code"), keywords: ["code", "código", "run"] },
+    { id: "mode-plan", label: "Modo: Plan (somente leitura)", icon: "📋", group: "Modo", action: () => { setMode("plan"); localStorage.setItem("polypus.mode", "plan"); }, keywords: ["plan", "readonly"] },
+    { id: "mode-review", label: "Modo: Review (confirmar ações)", icon: "👁", group: "Modo", action: () => { setMode("review"); localStorage.setItem("polypus.mode", "review"); }, keywords: ["review", "confirm"] },
+    { id: "mode-bypass", label: "Modo: Bypass (automático)", icon: "⚡", group: "Modo", action: () => { setMode("bypass"); localStorage.setItem("polypus.mode", "bypass"); }, keywords: ["bypass", "auto", "auto-approve"] },
+  ];
+
   const TABS: { id: Tab; label: string }[] = [
     { id: "chat", label: "Chat" },
     { id: "cowork", label: "Cowork" },
@@ -138,99 +190,122 @@ export function App(): JSX.Element {
   ];
 
   return (
-    <div className="shell-2col">
-      <Sidebar
-        onSettings={() => setShowSettings(true)}
-        onPickProject={switchProject}
-        onLoadSession={(id) => void handleLoadSession(id)}
-        onNewSession={handleNewSession}
-        onOpenFile={setFileViewerPath}
-        project={project ?? undefined}
-        activeSessionId={activeSession?.id}
-      />
-
-      <div className="workarea">
-        <header className="topbar">
-          <div className="toptabs">
-            {TABS.map((x) => (
-              <button key={x.id} className={`toptab${tab === x.id ? " on" : ""}`} onClick={() => setTab(x.id)}>
-                {x.label}
-              </button>
-            ))}
-          </div>
-          <div className="topbar-right">
-            {tab === "code" && (
-              <button className="chip" onClick={chooseFolder} title={project ?? ""}>
-                📁 {project ? baseName(project) : "Escolher pasta"}
-              </button>
-            )}
-            {tab !== "chat" && (
-              <ModeSelector
-                mode={mode}
-                onChange={(m) => {
-                  setMode(m);
-                  localStorage.setItem("polypus.mode", m);
-                }}
-              />
-            )}
-            <button
-              className={`chip${agentLabel === "sem agente" ? " chip-warn" : ""}`}
-              onClick={() => setShowSettings(true)}
-              title="Personalizar"
-            >
-              {agentLabel === "sem agente" ? "⚠ Configurar agente" : `${agentLabel} ▾`}
-            </button>
-          </div>
-        </header>
-
-        <div className="content">
-          {tab === "chat" && <PlainChat />}
-
-          {tab === "code" && (
-            <>
-              <div className="subtabs">
-                <button className={`subtab${codeView === "chat" ? " on" : ""}`} onClick={() => setCodeView("chat")}>
-                  Conversa
-                </button>
-                <button className={`subtab${codeView === "rag" ? " on" : ""}`} onClick={() => setCodeView("rag")}>
-                  Índice (RAG)
-                </button>
-              </div>
-              {codeView === "chat" ? (
-                <Chat
-                  mode={mode}
-                  dir={project ?? undefined}
-                  initialSession={activeSession ?? undefined}
-                  key={activeSession?.id ?? `new-${sessionKey}`}
-                />
-              ) : (
-                <RagPanel />
-              )}
-            </>
-          )}
-
-          {tab === "cowork" && (
-            <Cowork mode={mode} dir={project} onPickProject={setProject} />
-          )}
-        </div>
-      </div>
-
-      {showSettings && (
-        <SettingsModal
-          onClose={() => setShowSettings(false)}
-          onSaved={loadAgent}
+    <ToastProvider>
+      <div
+        className="shell-2col"
+        data-sidebar-collapsed={sidebarCollapsed ? "true" : undefined}
+      >
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
+          onSettings={() => setShowSettings(true)}
+          onPickProject={switchProject}
+          onLoadSession={(id) => void handleLoadSession(id)}
+          onNewSession={handleNewSession}
+          onOpenFile={setFileViewerPath}
           project={project ?? undefined}
+          activeSessionId={activeSession?.id}
         />
-      )}
 
-      <FileViewer path={fileViewerPath} onClose={() => setFileViewerPath(null)} />
+        <div className="workarea">
+          <header className="topbar">
+            <div className="toptabs">
+              {TABS.map((x) => (
+                <button key={x.id} className={`toptab${tab === x.id ? " on" : ""}`} onClick={() => setTab(x.id)}>
+                  {x.label}
+                </button>
+              ))}
+            </div>
+            <div className="topbar-right">
+              {tab === "code" && (
+                <button className="chip" onClick={chooseFolder} title={project ?? ""}>
+                  📁 {project ? baseName(project) : "Escolher pasta"}
+                </button>
+              )}
+              {tab !== "chat" && (
+                <ModeSelector
+                  mode={mode}
+                  onChange={(m) => {
+                    setMode(m);
+                    localStorage.setItem("polypus.mode", m);
+                  }}
+                />
+              )}
+              <button
+                className={`chip${agentLabel === "sem agente" ? " chip-warn" : ""}`}
+                onClick={() => setShowSettings(true)}
+                title="Personalizar"
+              >
+                {agentLabel === "sem agente" ? "⚠ Configurar agente" : `${agentLabel} ▾`}
+              </button>
+              <button
+                className="icon-btn"
+                title="Palette de comandos (Cmd+K)"
+                aria-label="Abrir palette de comandos"
+                onClick={() => setShowCmdPalette(true)}
+              >
+                ⌘K
+              </button>
+            </div>
+          </header>
 
-      {showProjectWarning && (
-        <ProjectSwitchWarning
-          onConfirm={confirmSwitchProject}
-          onCancel={() => { setShowProjectWarning(false); setPendingProject(null); }}
-        />
-      )}
-    </div>
+          <div className="content">
+            {tab === "chat" && <PlainChat />}
+
+            {tab === "code" && (
+              <>
+                <div className="subtabs">
+                  <button className={`subtab${codeView === "chat" ? " on" : ""}`} onClick={() => setCodeView("chat")}>
+                    Conversa
+                  </button>
+                  <button className={`subtab${codeView === "rag" ? " on" : ""}`} onClick={() => setCodeView("rag")}>
+                    Índice (RAG)
+                  </button>
+                </div>
+                {codeView === "chat" ? (
+                  <Chat
+                    mode={mode}
+                    dir={project ?? undefined}
+                    initialSession={activeSession ?? undefined}
+                    key={activeSession?.id ?? `new-${sessionKey}`}
+                  />
+                ) : (
+                  <RagPanel />
+                )}
+              </>
+            )}
+
+            {tab === "cowork" && (
+              <Cowork mode={mode} dir={project} onPickProject={setProject} />
+            )}
+          </div>
+        </div>
+
+        {showSettings && (
+          <SettingsModal
+            onClose={() => setShowSettings(false)}
+            onSaved={loadAgent}
+            project={project ?? undefined}
+          />
+        )}
+
+        <FileViewer path={fileViewerPath} onClose={() => setFileViewerPath(null)} />
+
+        {showProjectWarning && (
+          <ProjectSwitchWarning
+            onConfirm={confirmSwitchProject}
+            onCancel={() => { setShowProjectWarning(false); setPendingProject(null); }}
+          />
+        )}
+
+        {showCmdPalette && (
+          <CommandPalette commands={commands} onClose={() => setShowCmdPalette(false)} />
+        )}
+
+        {showOnboarding && (
+          <Onboarding onDone={() => setShowOnboarding(false)} />
+        )}
+      </div>
+    </ToastProvider>
   );
 }

@@ -79,9 +79,15 @@ export function SettingsModal({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Personalizar agente"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-head">
-          <strong>Personalizar</strong>
+          <strong id="settings-title">Personalizar</strong>
           <div className="settings-tabs">
             <button
               className={`settings-tab${settingsTab === "agents" ? " on" : ""}`}
@@ -96,7 +102,7 @@ export function SettingsModal({
               {t("settings.mcp")}
             </button>
           </div>
-          <button className="icon-btn" onClick={onClose}>✕</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Fechar configurações">✕</button>
         </div>
 
         {settingsTab === "mcp" ? (

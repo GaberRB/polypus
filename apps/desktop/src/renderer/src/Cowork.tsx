@@ -224,15 +224,18 @@ export function Cowork({
         {tools.length > 0 && (
           <div className="timeline">
             {tools.map((tool, i) => (
-              <div className="tool" key={i}>
+              <div
+                className={`tool tool--${tool.ok === undefined ? "running" : tool.ok ? "ok" : "error"}`}
+                key={i}
+              >
                 <span className="tool-head">
-                  <span className="tool-status">
-                    {tool.ok === undefined
-                      ? <PolypusMascot size="sm" />
-                      : tool.ok ? "✓" : "✗"}
-                  </span>
                   <span className="tool-name">{tool.name}</span>
                   {tool.arg && <span className="muted tool-arg">{tool.arg}</span>}
+                  <span
+                    className="tool-status-dot"
+                    role="status"
+                    aria-label={tool.ok === undefined ? "executando" : tool.ok ? "concluído" : "erro"}
+                  />
                 </span>
                 {tool.output && (
                   <div className="tool-out muted">{tool.output.split("\n")[0]}</div>
@@ -246,7 +249,7 @@ export function Cowork({
 
         {phase === "running" && !agentText && tools.length === 0 && (
           <div className="thinking-state">
-            <PolypusMascot size="lg" />
+            <PolypusMascot size="lg" state="running" />
             <span>{t("cowork.running")}</span>
           </div>
         )}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useSettings } from "./settings";
 import { PolypusMascot } from "./PolypusMascot";
+import { DiffViewer, isDiff } from "./DiffViewer";
 import type { DirEntry, LoadedSession, Mode, ModelPrice, StreamEvent } from "../../shared/ipc";
 
 interface ToolItem {
@@ -20,6 +21,19 @@ function deriveArg(args: unknown): string | undefined {
   const a = args as Record<string, unknown>;
   const v = a.command ?? a.path ?? a.query;
   return typeof v === "string" ? v : undefined;
+}
+
+const TOOL_ICONS: Record<string, string> = {
+  write_file: "✎", edit_file: "✎", create_file: "✎",
+  read_file: "◎", view_file: "◎",
+  run_command: "⊡", execute: "⊡", bash: "⊡",
+  search_file: "⊘", grep: "⊘", glob: "⊘",
+  retrieve: "◈", finish: "✦",
+};
+
+function toolIcon(name: string): string {
+  const key = Object.keys(TOOL_ICONS).find((k) => name.toLowerCase().includes(k));
+  return key ? (TOOL_ICONS[key] ?? "◈") : "◈";
 }
 
 /**
@@ -195,7 +209,7 @@ export function Chat({
 
   return (
     <div className="chat">
-      <div className="thread">
+      <div className="thread" aria-live="polite" aria-atomic="false">
         {initialSession && messages.length > 0 && (
           <div className="muted" style={{ fontSize: "12px", textAlign: "center", padding: "8px 0 4px" }}>
             — sessão retomada: {initialSession.title} —
@@ -213,17 +227,25 @@ export function Chat({
               {m.tools.length > 0 && (
                 <div className="timeline">
                   {m.tools.map((tool, i) => (
-                    <div className="tool" key={i}>
+                    <div
+                      className={`tool tool--${tool.ok === undefined ? "running" : tool.ok ? "ok" : "error"}`}
+                      key={i}
+                    >
                       <span className="tool-head">
-                        <span className="tool-status">
-                          {tool.ok === undefined
-                            ? <PolypusMascot size="sm" />
-                            : tool.ok ? "✓" : "✗"}
-                        </span>
+                        <span className="tool-icon" aria-hidden>{toolIcon(tool.name)}</span>
                         <span className="tool-name">{tool.name}</span>
                         {tool.arg && <span className="muted tool-arg">{tool.arg}</span>}
+                        <span
+                          className="tool-status-dot"
+                          role="status"
+                          aria-label={tool.ok === undefined ? "executando" : tool.ok ? "concluído" : "erro"}
+                        />
                       </span>
-                      {tool.output && <div className="tool-out muted">{tool.output.split("\n")[0]}</div>}
+                      {tool.output && (
+                        isDiff(tool.output)
+                          ? <DiffViewer diff={tool.output} />
+                          : <div className="tool-out muted">{tool.output.split("\n")[0]}</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -231,7 +253,7 @@ export function Chat({
               {m.text && <pre className="msg-text">{m.text}</pre>}
               {!m.done && !m.text && m.tools.length === 0 && (
                 <div className="thinking-state">
-                  <PolypusMascot size="lg" />
+                  <PolypusMascot size="lg" state="running" />
                   <span>{t("chat.running")}</span>
                 </div>
               )}
@@ -309,6 +331,27 @@ function fmtCost(usd: number): string {
   return `$${usd.toFixed(3)}`;
 }
 
+const DAY_KEY = "polypus.dayCost";
+const DAY_DATE_KEY = "polypus.dayCostDate";
+
+function addDayCost(usd: number): number {
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem(DAY_DATE_KEY) !== today) {
+    localStorage.setItem(DAY_DATE_KEY, today);
+    localStorage.setItem(DAY_KEY, "0");
+  }
+  const prev = parseFloat(localStorage.getItem(DAY_KEY) ?? "0");
+  const next = prev + usd;
+  localStorage.setItem(DAY_KEY, String(next));
+  return next;
+}
+
+function getDayCost(): number {
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem(DAY_DATE_KEY) !== today) return 0;
+  return parseFloat(localStorage.getItem(DAY_KEY) ?? "0");
+}
+
 function UsageBar({
   promptTokens,
   completionTokens,
@@ -318,12 +361,25 @@ function UsageBar({
   completionTokens: number;
   price: ModelPrice | null;
 }): JSX.Element | null {
+  const [expanded, setExpanded] = useState(false);
+  const [dayCost, setDayCost] = useState(() => getDayCost());
+
   const total = promptTokens + completionTokens;
   if (total === 0) return null;
+
   const costUsd =
     price
       ? (promptTokens * price.promptPrice + completionTokens * price.completionPrice) / 1_000_000
       : null;
+  const promptCost = price ? (promptTokens * price.promptPrice) / 1_000_000 : null;
+  const completionCost = price ? (completionTokens * price.completionPrice) / 1_000_000 : null;
+
+  // Update daily cost when this session's cost changes
+  useEffect(() => {
+    if (costUsd !== null && costUsd > 0) setDayCost(addDayCost(0));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="usage-bar">
       <span>↑ {fmtTokens(promptTokens)}</span>
@@ -336,6 +392,38 @@ function UsageBar({
           <span className="usage-sep">·</span>
           <span className="usage-cost">{fmtCost(costUsd)}</span>
         </>
+      )}
+      <button
+        className="usage-expand-btn"
+        onClick={() => setExpanded((v) => !v)}
+        aria-label={expanded ? "Recolher detalhes" : "Expandir detalhes de custo"}
+        aria-expanded={expanded}
+      >
+        {expanded ? "▴" : "▾"}
+      </button>
+      {expanded && (
+        <div className="cost-panel">
+          <div className="cost-panel-row">
+            <span className="muted">Prompt</span>
+            <span>{fmtTokens(promptTokens)} tok{promptCost !== null ? ` · ${fmtCost(promptCost)}` : ""}</span>
+          </div>
+          <div className="cost-panel-row">
+            <span className="muted">Completion</span>
+            <span>{fmtTokens(completionTokens)} tok{completionCost !== null ? ` · ${fmtCost(completionCost)}` : ""}</span>
+          </div>
+          {costUsd !== null && (
+            <>
+              <div className="cost-bar" aria-label={`Prompt: ${Math.round(promptTokens / total * 100)}%, Completion: ${Math.round(completionTokens / total * 100)}%`}>
+                <div className="cost-bar-prompt" style={{ flex: promptTokens }} />
+                <div className="cost-bar-completion" style={{ flex: completionTokens }} />
+              </div>
+              <div className="cost-panel-row cost-panel-today">
+                <span className="muted">Hoje (acumulado)</span>
+                <span>{fmtCost(dayCost + costUsd)}</span>
+              </div>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
