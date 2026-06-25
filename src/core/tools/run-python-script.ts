@@ -5,6 +5,10 @@ import type { Tool, ToolResult } from "./types.js";
 const Args = z.object({ script: z.string().min(1) });
 const MAX_OUTPUT = 20_000;
 const TIMEOUT_MS = 120_000;
+// Hard cap on bytes read from the child before we kill it. We only ever keep
+// MAX_OUTPUT, but a runaway `while True: print(...)` would otherwise balloon
+// memory for the whole timeout window — this mirrors run_command's maxBuffer guard.
+const OUTPUT_HARD_LIMIT = 10 * 1024 * 1024;
 
 // Interpreters to try, in order. `python3` first because on many systems `python`
 // is missing or still points at Python 2.
@@ -45,6 +49,11 @@ export const runPythonScriptTool: Tool = {
   },
 };
 
+// Cache the working interpreter for the process lifetime — probing spawns a child,
+// so doing it on every call is wasteful. Negative results are not cached, so a
+// Python install done mid-session is still picked up.
+let cachedInterpreter: string | null = null;
+
 async function runPython(script: string, cwd: string): Promise<ToolResult> {
   const bin = findInterpreter();
   if (!bin) {
@@ -61,11 +70,13 @@ async function runPython(script: string, cwd: string): Promise<ToolResult> {
  * A plain ENOENT fallback is not enough on Windows, where `python3` is often the
  * Microsoft Store App Execution Alias: it is not missing (no ENOENT) but exits
  * non-zero without running Python, so we must verify rather than assume.
+ * Exported so the test uses the exact same detection as the tool.
  */
-function findInterpreter(): string | null {
+export function findInterpreter(): string | null {
+  if (cachedInterpreter) return cachedInterpreter;
   for (const bin of INTERPRETERS) {
     const r = spawnSync(bin, ["--version"], { windowsHide: true });
-    if (!r.error && r.status === 0) return bin;
+    if (!r.error && r.status === 0) return (cachedInterpreter = bin);
   }
   return null;
 }
@@ -80,36 +91,62 @@ function runOnce(bin: string, script: string, cwd: string): Promise<ToolResult> 
     const child = spawn(bin, ["-"], { cwd, windowsHide: true });
     let stdout = "";
     let stderr = "";
+    let total = 0;
     let settled = false;
     let timedOut = false;
+    let overflowed = false;
+    let killFallback: ReturnType<typeof setTimeout> | undefined;
 
     const finish = (result: ToolResult) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      clearTimeout(killFallback);
       resolve(result);
     };
 
+    // Kill the child and, in case it ignores the signal or never emits `close`,
+    // arm a short fallback so the promise can never hang forever.
+    const killAndGuard = () => {
+      child.kill("SIGKILL");
+      killFallback = setTimeout(() => finish(killResult()), 2_000);
+    };
+    const killResult = (): ToolResult => ({
+      ok: false,
+      output: overflowed
+        ? "Python script produced too much output (>10 MB) and was aborted."
+        : `Python script timed out after ${TIMEOUT_MS / 1000}s.`,
+    });
+
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      killAndGuard();
     }, TIMEOUT_MS);
 
-    child.stdout.on("data", (d) => {
-      stdout += d.toString();
-    });
-    child.stderr.on("data", (d) => {
-      stderr += d.toString();
-    });
+    const onData = (buf: Buffer, sink: "out" | "err") => {
+      total += buf.length;
+      // Keep only what we might display (output is clamped to MAX_OUTPUT anyway);
+      // drop the rest so a chatty script can't grow these strings without bound.
+      if (sink === "out") {
+        if (stdout.length < MAX_OUTPUT) stdout += buf.toString();
+      } else if (stderr.length < MAX_OUTPUT) {
+        stderr += buf.toString();
+      }
+      if (total > OUTPUT_HARD_LIMIT && !overflowed) {
+        overflowed = true;
+        killAndGuard();
+      }
+    };
+
+    child.stdout.on("data", (d) => onData(d, "out"));
+    child.stderr.on("data", (d) => onData(d, "err"));
 
     child.on("error", (err: NodeJS.ErrnoException) => {
       finish({ ok: false, output: `Failed to run Python: ${err.message}` });
     });
 
     child.on("close", (code) => {
-      if (timedOut) {
-        return finish({ ok: false, output: `Python script timed out after ${TIMEOUT_MS / 1000}s.` });
-      }
+      if (overflowed || timedOut) return finish(killResult());
       if (code === 0) {
         const out = `${stdout}${stderr ? `\n[stderr]\n${stderr}` : ""}`.trim();
         return finish({ ok: true, output: clamp(out || "(no output)") });
@@ -118,10 +155,15 @@ function runOnce(bin: string, script: string, cwd: string): Promise<ToolResult> 
       finish({ ok: false, output: clamp(`Python script failed (exit ${code ?? "?"}):\n${body}`) });
     });
 
-    // Ignore EPIPE if the process died before consuming stdin.
-    child.stdin.on("error", () => {});
-    child.stdin.write(script);
-    child.stdin.end();
+    // Feed the script over stdin. Wrap in try/catch because writing to a process
+    // that died on startup can throw synchronously — tools must never throw.
+    try {
+      child.stdin.on("error", () => {});
+      child.stdin.write(script);
+      child.stdin.end();
+    } catch {
+      /* the error/close handlers settle the result */
+    }
   });
 }
 

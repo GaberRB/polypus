@@ -1,9 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { runPythonScriptTool } from "../src/core/tools/run-python-script.js";
+import { runPythonScriptTool, findInterpreter } from "../src/core/tools/run-python-script.js";
 import { PermissionEngine } from "../src/core/permissions/modes.js";
 import type { PermissionMode } from "../src/core/config/schema.js";
 
@@ -24,17 +23,10 @@ function ctx(ws: string, mode: PermissionMode = "bypass") {
   };
 }
 
-// The execution tests need a real interpreter; skip them when neither is installed
-// so CI on a Python-less machine stays green.
-function pythonBin(): string | null {
-  for (const bin of ["python3", "python"]) {
-    const r = spawnSync(bin, ["--version"], { windowsHide: true });
-    if (!r.error && r.status === 0) return bin;
-  }
-  return null;
-}
-const hasPython = pythonBin() !== null;
-const whenPython = hasPython ? it : it.skip;
+// The execution tests need a real interpreter; skip them when none is installed so
+// CI on a Python-less machine stays green. Reuse the tool's own detection so the
+// guard can never diverge from what the tool actually runs.
+const whenPython = findInterpreter() !== null ? it : it.skip;
 
 afterEach(() => {
   for (const d of dirs.splice(0)) {
@@ -93,5 +85,13 @@ describe("run_python_script tool", () => {
     expect(res.ok).toBe(false);
     expect(res.output).toMatch(/Python script failed/);
     expect(res.output).toMatch(/NameError/);
+  });
+
+  whenPython("clamps oversized output instead of returning it all", async () => {
+    const res = await runPythonScriptTool.run({ script: "print('x' * 30000)" }, ctx(workspace()));
+    expect(res.ok).toBe(true);
+    expect(res.output).toContain("[truncated]");
+    // Bounded to the clamp size plus the short marker.
+    expect(res.output.length).toBeLessThan(20_100);
   });
 });
