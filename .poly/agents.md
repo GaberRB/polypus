@@ -49,6 +49,7 @@ issue → (PRD bot ao rotular accepted) → branch feat|fix|docs/<n>-<slug>
 | [`skills/github-pages.md`](skills/github-pages.md) | Atualizar o site (`docs/`): i18n, diagramas interativos |
 | [`skills/coding.md`](skills/coding.md) | Padrões técnicos: tool nova, comando, i18n, testes, providers |
 | [`skills/task-generation.md`](skills/task-generation.md) | Quebrar PRD em tarefas paralelizáveis e documentar no PR |
+| [`skills/python-tool.md`](skills/python-tool.md) | Usar bem `run_python_script`: extrair valores de estruturados, stdlib, limites |
 
 ## Ambiente
 
