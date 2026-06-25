@@ -1,4 +1,5 @@
 import type { ToolSpec } from "../providers/types.js";
+import { applyPatchTool } from "./apply-patch.js";
 import { deleteFileTool } from "./delete-file.js";
 import { editFileTool } from "./edit-file.js";
 import { fileStatsTool } from "./file-stats.js";
@@ -23,6 +24,7 @@ export const TOOLS: Record<string, Tool> = {
   [retrieveTool.spec.name]: retrieveTool,
   [writeFileTool.spec.name]: writeFileTool,
   [editFileTool.spec.name]: editFileTool,
+  [applyPatchTool.spec.name]: applyPatchTool,
   [deleteFileTool.spec.name]: deleteFileTool,
   [moveFileTool.spec.name]: moveFileTool,
   [runCommandTool.spec.name]: runCommandTool,
