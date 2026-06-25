@@ -1,11 +1,6 @@
 import type { ToolSpec } from "../providers/types.js";
 import type { PermissionEngine } from "../permissions/modes.js";
 
-export interface Decision {
-  allowed: boolean;
-  reason: string;
-}
-
 export interface ToolContext {
   workspace: string;
   permissions: PermissionEngine;

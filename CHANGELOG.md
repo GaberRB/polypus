@@ -9,11 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.37] - 2026-06-25
 
-### Changed
-- Alguns harness usam python para ler arquivos complexod (#149)
-
 ### Added
-- New tool `run_python_script`: execute Python scripts to read structured files (e.g., CSV, JSON, XML, YAML). (#149)
+- New tool `run_python_script`: runs an inline Python 3 script (fed over stdin, no shell) to read or transform structured files such as CSV, JSON, XML, YAML and spreadsheets. Gated by the permission mode like `run_command`, with a 120s timeout and output clamp. (#149)
 
 ## [0.4.36] - 2026-06-24
 

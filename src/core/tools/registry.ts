@@ -4,14 +4,13 @@ import { listDirTool } from "./list-dir.js";
 import { readFileTool } from "./read-file.js";
 import { retrieveTool } from "./retrieve.js";
 import { runCommandTool } from "./run-command.js";
+import { runPythonScriptTool } from "./run-python-script.js";
 import { searchTool } from "./search-file.js";
 import { FINISH_TOOL, type Tool } from "./types.js";
 import { writeFileTool } from "./write-file.js";
-import { runPythonScriptTool } from "./run-python-script.js";
 
 /** All executable tools, keyed by name. `finish` is intercepted by the loop, not run here. */
 export const TOOLS: Record<string, Tool> = {
-  [runPythonScriptTool.spec.name]: runPythonScriptTool,
   [readFileTool.spec.name]: readFileTool,
   [listDirTool.spec.name]: listDirTool,
   [searchTool.spec.name]: searchTool,
@@ -19,6 +18,7 @@ export const TOOLS: Record<string, Tool> = {
   [writeFileTool.spec.name]: writeFileTool,
   [editFileTool.spec.name]: editFileTool,
   [runCommandTool.spec.name]: runCommandTool,
+  [runPythonScriptTool.spec.name]: runPythonScriptTool,
 };
 
 /** Tool specs advertised to the model, including the `finish` sentinel. */

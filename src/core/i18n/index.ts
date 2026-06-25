@@ -307,9 +307,6 @@ const en: Catalog = {
   // live status
   "ui.thinking": "thinking",
   "ui.running": "running {tool}",
-  "run_python_script.description": "Execute a Python script to read structured files (e.g., CSV, JSON, XML, YAML).",
-  "run_python_script.error": "Failed to execute Python script: {error}",
-  "run_python_script.success": "Python script executed successfully: {output}",
   "ui.tokens": "{total} tokens (in {in} / out {out})",
   "ui.tokensShort": "{total} tok",
 
@@ -625,9 +622,6 @@ const ptBR: Catalog = {
   "policy.blockedCommand": "bloqueado pela política de segurança ({reason}) — recusado em todos os modos",
   "policy.secretFound":
     "escrita bloqueada: possível segredo ({kind}) encontrado na linha {line}. Remova-o ou carregue de uma variável de ambiente em vez de fixá-lo no código.",
-  "run_python_script.description": "Executa um script Python para ler arquivos estruturados (ex.: CSV, JSON, XML, YAML).",
-  "run_python_script.error": "Falha ao executar o script Python: {error}",
-  "run_python_script.success": "Script Python executado com sucesso: {output}",
 
   "models.fetching": "Buscando modelos do OpenRouter…",
   "models.fetchError": "Não foi possível buscar modelos: {msg}",
