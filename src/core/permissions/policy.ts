@@ -44,6 +44,105 @@ export function screenCommand(command: string): CommandScreen {
   return { blocked: false };
 }
 
+import { isIP } from "node:net";
+
+export interface UrlScreen {
+  blocked: boolean;
+  reason?: string;
+}
+
+export interface UrlPolicy {
+  /** If non-empty, ONLY these domains (and subdomains) are reachable. */
+  allowDomains?: string[];
+  /** Domains (and subdomains) that are always blocked, even if on the allow-list. */
+  denyDomains?: string[];
+  /** Ports the agent may connect to. Defaults to https (443) only. */
+  allowedPorts?: number[];
+}
+
+/**
+ * Decide whether an IPv4/IPv6 literal points at a private, loopback, link-local,
+ * or otherwise non-public address — the core of SSRF defense. Catches the cloud
+ * metadata endpoint (169.254.169.254) and all RFC1918 ranges. IPv4-mapped IPv6
+ * (`::ffff:a.b.c.d`) is unwrapped and re-checked.
+ */
+export function isPrivateAddress(ip: string): boolean {
+  const fam = isIP(ip);
+  if (fam === 4) return isPrivateV4(ip);
+  if (fam === 6) return isPrivateV6(ip.toLowerCase());
+  return false; // not an IP literal — caller handles hostnames separately
+}
+
+function isPrivateV4(ip: string): boolean {
+  const parts = ip.split(".").map((p) => Number(p));
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return true;
+  const [a, b] = parts as [number, number, number, number];
+  if (a === 0) return true; // 0.0.0.0/8 "this host"
+  if (a === 10) return true; // 10/8 private
+  if (a === 127) return true; // loopback
+  if (a === 169 && b === 254) return true; // link-local incl. 169.254.169.254 metadata
+  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16/12 private
+  if (a === 192 && b === 168) return true; // 192.168/16 private
+  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64/10 CGNAT
+  if (a === 192 && b === 0) return true; // 192.0.0/24 + 192.0.2/24 (test-net)
+  if (a === 198 && (b === 18 || b === 19)) return true; // 198.18/15 benchmark
+  if (a >= 224) return true; // 224/4 multicast + 240/4 reserved + 255.255.255.255
+  return false;
+}
+
+function isPrivateV6(ip: string): boolean {
+  if (ip === "::1" || ip === "::") return true; // loopback / unspecified
+  // IPv4-mapped (::ffff:a.b.c.d) — unwrap and re-check as IPv4.
+  const mapped = ip.match(/::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (mapped) return isPrivateV4(mapped[1]!);
+  if (ip.startsWith("fe80") || ip.startsWith("fc") || ip.startsWith("fd")) return true; // link-local / ULA
+  if (ip.startsWith("ff")) return true; // multicast
+  return false;
+}
+
+/**
+ * Screen an outbound URL before any network request. Enforced in every mode
+ * (including bypass), mirroring how destructive commands and secrets are blocked.
+ * Rejects non-https schemes, embedded credentials, non-allowed ports, localhost /
+ * `*.local` / `*.internal` hostnames, private IP literals, and deny-listed
+ * domains. Does NOT resolve DNS — connection-time SSRF (a public hostname that
+ * resolves to a private IP) is closed by the custom `lookup` in safe-fetch.
+ */
+export function screenUrl(url: string, policy: UrlPolicy = {}): UrlScreen {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return { blocked: true, reason: "malformed URL" };
+  }
+  if (u.protocol !== "https:") {
+    return { blocked: true, reason: `scheme "${u.protocol.replace(":", "")}" is not allowed (https only)` };
+  }
+  if (u.username || u.password) {
+    return { blocked: true, reason: "URLs with embedded credentials are not allowed" };
+  }
+  const allowedPorts = policy.allowedPorts ?? [443];
+  const port = u.port ? Number(u.port) : 443;
+  if (!allowedPorts.includes(port)) {
+    return { blocked: true, reason: `port ${port} is not allowed` };
+  }
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, ""); // strip IPv6 brackets
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) {
+    return { blocked: true, reason: `host "${host}" resolves to a private/internal network` };
+  }
+  if (isIP(host) && isPrivateAddress(host)) {
+    return { blocked: true, reason: `address "${host}" is private/loopback (SSRF blocked)` };
+  }
+  const matches = (d: string) => host === d.toLowerCase() || host.endsWith("." + d.toLowerCase());
+  if (policy.denyDomains?.some(matches)) {
+    return { blocked: true, reason: `host "${host}" is on the deny-list` };
+  }
+  if (policy.allowDomains && policy.allowDomains.length > 0 && !policy.allowDomains.some(matches)) {
+    return { blocked: true, reason: `host "${host}" is not on the allow-list` };
+  }
+  return { blocked: false };
+}
+
 export interface SecretFinding {
   line: number;
   kind: string;

@@ -17,6 +17,7 @@ export {
   listSessions,
   loadSession,
   latestSession,
+  deleteSession,
   type SessionSummary,
   type SessionRecord,
 } from "./core/agent/session-store.js";
@@ -61,3 +62,6 @@ export type {
   ProviderKind,
   PermissionMode,
 } from "./core/config/schema.js";
+
+export { McpClient, type McpToolDef } from "./core/mcp/client.js";
+export { type McpServerConfig, type LoadedMcp } from "./core/mcp/index.js";

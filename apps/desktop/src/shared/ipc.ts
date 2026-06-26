@@ -20,6 +20,7 @@ export const IPC = {
   recentAdd: "polypus:recent:add",
   sessionsList: "polypus:sessions:list",
   runStart: "polypus:run:start",
+  runStop: "polypus:run:stop",
   runEvent: "polypus:run:event",
   configGet: "polypus:config:get",
   configSaveAgent: "polypus:config:saveAgent",
@@ -28,6 +29,14 @@ export const IPC = {
   dialogFolder: "polypus:dialog:folder",
   chatSend: "polypus:chat:send",
   configTestAgent: "polypus:config:testAgent",
+  mcpList: "polypus:mcp:list",
+  mcpSave: "polypus:mcp:save",
+  mcpTestServer: "polypus:mcp:test",
+  sessionDelete: "polypus:session:delete",
+  sessionLoad: "polypus:session:load",
+  dirList: "polypus:dir:list",
+  fileRead: "polypus:file:read",
+  modelPrice: "polypus:model:price",
 } as const;
 
 /** A plain chat message (Chat tab — no tools, no filesystem). */
@@ -79,6 +88,7 @@ export interface OpenRouterModel {
  */
 export interface StreamEvent {
   type:
+    | "session_start"
     | "step"
     | "assistant_delta"
     | "assistant"
@@ -91,7 +101,18 @@ export interface StreamEvent {
     | "result"
     | "end"
     | "error";
+  /** Present on type: "session_start" — use as resumeSessionId for follow-ups. */
+  sessionId?: string;
+  /** Populated on `type: "usage"` — cumulative tokens for this run. */
+  promptTokens?: number;
+  completionTokens?: number;
   [key: string]: unknown;
+}
+
+/** Pricing for the active model (per-million-token prices from OpenRouter). */
+export interface ModelPrice {
+  promptPrice: number;
+  completionPrice: number;
 }
 
 /** A recently opened project folder (mirrors src/core recent-projects). */
@@ -108,10 +129,43 @@ export interface SessionSummary {
   agentName: string;
   mode: string;
   messageCount: number;
+  projectDir?: string;
 }
 
 /** Every bridge call resolves to a Result so the renderer never sees a throw. */
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
+
+/** A full session record as returned by sessionLoad (mirrors src/core SessionRecord). */
+export interface LoadedSession {
+  id: string;
+  title: string;
+  agentName: string;
+  mode: string;
+  updatedAt: string;
+  messages: Array<{ role: string; content: string | unknown[] }>;
+}
+
+/** A directory entry returned by dirList. */
+export interface DirEntry {
+  name: string;
+  type: "file" | "dir";
+  path: string;
+}
+
+/** A single MCP server entry as stored in .poly/mcp.json. */
+export interface McpServerEntry {
+  name: string;
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+}
+
+/** A tool exposed by an MCP server (returned by mcpTestServer). */
+export interface McpToolInfo {
+  server: string;
+  name: string;
+  description?: string;
+}
 
 /** Shape of `polypus estimate --json`. */
 export interface EstimateResult {

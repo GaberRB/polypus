@@ -3,6 +3,7 @@ import { applyPatchTool } from "./apply-patch.js";
 import { askUserTool } from "./ask-user.js";
 import { codeOutlineTool } from "./code-outline.js";
 import { deleteFileTool } from "./delete-file.js";
+import { downloadTool } from "./download.js";
 import { editFileTool } from "./edit-file.js";
 import { fileStatsTool } from "./file-stats.js";
 import { findFilesTool } from "./find-files.js";
@@ -15,6 +16,8 @@ import { runPythonScriptTool } from "./run-python-script.js";
 import { searchTool } from "./search-file.js";
 import { FINISH_TOOL, type Tool } from "./types.js";
 import { updatePlanTool } from "./update-plan.js";
+import { webFetchTool } from "./web-fetch.js";
+import { webSearchTool } from "./web-search.js";
 import { writeFileTool } from "./write-file.js";
 
 /** All executable tools, keyed by name. `finish` is intercepted by the loop, not run here. */
@@ -35,6 +38,9 @@ export const TOOLS: Record<string, Tool> = {
   [moveFileTool.spec.name]: moveFileTool,
   [runCommandTool.spec.name]: runCommandTool,
   [runPythonScriptTool.spec.name]: runPythonScriptTool,
+  [webSearchTool.spec.name]: webSearchTool,
+  [webFetchTool.spec.name]: webFetchTool,
+  [downloadTool.spec.name]: downloadTool,
 };
 
 /** Tool specs advertised to the model, including the `finish` sentinel. */

@@ -3,8 +3,13 @@ import {
   IPC,
   type ChatMessage,
   type ConfigSnapshot,
+  type DirEntry,
   type EstimateResult,
+  type LoadedSession,
+  type McpServerEntry,
+  type McpToolInfo,
   type Mode,
+  type ModelPrice,
   type OpenRouterModel,
   type RecentProject,
   type Result,
@@ -45,20 +50,23 @@ const api = {
   recentProjects: (): Promise<Result<RecentProject[]>> => ipcRenderer.invoke(IPC.recentList),
   addRecentProject: (path: string): Promise<Result<void>> =>
     ipcRenderer.invoke(IPC.recentAdd, path),
-  /** Saved sessions that can be resumed. */
-  sessions: (): Promise<Result<SessionSummary[]>> => ipcRenderer.invoke(IPC.sessionsList),
+  /** Saved sessions for the given project dir (omit to get all). */
+  sessions: (projectDir?: string): Promise<Result<SessionSummary[]>> =>
+    ipcRenderer.invoke(IPC.sessionsList, projectDir),
 
   /**
    * Run a task with live NDJSON streaming (`run --json --stream`). Calls `onEvent`
    * for each event (step, assistant_delta, tool_call/result, …, result, end,
    * error). Returns an unsubscribe to detach the listener.
    */
-  runStream(task: string, mode: Mode, onEvent: (e: StreamEvent) => void, dir?: string): () => void {
+  runStream(task: string, mode: Mode, onEvent: (e: StreamEvent) => void, dir?: string, resumeSessionId?: string): () => void {
     const listener = (_e: IpcRendererEvent, ev: StreamEvent): void => onEvent(ev);
     ipcRenderer.on(IPC.runEvent, listener);
-    ipcRenderer.send(IPC.runStart, { task, mode, dir });
+    ipcRenderer.send(IPC.runStart, { task, mode, dir, resumeSessionId });
     return () => ipcRenderer.removeListener(IPC.runEvent, listener);
   },
+
+  stopRun: (): void => ipcRenderer.send(IPC.runStop),
 
   // Settings / model picker / folder picker (#112).
   getConfig: (): Promise<Result<ConfigSnapshot>> => ipcRenderer.invoke(IPC.configGet),
@@ -71,6 +79,25 @@ const api = {
   chat: (messages: ChatMessage[]): Promise<Result<string>> => ipcRenderer.invoke(IPC.chatSend, messages),
   testAgent: (name: string): Promise<Result<{ ok: boolean; message: string }>> =>
     ipcRenderer.invoke(IPC.configTestAgent, name),
+
+  // MCP server management — reads/writes .poly/mcp.json in the project dir.
+  mcpList: (dir: string): Promise<Result<McpServerEntry[]>> => ipcRenderer.invoke(IPC.mcpList, dir),
+  mcpSave: (dir: string, servers: McpServerEntry[]): Promise<Result<void>> =>
+    ipcRenderer.invoke(IPC.mcpSave, dir, servers),
+  mcpTestServer: (entry: McpServerEntry): Promise<Result<McpToolInfo[]>> =>
+    ipcRenderer.invoke(IPC.mcpTestServer, entry),
+
+  // Session management — delete and load full session record.
+  deleteSession: (id: string): Promise<Result<void>> => ipcRenderer.invoke(IPC.sessionDelete, id),
+  loadSession: (id: string): Promise<Result<LoadedSession | undefined>> =>
+    ipcRenderer.invoke(IPC.sessionLoad, id),
+
+  // Filesystem — list directory entries and read file content.
+  dirList: (absPath: string): Promise<Result<DirEntry[]>> => ipcRenderer.invoke(IPC.dirList, absPath),
+  fileRead: (absPath: string): Promise<Result<string>> => ipcRenderer.invoke(IPC.fileRead, absPath),
+
+  // Model pricing — returns price-per-million-tokens for the active model, or null.
+  getModelPrice: (): Promise<Result<ModelPrice | null>> => ipcRenderer.invoke(IPC.modelPrice),
 };
 
 export type PolypusApi = typeof api;

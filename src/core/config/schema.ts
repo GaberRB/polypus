@@ -37,6 +37,21 @@ export const AgentConfig = z.object({
 });
 export type AgentConfig = z.infer<typeof AgentConfig>;
 
+/**
+ * Outbound-network rules for the web tools (web_search/web_fetch/download).
+ * The https-only and SSRF/private-IP guards are always on (even in bypass) and
+ * are NOT configurable here — these knobs only narrow or widen public access.
+ */
+export const NetworkPolicy = z.object({
+  /** If non-empty, ONLY these domains (and their subdomains) are reachable. */
+  allowDomains: z.array(z.string()).default([]),
+  /** Domains (and subdomains) always blocked, even if otherwise allowed. */
+  denyDomains: z.array(z.string()).default([]),
+  /** Ports the agent may connect to. Defaults to https (443) only. */
+  allowedPorts: z.array(z.number().int().positive()).default([443]),
+});
+export type NetworkPolicy = z.infer<typeof NetworkPolicy>;
+
 export const Permissions = z.object({
   mode: PermissionMode.default("review"),
   /** Glob patterns of paths the agent may read/write, relative to the workspace root. */
@@ -45,6 +60,8 @@ export const Permissions = z.object({
   deny: z.array(z.string()).default([".git/**", ".polypus/**", "**/.env"]),
   /** Shell commands (matched by prefix) the agent may run without per-call escalation. */
   allowedCommands: z.array(z.string()).default([]),
+  /** Domain/port rules for the network tools. SSRF/https guards apply regardless. */
+  network: NetworkPolicy.default({}),
 });
 export type Permissions = z.infer<typeof Permissions>;
 

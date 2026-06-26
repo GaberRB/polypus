@@ -2,13 +2,13 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { PermissionMode } from "../config/schema.js";
 import { checkPath, isCommandPreApproved, type PathPolicy } from "./allowlist.js";
-import { scanSecrets, screenCommand } from "./policy.js";
+import { scanSecrets, screenCommand, screenUrl, type UrlPolicy } from "./policy.js";
 import { computeHunks, type Hunk } from "./diff.js";
 import { applyHunks } from "./diff.js";
 import { t } from "../i18n/index.js";
 
 export interface ConfirmRequest {
-  kind: "write" | "command";
+  kind: "write" | "command" | "network";
   summary: string;
   preview?: string;
   /** For writes in review mode: the change split into hunks, for diff/hunk approval. */
@@ -34,6 +34,8 @@ export interface PermissionEngineOptions {
   mode: PermissionMode;
   policy: PathPolicy;
   allowedCommands: string[];
+  /** Domain/port rules for outbound network tools. SSRF/scheme guards apply regardless. */
+  network?: UrlPolicy;
   /** Invoked in `review` mode to ask the user. Defaults to deny if absent. */
   confirm?: ConfirmFn;
 }
@@ -108,6 +110,26 @@ export class PermissionEngine {
     if (isCommandPreApproved(this.opts.allowedCommands, command)) return { allowed: true };
 
     const res = await this.ask({ kind: "command", summary: `run: ${command}` });
+    return res === true ? { allowed: true } : { allowed: false, reason: "rejected by user" };
+  }
+
+  /**
+   * Gate an outbound network request (web_search/web_fetch/download). The SSRF,
+   * https-only and domain guards in `screenUrl` are enforced in EVERY mode,
+   * including bypass — exactly like destructive commands and hard-coded secrets.
+   * Mode then decides consent: plan denies, review asks, bypass allows.
+   */
+  async authorizeNetwork(url: string): Promise<Decision> {
+    const screen = screenUrl(url, this.opts.network);
+    if (screen.blocked) {
+      return { allowed: false, reason: `network blocked: ${screen.reason}` };
+    }
+    if (this.opts.mode === "plan") {
+      return { allowed: false, reason: "plan mode: network access is disabled" };
+    }
+    if (this.opts.mode === "bypass") return { allowed: true };
+
+    const res = await this.ask({ kind: "network", summary: `fetch: ${url}` });
     return res === true ? { allowed: true } : { allowed: false, reason: "rejected by user" };
   }
 

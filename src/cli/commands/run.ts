@@ -4,6 +4,7 @@ import {
   resolveExecution,
   type EmbeddingsConfig,
   type ExecutionConfig,
+  type NetworkPolicy,
   type PermissionMode,
   type ResolvedExecution,
   type RetrievalConfig,
@@ -109,6 +110,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     allow: config.permissions.allow,
     deny: config.permissions.deny,
     allowedCommands: config.permissions.allowedCommands,
+    network: config.permissions.network,
     maxSteps: opts.maxSteps ? Number(opts.maxSteps) : undefined,
     history: seeded?.messages ?? [],
     budget: opts.budget ? Number(opts.budget) : undefined,
@@ -197,6 +199,7 @@ export interface SessionState {
   allow: string[];
   deny: string[];
   allowedCommands: string[];
+  network: NetworkPolicy;
   maxSteps?: number;
   history: Message[];
   /** Optional USD spend cap for the whole session (from --budget). */
@@ -248,6 +251,9 @@ async function executeTask(
   const streamer = json && stream
     ? createNdjsonStreamer((e) => process.stdout.write(JSON.stringify(e) + "\n"))
     : undefined;
+
+  // Emit session ID immediately so the caller can wire --resume for follow-ups.
+  if (streamer) process.stdout.write(JSON.stringify({ type: "session_start", sessionId: session.id }) + "\n");
   const collector = json && !stream ? createJsonCollector() : undefined;
 
   // Cost estimation + budget enforcement (no-op when pricing is unknown).
@@ -271,6 +277,7 @@ async function executeTask(
     mode: session.mode,
     policy: { workspace, allow: session.allow, deny: session.deny },
     allowedCommands: session.allowedCommands,
+    network: session.network,
     // Headless runs have no TTY for confirmations — use --mode bypass instead.
     confirm: json
       ? async () => false
@@ -364,6 +371,7 @@ async function executeTask(
     agentName: session.agentName,
     mode: session.mode,
     messages: session.history,
+    projectDir: process.cwd(),
   }).catch(() => {/* best-effort persistence */});
 
   // Account for estimated spend and persist analytics (best-effort).

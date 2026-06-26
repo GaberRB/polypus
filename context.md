@@ -82,7 +82,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_103 módulos em `src/`._
+_109 módulos em `src/`._
 
 ### `src`
 - `lib.ts` — Public library surface for embedders of Polypus (e.g. the Cowork desktop app).
@@ -152,6 +152,13 @@ _103 módulos em `src/`._
 - `client.ts`
 - `index.ts`
 
+### `src/core/net`
+- `html.ts` — Dependency-free HTML helpers. Good enough to feed page text to a model without
+- `safe-fetch.ts` — Hardened HTTP client for the network tools (web_search/web_fetch/download).
+
+### `src/core/net/search`
+- `duckduckgo.ts` — DuckDuckGo search provider — keyless. Hits the no-JS HTML endpoint and scrapes
+
 ### `src/core/permissions`
 - `allowlist.ts`
 - `diff.ts` — Minimal line-based diff (LCS) grouped into hunks, used to show the real change
@@ -195,6 +202,7 @@ _103 módulos em `src/`._
 - `code-outline.ts`
 - `custom.ts`
 - `delete-file.ts`
+- `download.ts`
 - `edit-file.ts`
 - `file-stats.ts`
 - `find-files.ts`
@@ -208,6 +216,8 @@ _103 módulos em `src/`._
 - `search-file.ts`
 - `types.ts`
 - `update-plan.ts`
+- `web-fetch.ts`
+- `web-search.ts`
 - `write-file.ts`
 
 ### `src/core/util`
