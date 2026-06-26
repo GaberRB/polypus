@@ -45,9 +45,9 @@ async function readLineTTY(prompt: string): Promise<string | null> {
       // Handle Shift+Tab shortcut for mode toggling.
       // This will be handled in the REPL loop.
       proxy.write(input);
-    } else {
-      proxy.write(filter.push(input));
     }
+    const filtered = filter.push(input);
+    if (filtered) proxy.write(filtered);
   };
 
   stdout.write(ENABLE_BRACKETED_PASTE);
