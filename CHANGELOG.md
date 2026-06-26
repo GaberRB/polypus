@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-06-26
+
 ### Added
-- cli: `polypus usage` agora mostra **eficiência por modelo** (tabela com execuções, tokens, custo, custo/exec e US$/1k tokens) e barras comparativas de custo entre modelos, além da visão por dia. Nova flag `--global` agrega o uso de todos os projetos.
-- core: o uso passa a ser gravado também em `.poly/usage.jsonl` do projeto (além do log global `~/.polypus/usage.jsonl`), e o `swarm` agora registra uso por worker.
+- cli: `polypus usage` agora mostra **eficiência por modelo** (tabela com execuções, tokens, custo, custo/exec e US$/1k tokens) e barras comparativas de custo entre modelos, além da visão por dia. Nova flag `--global` agrega o uso de todos os projetos. (#177)
+- core: o uso passa a ser gravado também em `.poly/usage.jsonl` do projeto (além do log global `~/.polypus/usage.jsonl`), e o `swarm` agora registra uso por worker. (#177)
 
 ## [0.6.0] - 2026-06-26
 
@@ -518,7 +520,9 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/GaberRB/polypus/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/GaberRB/polypus/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/GaberRB/polypus/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/GaberRB/polypus/compare/v0.4.37...v0.5.0
 [0.4.37]: https://github.com/GaberRB/polypus/compare/v0.4.36...v0.4.37
