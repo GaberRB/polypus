@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- repl: novos slash commands `/usage`, `/models`, `/estimate`, `/index` e `/retrieve` — antes só existiam como subcomandos de CLI.
+- repl: autocomplete de slash — digitar `/` abre uma lista filtrável dos comandos (com descrição); continuar digitando filtra por subsequência e Enter insere o comando.
+
 ## [0.6.1] - 2026-06-26
 
 ### Added

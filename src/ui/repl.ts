@@ -4,6 +4,11 @@ import { resolveExecution, type PermissionMode, type PolypusConfig } from "../co
 import { findAgent, loadConfig, saveConfig } from "../core/config/store.js";
 import { addAgentInteractive } from "./wizard.js";
 import { listSessions, loadSession } from "../core/agent/session-store.js";
+import { usage } from "../cli/commands/usage.js";
+import { models } from "../cli/commands/models.js";
+import { estimate } from "../cli/commands/estimate.js";
+import { retrieveCmd } from "../cli/commands/retrieve.js";
+import { indexRepo } from "../cli/commands/repo-index.js";
 import { t } from "../core/i18n/index.js";
 import { promptLabel } from "./banner.js";
 import { readLine } from "./line-reader.js";
@@ -193,6 +198,34 @@ async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promis
       return;
     }
 
+    case "usage":
+      await runSafely(() => usage({ global: /(^|\s)--?global(\s|$)/i.test(arg) }));
+      return;
+
+    case "models":
+      await runSafely(() => models({ search: arg || undefined }));
+      return;
+
+    case "estimate":
+      if (!arg) {
+        console.log(pc.yellow(t("repl.needName", { usage: "/estimate <task>" })));
+        return;
+      }
+      await runSafely(() => estimate(arg, { agent: session.agentName }));
+      return;
+
+    case "retrieve":
+      if (!arg) {
+        console.log(pc.yellow(t("repl.needName", { usage: "/retrieve <query>" })));
+        return;
+      }
+      await runSafely(() => retrieveCmd(arg, {}));
+      return;
+
+    case "index":
+      await runSafely(() => indexRepo({ rebuild: /(^|\s)--?rebuild(\s|$)/i.test(arg) }));
+      return;
+
     case "agents":
       printAgents(ctx.getConfig(), session.agentName);
       return;
@@ -222,6 +255,15 @@ async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promis
 
     default:
       console.log(pc.yellow(t("repl.unknown", { cmd })));
+  }
+}
+
+/** Run a command action, printing (not throwing) any error so the REPL survives. */
+async function runSafely(fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn();
+  } catch (e) {
+    console.log(pc.red(`✗ ${(e as Error).message}`));
   }
 }
 

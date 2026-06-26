@@ -3,6 +3,7 @@ import { PassThrough } from "node:stream";
 import { stdin, stdout } from "node:process";
 import { PasteStore, PasteFilter } from "./paste.js";
 import { pickFile } from "./file-picker.js";
+import { pickSlash } from "./slash-picker.js";
 import { t } from "../core/i18n/index.js";
 
 const ENABLE_BRACKETED_PASTE = "\x1b[?2004h";
@@ -70,6 +71,27 @@ async function readLineTTY(prompt: string, opts: ReadLineOptions): Promise<strin
           } else {
             proxy.write("@");
             lastChar = "@";
+          }
+        })
+        .finally(() => {
+          stdin.on("data", onData);
+          pickerOpen = false;
+        });
+      return;
+    }
+
+    // `/` at the very start of the line opens the slash-command picker.
+    if (input === "/" && lastChar === "") {
+      pickerOpen = true;
+      stdin.off("data", onData);
+      void pickSlash()
+        .then((cmd) => {
+          if (cmd) {
+            proxy.write(`/${cmd} `);
+            lastChar = " ";
+          } else {
+            proxy.write("/");
+            lastChar = "/";
           }
         })
         .finally(() => {
