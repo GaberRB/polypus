@@ -165,10 +165,13 @@ async function guardedWorker(
     outcome = {
       subtask,
       agentName: agent.config.name,
+      provider: agent.config.provider,
+      model: agent.config.model,
       branch: wt.branch,
       finished: false,
       committed: false,
       steps: 0,
+      usage: { promptTokens: 0, completionTokens: 0 },
     };
   } finally {
     if (idleTimer) clearTimeout(idleTimer);

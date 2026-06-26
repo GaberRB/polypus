@@ -46,8 +46,14 @@ export function fmtUsd(n: number): string {
   return `US$${n.toFixed(2)}`;
 }
 
+/** Global usage log, shared across all projects. */
 export function usagePath(): string {
   return join(configDir(), "usage.jsonl");
+}
+
+/** Per-project usage log, kept inside the workspace's .poly folder. */
+export function projectUsagePath(workspace: string): string {
+  return join(workspace, ".poly", "usage.jsonl");
 }
 
 export interface UsageEntry {
@@ -60,14 +66,47 @@ export interface UsageEntry {
   costUsd: number;
 }
 
-/** Append a usage record to ~/.polypus/usage.jsonl (best-effort; never throws). */
-export async function recordUsage(entry: UsageEntry): Promise<void> {
-  try {
-    await mkdir(configDir(), { recursive: true });
-    await appendFile(usagePath(), JSON.stringify(entry) + "\n", "utf8");
-  } catch {
+async function appendEntry(dir: string, file: string, line: string): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  await appendFile(file, line, "utf8");
+}
+
+/**
+ * Append a usage record to the global log (~/.polypus/usage.jsonl) and, when a
+ * workspace is given, also to that project's .poly/usage.jsonl. Best-effort:
+ * each target is written independently and write failures are swallowed so
+ * analytics never disrupt a run.
+ */
+export async function recordUsage(entry: UsageEntry, opts: { workspace?: string } = {}): Promise<void> {
+  const line = JSON.stringify(entry) + "\n";
+  await appendEntry(configDir(), usagePath(), line).catch(() => {
     /* analytics are best-effort — ignore write failures */
+  });
+  if (opts.workspace) {
+    await appendEntry(join(opts.workspace, ".poly"), projectUsagePath(opts.workspace), line).catch(() => {
+      /* best-effort per-project log */
+    });
   }
+}
+
+/** Read and parse the NDJSON usage log at `path`; missing/malformed lines are skipped. */
+export async function readUsageEntries(path: string): Promise<UsageEntry[]> {
+  let text = "";
+  try {
+    text = await readFile(path, "utf8");
+  } catch {
+    return [];
+  }
+  const entries: UsageEntry[] = [];
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      entries.push(JSON.parse(line) as UsageEntry);
+    } catch {
+      /* skip malformed line */
+    }
+  }
+  return entries;
 }
 
 export interface UsageBucket {
@@ -78,24 +117,14 @@ export interface UsageBucket {
   runs: number;
 }
 
-/** Aggregate the usage log by calendar day, plus a grand total. */
-export async function aggregateUsage(): Promise<{ days: UsageBucket[]; total: UsageBucket }> {
-  let text = "";
-  try {
-    text = await readFile(usagePath(), "utf8");
-  } catch {
-    return { days: [], total: emptyBucket("total") };
-  }
+/** Aggregate a usage log by calendar day, plus a grand total. */
+export async function aggregateUsage(
+  path: string = usagePath(),
+): Promise<{ days: UsageBucket[]; total: UsageBucket }> {
+  const entries = await readUsageEntries(path);
   const byDay = new Map<string, UsageBucket>();
   const total = emptyBucket("total");
-  for (const line of text.split("\n")) {
-    if (!line.trim()) continue;
-    let e: UsageEntry;
-    try {
-      e = JSON.parse(line) as UsageEntry;
-    } catch {
-      continue;
-    }
+  for (const e of entries) {
     const date = (e.ts ?? "").slice(0, 10) || "unknown";
     const bucket = byDay.get(date) ?? emptyBucket(date);
     accumulate(bucket, e);
@@ -110,9 +139,48 @@ function emptyBucket(date: string): UsageBucket {
   return { date, promptTokens: 0, completionTokens: 0, costUsd: 0, runs: 0 };
 }
 
-function accumulate(bucket: UsageBucket, e: UsageEntry): void {
+function accumulate(bucket: { promptTokens: number; completionTokens: number; costUsd: number; runs: number }, e: UsageEntry): void {
   bucket.promptTokens += e.promptTokens ?? 0;
   bucket.completionTokens += e.completionTokens ?? 0;
   bucket.costUsd += e.costUsd ?? 0;
   bucket.runs += 1;
+}
+
+export interface UsageModelBucket {
+  model: string;
+  provider: string;
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number;
+  runs: number;
+}
+
+/**
+ * Aggregate a usage log by model (to compare per-model efficiency), plus a grand
+ * total. Models are ordered by cost desc, then total tokens desc so free models
+ * still rank by volume.
+ */
+export async function aggregateUsageByModel(
+  path: string = usagePath(),
+): Promise<{ models: UsageModelBucket[]; total: UsageModelBucket }> {
+  const entries = await readUsageEntries(path);
+  const byModel = new Map<string, UsageModelBucket>();
+  const total = emptyModelBucket("total", "");
+  for (const e of entries) {
+    const model = e.model || "unknown";
+    const bucket = byModel.get(model) ?? emptyModelBucket(model, e.provider ?? "");
+    accumulate(bucket, e);
+    byModel.set(model, bucket);
+    accumulate(total, e);
+  }
+  const models = [...byModel.values()].sort(
+    (a, b) =>
+      b.costUsd - a.costUsd ||
+      b.promptTokens + b.completionTokens - (a.promptTokens + a.completionTokens),
+  );
+  return { models, total };
+}
+
+function emptyModelBucket(model: string, provider: string): UsageModelBucket {
+  return { model, provider, promptTokens: 0, completionTokens: 0, costUsd: 0, runs: 0 };
 }

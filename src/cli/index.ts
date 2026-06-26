@@ -141,8 +141,9 @@ function buildProgram(): Command {
 
   program
     .command("usage")
+    .option("--global", t("cli.opt.usageGlobal"))
     .description(t("cli.cmd.usage"))
-    .action(() => usage());
+    .action((opts) => usage(opts));
 
   program
     .command("estimate")
