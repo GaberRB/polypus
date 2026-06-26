@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-06-26
+
+### Added
+- tools: novas tools de rede `web_search` (busca keyless via DuckDuckGo), `web_fetch` (lê uma URL e devolve texto limpo) e `download` (salva um arquivo no workspace).
+- permissions: novo gate `authorizeNetwork` no `PermissionEngine`. As proteções de SSRF (IP privado/loopback/link-local, incl. metadata cloud `169.254.169.254`), https-only e bloqueio de credenciais na URL valem em **todos os modos, inclusive bypass** — espelhando como comandos destrutivos e segredos já são bloqueados. `plan` nega rede, `review` pede confirmação, `bypass` libera só após os guards.
+- config: novo bloco `permissions.network` (`allowDomains`/`denyDomains`/`allowedPorts`) para restringir o acesso de rede.
+
+### Security
+- net: cliente HTTP endurecido (`safe-fetch`) com validação do IP resolvido no momento da conexão (fecha DNS-rebinding/TOCTOU), teto de tamanho de resposta, timeout, `AbortSignal` e redirects re-validados a cada hop.
+
 ## [0.6.2] - 2026-06-26
 
 ### Added
