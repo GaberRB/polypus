@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-06-26
+
+### Fixed
+- repl: o picker de `/` (slash) e de `@` (arquivo) não sobrescreve mais o início do prompt ao inserir a seleção. O teardown do picker deixava o cursor na coluna 0 enquanto o readline ainda o considerava após o prompt; agora o prompt é redesenhado (`rl.prompt(true)`) para ressincronizar antes do eco.
+
 ## [0.6.3] - 2026-06-26
 
 ### Added

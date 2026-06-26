@@ -65,6 +65,10 @@ async function readLineTTY(prompt: string, opts: ReadLineOptions): Promise<strin
       stdin.off("data", onData);
       void pickFile(opts.workspace)
         .then((choice) => {
+          // The picker drew below the prompt and left the cursor at column 0 of
+          // the prompt line; readline still thinks it sits after the prompt.
+          // Redraw the prompt in place to resync before echoing the insertion.
+          rl.prompt(true);
           if (choice) {
             proxy.write(`@${choice} `);
             lastChar = " ";
@@ -86,6 +90,9 @@ async function readLineTTY(prompt: string, opts: ReadLineOptions): Promise<strin
       stdin.off("data", onData);
       void pickSlash()
         .then((cmd) => {
+          // Resync readline with the cursor the picker left on the prompt line
+          // (see the file picker above) so the echo doesn't overwrite the prompt.
+          rl.prompt(true);
           if (cmd) {
             proxy.write(`/${cmd} `);
             lastChar = " ";
