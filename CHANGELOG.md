@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-26
+
+### Changed
+- É necessário apertar duas vezes o Enter em algumas horas (#174)
+
+### Fixed
+- Corrigido o problema em que era necessário pressionar `Enter` duas vezes em alguns momentos para confirmar ações ou comandos. O tratamento de entrada do usuário foi ajustado para garantir que a leitura seja concluída de forma mais eficiente. (#174)
 ## [0.5.0] - 2026-06-25
 
 Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
@@ -494,7 +501,8 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/GaberRB/polypus/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/GaberRB/polypus/compare/v0.4.37...v0.5.0
 [0.4.37]: https://github.com/GaberRB/polypus/compare/v0.4.36...v0.4.37
 [0.4.36]: https://github.com/GaberRB/polypus/compare/v0.4.35...v0.4.36
