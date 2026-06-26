@@ -12,22 +12,76 @@ export interface CheckResult {
   output: string;
 }
 
-/** npm scripts we treat as verification checks, in the order they should run. */
-const CHECK_SCRIPTS = ["typecheck", "build", "test"] as const;
+/** True when a file exists in the workspace root. */
+async function has(workspace: string, file: string): Promise<boolean> {
+  try {
+    await readFile(resolve(workspace, file), "utf8");
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-/**
- * Detect verification commands for a workspace. Today this reads `package.json`
- * scripts and picks the standard checks (`typecheck`, `build`, `test`). Returns
- * an empty array when there is nothing sensible to run.
- */
-export async function detectChecks(workspace: string): Promise<string[]> {
+/** npm scripts we treat as verification checks, in the order they should run. */
+const NPM_CHECK_SCRIPTS = ["typecheck", "build", "test", "lint"] as const;
+
+/** JS/TS: pick the standard `package.json` scripts that exist. */
+async function detectNode(workspace: string): Promise<string[]> {
   try {
     const raw = await readFile(resolve(workspace, "package.json"), "utf8");
     const scripts = (JSON.parse(raw) as { scripts?: Record<string, string> }).scripts ?? {};
-    return CHECK_SCRIPTS.filter((s) => typeof scripts[s] === "string").map((s) => `npm run ${s}`);
+    return NPM_CHECK_SCRIPTS.filter((s) => typeof scripts[s] === "string").map((s) => `npm run ${s}`);
   } catch {
     return [];
   }
+}
+
+/** Rust: a Cargo project gets a type-check and the test suite. */
+async function detectRust(workspace: string): Promise<string[]> {
+  return (await has(workspace, "Cargo.toml")) ? ["cargo check", "cargo test"] : [];
+}
+
+/** Go: a module gets a build and the test suite. */
+async function detectGo(workspace: string): Promise<string[]> {
+  return (await has(workspace, "go.mod")) ? ["go build ./...", "go test ./..."] : [];
+}
+
+/**
+ * Python: run the test suite when pytest config is present, plus declared
+ * linters/type-checkers (ruff/mypy) when their tools are configured.
+ */
+async function detectPython(workspace: string): Promise<string[]> {
+  const pyproject = await safeRead(workspace, "pyproject.toml");
+  const hasPytestCfg = pyproject?.includes("[tool.pytest") || (await has(workspace, "pytest.ini"));
+  const checks: string[] = [];
+  if (pyproject?.includes("ruff")) checks.push("ruff check .");
+  if (pyproject?.includes("mypy")) checks.push("mypy .");
+  if (hasPytestCfg) checks.push("pytest -q");
+  return checks;
+}
+
+async function safeRead(workspace: string, file: string): Promise<string | null> {
+  try {
+    return await readFile(resolve(workspace, file), "utf8");
+  } catch {
+    return null;
+  }
+}
+
+/** Detectors run in turn; the first ecosystem that yields checks wins. */
+const DETECTORS = [detectNode, detectRust, detectGo, detectPython] as const;
+
+/**
+ * Detect verification commands for a workspace across ecosystems (JS/TS, Rust,
+ * Go, Python). Returns the checks of the first matching ecosystem, or an empty
+ * array when there is nothing sensible to run.
+ */
+export async function detectChecks(workspace: string): Promise<string[]> {
+  for (const detect of DETECTORS) {
+    const checks = await detect(workspace);
+    if (checks.length > 0) return checks;
+  }
+  return [];
 }
 
 /** Run the given commands in the workspace, capturing pass/fail and output. */

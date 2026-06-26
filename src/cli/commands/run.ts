@@ -1,14 +1,20 @@
 import pc from "picocolors";
 import * as p from "@clack/prompts";
-import type { EmbeddingsConfig, PermissionMode, RetrievalConfig } from "../../core/config/schema.js";
+import {
+  resolveExecution,
+  type EmbeddingsConfig,
+  type ExecutionConfig,
+  type PermissionMode,
+  type ResolvedExecution,
+  type RetrievalConfig,
+} from "../../core/config/schema.js";
 import { loadConfig, resolveAgent } from "../../core/config/store.js";
-import { autoContext } from "../../core/retrieval/retriever.js";
+import { gatherContext } from "../../core/context/auto-context.js";
 import { createProvider } from "../../core/providers/registry.js";
 import { PermissionEngine, type ConfirmRequest, type ConfirmResult } from "../../core/permissions/modes.js";
 import { hunkLabel, type Hunk } from "../../core/permissions/diff.js";
 import { runAgent, type AgentEvents, type RunResult } from "../../core/agent/loop.js";
 import { resolveMentions } from "../../core/context/mentions.js";
-import { buildVerifyFeedback, detectChecks, runChecks } from "../../core/agent/verify.js";
 import {
   estimateCost,
   fmtUsd,
@@ -27,6 +33,8 @@ import {
 import { loadHooks } from "../../core/agent/hooks.js";
 import { loadCustomTools } from "../../core/tools/custom.js";
 import { loadMcpTools } from "../../core/mcp/index.js";
+import { loadSkills, makeUseSkillTool } from "../../core/skills/index.js";
+import type { AskRequest } from "../../core/tools/types.js";
 import { createJsonCollector, createNdjsonStreamer } from "./json-output.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
@@ -44,8 +52,12 @@ export interface RunOptions {
   json?: boolean;
   /** With --json: emit NDJSON events live (one per line) instead of one object. */
   stream?: boolean;
-  /** After the agent finishes, run project checks and iterate until they pass. */
+  /** Force verification on (--verify) or off (--no-verify); undefined = profile/config. */
   verify?: boolean;
+  /** Shortcut for the `fast` execution profile (verify/plan/auto-context off). */
+  fast?: boolean;
+  /** Shortcut for the `quality` execution profile (the default scaffolding on). */
+  quality?: boolean;
   /** Abort the run when the estimated session cost reaches this USD amount. */
   budget?: string;
   /** Resume the most recently saved session. */
@@ -54,8 +66,13 @@ export interface RunOptions {
   resume?: string;
 }
 
-/** How many times the agent may re-try to make the verification checks pass. */
-const MAX_VERIFY_FIXES = 3;
+/** Resolve the effective execution settings from config + CLI flags. */
+function execFromOpts(cfg: ExecutionConfig, opts: RunOptions): ResolvedExecution {
+  return resolveExecution(cfg, {
+    profile: opts.fast ? "fast" : opts.quality ? "quality" : undefined,
+    verify: opts.verify,
+  });
+}
 
 /**
  * Token threshold above which old history is auto-compacted. Defaults to 120k,
@@ -96,6 +113,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     history: seeded?.messages ?? [],
     budget: opts.budget ? Number(opts.budget) : undefined,
     costUsd: 0,
+    exec: execFromOpts(config.execution, opts),
   };
 
   if (seeded && !opts.json) {
@@ -106,7 +124,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   const runTask = async (taskText: string): Promise<void> => {
     const active = resolveAgent(config, session.agentName);
     const resolved = createProvider(active);
-    await executeTask(taskText, resolved, workspace, session, false, false, {
+    await executeTask(taskText, resolved, workspace, session, false, {
       embeddings: config.embeddings,
       retrieval: config.retrieval,
     });
@@ -135,7 +153,6 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
       workspace,
       session,
       opts.json ?? false,
-      opts.verify ?? false,
       { embeddings: config.embeddings, retrieval: config.retrieval },
       opts.stream ?? false,
     );
@@ -158,6 +175,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
 
   const ctx: ReplContext = {
     session,
+    workspace,
     runTask,
     runSwarm: (taskText, swarmOpts) => runSwarmSession(taskText, config, { workspace, ...swarmOpts }),
     getConfig: () => config,
@@ -185,6 +203,8 @@ export interface SessionState {
   budget?: number;
   /** Estimated USD spent so far this session. */
   costUsd: number;
+  /** Effective execution settings (verify/plan-first/auto-context); REPL toggles mutate this. */
+  exec: ResolvedExecution;
 }
 
 async function executeTask(
@@ -193,7 +213,6 @@ async function executeTask(
   workspace: string,
   session: SessionState,
   json = false,
-  verify = false,
   retrievalCfg?: { embeddings?: EmbeddingsConfig; retrieval: RetrievalConfig },
   stream = false,
 ): Promise<void> {
@@ -208,12 +227,17 @@ async function executeTask(
     if (!json) console.log(pc.dim(`↳ @ ${mention.injected.join(", ")}`));
   }
 
-  // Opt-in semantic retrieval (RAG): inject the top matches for the task.
+  // Proactive context: semantic retrieval when embeddings are configured, else a
+  // zero-setup keyword scan. Gated by the execution profile's auto-context flag.
   if (retrievalCfg) {
-    const auto = await autoContext(workspace, retrievalCfg.embeddings, retrievalCfg.retrieval, task);
+    const auto = await gatherContext(workspace, task, {
+      enabled: session.exec.autoContext,
+      embeddings: retrievalCfg.embeddings,
+      retrieval: retrievalCfg.retrieval,
+    });
     if (auto) {
       task = `${task}\n\n--- ${t("retrieval.injectedHeader")} ---\n\n${auto.block}`;
-      if (!json) console.log(pc.dim(`↳ retrieve ${auto.count}`));
+      if (!json) console.log(pc.dim(`↳ retrieve ${auto.count} (${auto.source})`));
     }
   }
 
@@ -260,19 +284,39 @@ async function executeTask(
   });
 
   // Load user-declared custom tools and hooks from .poly/ (if any), plus any
-  // MCP servers (external tool servers) declared in .poly/mcp.json.
-  const [customTools, hooks, mcp] = await Promise.all([
+  // MCP servers (external tool servers) declared in .poly/mcp.json, plus skills
+  // (project + global) the agent can pull in on demand.
+  const [customTools, hooks, mcp, skills] = await Promise.all([
     loadCustomTools(workspace),
     loadHooks(workspace),
     loadMcpTools(workspace),
+    loadSkills(workspace),
   ]);
-  const extraTools = [...customTools, ...mcp.tools];
+  const extraTools = [
+    ...customTools,
+    ...mcp.tools,
+    ...(skills.length > 0 ? [makeUseSkillTool(skills)] : []),
+  ];
   if (!json && customTools.length > 0) {
     console.log(pc.dim(t("tools.customLoaded", { names: customTools.map((tl) => tl.spec.name).join(", ") })));
   }
   if (!json && mcp.servers.length > 0) {
     console.log(pc.dim(t("mcp.connected", { servers: mcp.servers.join(", "), n: mcp.tools.length })));
   }
+  if (!json && skills.length > 0) {
+    console.log(pc.dim(t("skills.loaded", { names: skills.map((s) => s.name).join(", ") })));
+  }
+
+  // Interactive choice prompt for the ask_user tool — only when we own a TTY.
+  const ask = json
+    ? undefined
+    : async (req: AskRequest): Promise<string[] | null> => {
+        spinner.stop();
+        cancel.pause();
+        const answer = await promptChoice(req);
+        cancel.resume();
+        return answer;
+      };
 
   const runOnce = (taskText: string): Promise<RunResult> =>
     runAgent({
@@ -280,12 +324,22 @@ async function executeTask(
       workspace,
       agent: resolved,
       permissions,
-      promptContext: { workspace, mode: session.mode, allow: session.allow },
+      promptContext: {
+        workspace,
+        mode: session.mode,
+        allow: session.allow,
+        planFirst: session.exec.planFirst,
+        skills: skills.map((s) => ({ name: s.name, description: s.description })),
+      },
       history: session.history,
       maxSteps: session.maxSteps,
       compactThresholdTokens: compactionThreshold(),
       extraTools,
       hooks,
+      // Closed-loop verification runs inside the loop at finish time, so it also
+      // covers REPL/swarm — not just this command. Disabled in plan mode (no edits).
+      verify: { enabled: session.exec.verify && session.mode !== "plan", maxFixes: session.exec.maxVerifyFixes },
+      ask,
       signal: controller.signal,
       events,
     });
@@ -295,12 +349,6 @@ async function executeTask(
   try {
     result = await runOnce(task);
     session.history = result.messages;
-
-    // Test-driven verification: run project checks and feed failures back to
-    // the agent until they pass or the retry budget is exhausted.
-    if (verify && result.reason === "finished" && !controller.signal.aborted) {
-      result = await runVerification(runOnce, workspace, session, spinner, json, controller.signal, result);
-    }
   } finally {
     spinner.stop();
     cancel.dispose();
@@ -399,49 +447,6 @@ async function confirmAction(req: ConfirmRequest): Promise<ConfirmResult> {
   return answer === true;
 }
 
-/**
- * Run the project's verification checks; on failure feed the output back to the
- * agent and re-run, up to MAX_VERIFY_FIXES times. Returns the latest run result.
- */
-async function runVerification(
-  runOnce: (task: string) => Promise<RunResult>,
-  workspace: string,
-  session: SessionState,
-  spinner: Spinner,
-  json: boolean,
-  signal: AbortSignal,
-  initial: RunResult,
-): Promise<RunResult> {
-  const checks = await detectChecks(workspace);
-  if (checks.length === 0) {
-    if (!json) console.log(pc.dim(t("verify.noChecks")));
-    return initial;
-  }
-  let result = initial;
-  for (let fix = 0; ; fix++) {
-    if (signal.aborted) return result;
-    if (!json) spinner.start(t("verify.running"));
-    const results = await runChecks(workspace, checks);
-    spinner.stop();
-    const failed = results.filter((r) => !r.ok);
-    if (failed.length === 0) {
-      if (!json) console.log(pc.green("✓ " + t("verify.passed")));
-      return result;
-    }
-    if (fix >= MAX_VERIFY_FIXES) {
-      if (!json) console.log(pc.yellow("⚠ " + t("verify.giveUp", { n: failed.length })));
-      return result;
-    }
-    if (!json) {
-      console.log(pc.yellow("✗ " + t("verify.failed", { n: failed.length, attempt: fix + 1 })));
-    }
-    if (!json) spinner.start(t("ui.thinking"));
-    result = await runOnce(buildVerifyFeedback(failed));
-    spinner.stop();
-    session.history = result.messages;
-  }
-}
-
 /** Print a colored unified diff for the hunks of a pending write. */
 function renderDiff(hunks: Hunk[]): void {
   for (const h of hunks) {
@@ -509,6 +514,19 @@ function renderEvents(spinner: Spinner): AgentEvents {
       spinner.stop();
       console.log(pc.yellow("    ↻ " + t("run.autocorrect")));
     },
+    onVerify(results) {
+      spinner.stop();
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length === 0) {
+        console.log(pc.green("  ✓ " + t("verify.passed")));
+      } else {
+        console.log(pc.yellow("  ✗ " + t("verify.someFailed", { n: failed.length })));
+      }
+    },
+    onSkill(name, scope) {
+      spinner.stop();
+      console.log(pc.magenta("  🎯 " + t("skills.activated", { name, scope })));
+    },
   };
 }
 
@@ -518,4 +536,17 @@ const PREREQ_HINTS: { re: RegExp; key: string }[] = [
 ];
 export function prerequisiteHint(output: string): string | null {
   return PREREQ_HINTS.find((h) => h.re.test(output))?.key ?? null;
+}
+
+/** Render an agent question as an interactive single/multi-choice prompt. */
+async function promptChoice(req: AskRequest): Promise<string[] | null> {
+  const options = req.options.map((o) => ({ value: o, label: o }));
+  if (req.multi) {
+    const sel = await p.multiselect({ message: req.question, options, required: false });
+    if (p.isCancel(sel)) return null;
+    return sel as string[];
+  }
+  const sel = await p.select({ message: req.question, options });
+  if (p.isCancel(sel)) return null;
+  return [sel as string];
 }

@@ -7,7 +7,7 @@ import {
   type MergeResult,
   type Worktree,
 } from "../git/worktree.js";
-import { runWorker, type Subtask, type WorkerOutcome } from "./worker.js";
+import { runWorker, type Subtask, type WorkerExecution, type WorkerOutcome } from "./worker.js";
 import type { AgentEvents } from "./loop.js";
 
 export interface SwarmOptions {
@@ -21,6 +21,8 @@ export interface SwarmOptions {
   concurrency?: number;
   /** Abort a worker that makes no progress (no step) for this long. 0 disables. */
   idleTimeoutMs?: number;
+  /** Execution scaffolding applied to every worker (verification, plan-first). */
+  execution?: WorkerExecution;
   /** Cancel the whole swarm (e.g. user pressed ESC). */
   signal?: AbortSignal;
   events?: SwarmEvents;
@@ -72,25 +74,34 @@ export async function runSwarm(opts: SwarmOptions): Promise<SwarmResult> {
       allow: opts.allow,
       deny: opts.deny,
       idleTimeoutMs,
+      execution: opts.execution,
       signal: opts.signal,
       events: opts.events,
     });
   const outcomes = await runPool(subtasks, concurrency, runOne);
 
   // Merge sequentially so conflicts are attributed to a specific branch. Runs
-  // even after cancellation, so committed workers aren't thrown away.
+  // even after cancellation, so committed workers aren't thrown away. Code that
+  // failed verification (verified === false) is kept on its branch but NOT
+  // merged, so a broken subtask never lands on the main worktree.
   const merges: MergeResult[] = [];
+  const unverified = new Set<string>();
   for (const outcome of outcomes) {
     if (!outcome.committed) continue;
+    if (outcome.verified === false) {
+      unverified.add(outcome.branch);
+      continue;
+    }
     const merge = await mergeWorktreeBranch(git, outcome.branch);
     merges.push(merge);
     opts.events?.onMerge?.(merge);
   }
 
-  // Clean up worktrees and branches that merged cleanly; keep conflicted branches for inspection.
+  // Keep worktrees for branches that conflicted OR failed verification (for
+  // inspection); clean up the rest.
   const conflicted = new Set(merges.filter((m) => !m.ok).map((m) => m.branch));
   for (const wt of worktrees) {
-    if (conflicted.has(wt.branch)) {
+    if (conflicted.has(wt.branch) || unverified.has(wt.branch)) {
       await git.raw(["worktree", "remove", wt.path, "--force"]).catch(() => undefined);
     } else {
       await removeWorktree(git, wt);
@@ -104,6 +115,7 @@ interface GuardOptions {
   allow: string[];
   deny: string[];
   idleTimeoutMs: number;
+  execution?: WorkerExecution;
   signal?: AbortSignal;
   events?: SwarmEvents;
 }
@@ -148,7 +160,7 @@ async function guardedWorker(
 
   let outcome: WorkerOutcome;
   try {
-    outcome = await runWorker(subtask, agent, wt, opts.allow, opts.deny, events, ac.signal);
+    outcome = await runWorker(subtask, agent, wt, opts.allow, opts.deny, events, ac.signal, opts.execution);
   } catch {
     outcome = {
       subtask,

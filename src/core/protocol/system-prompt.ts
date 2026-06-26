@@ -10,6 +10,42 @@ export interface PromptContext {
   briefing?: string;
   /** Project operating instructions loaded from `.poly/agents.md` (or `AGENTS.md`). */
   projectInstructions?: string;
+  /**
+   * Quality scaffolding for weak/local models: when true, instruct the agent to
+   * plan before acting, read real files before editing, and verify before
+   * finishing. Off in `fast` mode. Defaults to on when undefined.
+   */
+  planFirst?: boolean;
+  /** Skills index (name + description) advertised to the model; loaded via use_skill. */
+  skills?: Array<{ name: string; description: string }>;
+}
+
+/** Render the skills index for the prompt, or "" when there are none. */
+function skillsSection(skills: PromptContext["skills"]): string {
+  if (!skills || skills.length === 0) return "";
+  return [
+    "",
+    "AVAILABLE SKILLS — focused how-to guides for this project. When one matches the task,",
+    "call the `use_skill` tool with its exact name to load its full instructions BEFORE doing",
+    "the related work:",
+    ...skills.map((s) => `- ${s.name}: ${s.description}`),
+  ].join("\n");
+}
+
+/**
+ * The discipline that keeps cheaper/local models from guessing: plan, ground
+ * yourself in the real code, and prove the work before declaring it done.
+ * Injected only when {@link PromptContext.planFirst} is not explicitly false.
+ */
+function qualityDiscipline(): string {
+  return [
+    "",
+    "WORKING DISCIPLINE (follow this order):",
+    "1. PLAN FIRST: before touching anything, write a short numbered plan (3-7 steps) of what you will do. Keep it updated with the update_plan tool if available.",
+    "2. GROUND YOURSELF: read the real files with read_file/search before editing. Do NOT invent file paths, function names or API signatures — confirm them in the code.",
+    "3. SMALL STEPS: prefer small, targeted edits over rewriting whole files.",
+    "4. VERIFY BEFORE FINISH: make sure the project's own checks (build/typecheck/test) would pass. Only then call finish with a concrete summary.",
+  ].join("\n");
 }
 
 /** Shared role/permission preamble used by both the native and emulated paths. */
@@ -35,6 +71,8 @@ function basePreamble(ctx: PromptContext): string {
     "- Do NOT start long-running servers or watchers (e.g. `npm run dev`, `npm start`, `start /B node …`, `vite`): they never return, block the run and stall you. To verify, run one-shot checks like `npm run build`, `npm test` or `npm run typecheck`.",
     "- Make the changes directly. When the task is fully done, call the `finish` tool with a short summary.",
     t("prompt.language", { language: LOCALE_NAMES[getLocale()] }),
+    ctx.planFirst !== false ? qualityDiscipline() : "",
+    skillsSection(ctx.skills),
     ctx.projectInstructions ? `\n${t("prompt.projectInstructions")}\n\n${ctx.projectInstructions}` : "",
     ctx.briefing ? `\nYour assigned task:\n${ctx.briefing}` : "",
   ].join("\n");

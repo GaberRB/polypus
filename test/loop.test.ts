@@ -216,6 +216,68 @@ describe("runAgent (emulated path)", () => {
     expect(result.finished).toBe(false);
   });
 
+  it("rejects a finish with an empty summary, then accepts the real one", async () => {
+    const ws = workspace();
+    const agent = makeAgent([
+      `<polypus:tool name="finish"><arg name="summary"></arg></polypus:tool>`,
+      `<polypus:tool name="finish"><arg name="summary">actually done</arg></polypus:tool>`,
+    ]);
+
+    const result = await runAgent({
+      task: "do it",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+    });
+
+    expect(result.finished).toBe(true);
+    expect(result.summary).toBe("actually done");
+    expect(result.messages.some((m) => /finish without a summary/i.test(m.content))).toBe(true);
+  });
+
+  it("loops back when verification checks fail, then gives up flagged unverified", async () => {
+    const ws = workspace();
+    const agent = makeAgent([
+      `<polypus:tool name="finish"><arg name="summary">done</arg></polypus:tool>`,
+    ]);
+
+    let verifyRuns = 0;
+    const result = await runAgent({
+      task: "do it",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+      verify: { enabled: true, checks: ['node -e "process.exit(1)"'], maxFixes: 2 },
+      events: { onVerify: () => verifyRuns++ },
+    });
+
+    expect(verifyRuns).toBe(2); // ran up to the retry budget
+    expect(result.verified).toBe(false);
+    expect(result.finished).toBe(true); // gives up gracefully rather than hanging
+    expect(result.messages.some((m) => /Verification failed/i.test(m.content))).toBe(true);
+  });
+
+  it("accepts finish when verification passes", async () => {
+    const ws = workspace();
+    const agent = makeAgent([
+      `<polypus:tool name="finish"><arg name="summary">done</arg></polypus:tool>`,
+    ]);
+
+    const result = await runAgent({
+      task: "do it",
+      workspace: ws,
+      agent,
+      permissions: engine(ws),
+      promptContext: { workspace: ws, mode: "bypass", allow: ["**/*"] },
+      verify: { enabled: true, checks: ['node -e "process.exit(0)"'], maxFixes: 2 },
+    });
+
+    expect(result.finished).toBe(true);
+    expect(result.verified).toBe(true);
+  });
+
   it("blocks writes in plan mode", async () => {
     const ws = workspace();
     const agent = makeAgent([

@@ -9,6 +9,7 @@ import { buildCorrection, makeLLMEscalator, truncationGuidance } from "./correct
 import { loadProjectInstructions } from "./project-context.js";
 import { compactHistory, estimateTokens } from "./compaction.js";
 import { runAfterHook, screenCommandHook, type HooksConfig } from "./hooks.js";
+import { buildVerifyFeedback, detectChecks, runChecks, type CheckResult } from "./verify.js";
 
 export interface Usage {
   promptTokens: number;
@@ -29,6 +30,20 @@ export interface AgentEvents {
   onUsage?(usage: Usage): void;
   /** Fired when old history is summarized to free up context (token counts). */
   onCompaction?(before: number, after: number): void;
+  /** Fired after project checks run at `finish` time (closed-loop verification). */
+  onVerify?(results: CheckResult[]): void;
+  /** Fired when the agent activates a skill via the use_skill tool. */
+  onSkill?(name: string, scope: "project" | "global"): void;
+}
+
+/** Closed-loop verification config: run project checks before accepting `finish`. */
+export interface VerifyOptions {
+  /** Master switch. When false, `finish` is accepted as-is. */
+  enabled: boolean;
+  /** Pre-detected checks; when omitted they are detected from the workspace. */
+  checks?: string[];
+  /** Max times the agent may iterate to make failing checks pass (default 3). */
+  maxFixes?: number;
 }
 
 export interface RunOptions {
@@ -50,6 +65,10 @@ export interface RunOptions {
   extraTools?: Tool[];
   /** Pre/post-tool hooks (from `.poly/hooks.json`). */
   hooks?: HooksConfig;
+  /** Closed-loop verification: run project checks before accepting `finish`. */
+  verify?: VerifyOptions;
+  /** Interactive choice prompt for the ask_user tool (undefined in headless mode). */
+  ask?(req: import("../tools/types.js").AskRequest): Promise<string[] | null>;
   /** Abort the run (e.g. user pressed ESC). */
   signal?: AbortSignal;
   events?: AgentEvents;
@@ -67,6 +86,12 @@ export interface RunResult {
   steps: number;
   messages: Message[];
   usage: Usage;
+  /**
+   * Closed-loop verification outcome: true if project checks passed, false if
+   * they were still failing when the retry budget ran out, undefined when
+   * verification was disabled or no checks were detected.
+   */
+  verified?: boolean;
 }
 
 /**
@@ -101,7 +126,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const resolveTool = (name: string): Tool | undefined => extraByName.get(name) ?? getTool(name);
 
   const driver = makeDriver(agent.toolMode, allSpecs);
-  const ctx = { workspace: opts.workspace, permissions };
+  const ctx = { workspace: opts.workspace, permissions, ask: opts.ask, onSkill: events?.onSkill };
 
   const seeding = !(opts.history && opts.history.length > 0);
   // On a fresh conversation, auto-load project operating instructions
@@ -128,9 +153,20 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const compactThreshold = opts.compactThresholdTokens ?? 0;
   let lastPromptTokens = 0;
 
+  // Closed-loop verification state.
+  const verify = opts.verify;
+  const maxVerifyFixes = verify?.maxFixes ?? 3;
+  let cachedChecks: string[] | undefined = verify?.checks;
+  let verifyFixes = 0;
+  let finishNudges = 0;
+  let verified: boolean | undefined;
+
   for (let step = 1; step <= maxSteps; step++) {
     if (opts.signal?.aborted) return { finished: false, reason: "cancelled", steps: step - 1, messages, usage };
     events?.onStep?.(step);
+    // Set when a finish is intercepted (empty-summary nudge or verification
+    // failure) so the model gets another turn instead of ending here.
+    let pendingContinue = false;
 
     // Auto-compact: when the prompt grows past the threshold, summarize old
     // history into one message, preserving the system prompt and recent turns.
@@ -209,7 +245,41 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
       if (call.name === "finish") {
         const summary = String(call.arguments.summary ?? "").trim();
-        return { finished: true, reason: "finished", summary, steps: step, messages, usage };
+
+        // finish-gate: a "done" with no summary is almost always premature.
+        if (summary.length === 0 && finishNudges < maxReprompts) {
+          finishNudges++;
+          messages.push({
+            role: "user",
+            content:
+              "You called finish without a summary. If the task is truly complete, " +
+              "call finish again with a concrete summary of what you changed. " +
+              "If it is not complete, keep working with the tools.",
+          });
+          pendingContinue = true;
+          break;
+        }
+
+        // Closed-loop verification: don't accept "done" until the project's own
+        // checks (typecheck/build/test/lint) pass. On failure, hand the output
+        // back so the model fixes it — up to the retry budget, then give up.
+        if (verify?.enabled) {
+          if (cachedChecks === undefined) cachedChecks = await detectChecks(opts.workspace);
+          if (cachedChecks.length > 0 && verifyFixes < maxVerifyFixes) {
+            const results = await runChecks(opts.workspace, cachedChecks);
+            events?.onVerify?.(results);
+            const failed = results.filter((r) => !r.ok);
+            verified = failed.length === 0;
+            if (failed.length > 0) {
+              verifyFixes++;
+              messages.push({ role: "user", content: buildVerifyFeedback(failed) });
+              pendingContinue = true;
+              break;
+            }
+          }
+        }
+
+        return { finished: true, reason: "finished", summary, steps: step, messages, usage, verified };
       }
 
       const tool = resolveTool(call.name);
@@ -275,6 +345,10 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         }
       }
     }
+
+    // A finish was intercepted (empty summary or failing checks): a corrective
+    // message was queued, so give the model another turn instead of ending.
+    if (pendingContinue) continue;
   }
 
   return { finished: false, reason: "maxsteps", steps: maxSteps, messages, usage };

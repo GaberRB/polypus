@@ -1,7 +1,8 @@
-import { runAgent, type AgentEvents } from "./loop.js";
+import { runAgent, type AgentEvents, type VerifyOptions } from "./loop.js";
 import { commitWorktree, type Worktree } from "../git/worktree.js";
 import { PermissionEngine } from "../permissions/modes.js";
 import type { ResolvedAgent } from "../providers/registry.js";
+import { loadSkills, makeUseSkillTool } from "../skills/index.js";
 
 export interface Subtask {
   id: string;
@@ -17,6 +18,14 @@ export interface WorkerOutcome {
   summary?: string;
   committed: boolean;
   steps: number;
+  /** Closed-loop verification result (undefined when verification was off/N-A). */
+  verified?: boolean;
+}
+
+/** Per-worker execution scaffolding, mirrored from the swarm's config. */
+export interface WorkerExecution {
+  verify?: VerifyOptions;
+  planFirst?: boolean;
 }
 
 /**
@@ -31,6 +40,7 @@ export async function runWorker(
   deny: string[],
   events?: AgentEvents,
   signal?: AbortSignal,
+  execution?: WorkerExecution,
 ): Promise<WorkerOutcome> {
   const permissions = new PermissionEngine({
     mode: "bypass",
@@ -38,18 +48,33 @@ export async function runWorker(
     allowedCommands: [],
   });
 
+  // Global skills (~/.polypus/skills) are available even in throwaway worktrees,
+  // which don't carry the gitignored project `.poly/`.
+  const skills = await loadSkills(wt.path);
+
   const result = await runAgent({
     task: subtask.brief,
     workspace: wt.path,
     agent,
     permissions,
-    promptContext: { workspace: wt.path, mode: "bypass", allow, briefing: subtask.brief },
+    promptContext: {
+      workspace: wt.path,
+      mode: "bypass",
+      allow,
+      briefing: subtask.brief,
+      planFirst: execution?.planFirst,
+      skills: skills.map((s) => ({ name: s.name, description: s.description })),
+    },
+    verify: execution?.verify,
+    extraTools: skills.length > 0 ? [makeUseSkillTool(skills)] : undefined,
     events,
     signal,
   });
 
   // Don't commit a worker that was cancelled/timed out mid-step — its worktree
-  // may hold half-applied changes we don't want to merge.
+  // may hold half-applied changes we don't want to merge. Code that failed
+  // verification is still committed (so the branch survives for inspection) but
+  // flagged unverified so the orchestrator won't merge it.
   const committed =
     result.reason === "cancelled"
       ? false
@@ -63,5 +88,6 @@ export async function runWorker(
     summary: result.summary,
     committed,
     steps: result.steps,
+    verified: result.verified,
   };
 }

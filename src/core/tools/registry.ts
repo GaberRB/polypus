@@ -1,5 +1,6 @@
 import type { ToolSpec } from "../providers/types.js";
 import { applyPatchTool } from "./apply-patch.js";
+import { askUserTool } from "./ask-user.js";
 import { codeOutlineTool } from "./code-outline.js";
 import { deleteFileTool } from "./delete-file.js";
 import { editFileTool } from "./edit-file.js";
@@ -13,6 +14,7 @@ import { runCommandTool } from "./run-command.js";
 import { runPythonScriptTool } from "./run-python-script.js";
 import { searchTool } from "./search-file.js";
 import { FINISH_TOOL, type Tool } from "./types.js";
+import { updatePlanTool } from "./update-plan.js";
 import { writeFileTool } from "./write-file.js";
 
 /** All executable tools, keyed by name. `finish` is intercepted by the loop, not run here. */
@@ -24,6 +26,8 @@ export const TOOLS: Record<string, Tool> = {
   [codeOutlineTool.spec.name]: codeOutlineTool,
   [searchTool.spec.name]: searchTool,
   [retrieveTool.spec.name]: retrieveTool,
+  [updatePlanTool.spec.name]: updatePlanTool,
+  [askUserTool.spec.name]: askUserTool,
   [writeFileTool.spec.name]: writeFileTool,
   [editFileTool.spec.name]: editFileTool,
   [applyPatchTool.spec.name]: applyPatchTool,
