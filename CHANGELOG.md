@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-26
+
+### Added
+- core: perfis de execução `quality` (padrão) vs `fast`, com escape hatches `--fast`/`--quality`/`--no-verify` e toggles de REPL `/quality` `/fast` `/verify` `/planfirst`.
+- core: verificação fechada ligada por padrão — roda as checagens do projeto antes de aceitar `finish` e itera até passar; detecção multi-ecossistema (Node, Rust, Go, Python). No swarm, worker que falha nas checagens não é mesclado.
+- core: plano-antes-de-agir (instruções "plan-first" + tool `update_plan`) e finish-gate (rejeita `finish` sem resumo).
+- core: auto-contexto proativo — índice semântico quando há embeddings, senão fallback por keyword sem setup.
+- core: skills de projeto (`.poly/skills/`) e globais (`~/.polypus/skills/`) com índice no prompt, tool `use_skill` e aviso de ativação.
+- core: tool `ask_user` — perguntas interativas de escolha única/múltipla (degrada com elegância no modo headless).
+- ui: seletor de arquivos com `@` no REPL — lista e filtra os arquivos do diretório ao digitar, escolha com as setas.
+
+### Changed
+- core: parser do protocolo emulado tolera `name` com aspas simples ou sem aspas; auto-correção orienta em tool desconhecida.
+
 ## [0.5.1] - 2026-06-26
 
 ### Changed
@@ -53,7 +67,6 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 
 ### Added
 - New tool `run_python_script`: runs an inline Python 3 script (fed over stdin, no shell) to read or transform structured files such as CSV, JSON, XML, YAML and spreadsheets. Gated by the permission mode like `run_command`, with a 120s timeout and output clamp. (#149)
-
 ## [0.4.36] - 2026-06-24
 
 ### Changed

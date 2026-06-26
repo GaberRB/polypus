@@ -6,12 +6,15 @@ import { recommendConcurrency, idleTimeoutMs, overallTimeoutMs } from "../../cor
 import { SwarmView, describeToolCall } from "../../ui/swarm-view.js";
 import { listenForCancel } from "../../ui/cancel.js";
 import { t } from "../../core/i18n/index.js";
-import type { PolypusConfig } from "../../core/config/schema.js";
+import { resolveExecution, type PolypusConfig } from "../../core/config/schema.js";
 
 export interface SwarmCliOptions {
   agents?: string;
   maxSubtasks?: string;
   workers?: string;
+  fast?: boolean;
+  quality?: boolean;
+  verify?: boolean;
 }
 
 /** Minimum number of configured agents for swarm mode to be worthwhile. */
@@ -34,6 +37,10 @@ export interface SwarmSessionOptions {
   workers?: number;
   /** Workspace to run in; defaults to the current working directory. */
   workspace?: string;
+  /** Execution profile override (from --fast/--quality). */
+  profile?: "quality" | "fast";
+  /** Verification override (from --verify/--no-verify). */
+  verify?: boolean;
 }
 
 /**
@@ -75,6 +82,9 @@ export async function runSwarmSession(
     once: true,
   });
 
+  // Resolve quality-vs-fast scaffolding for every worker.
+  const exec = resolveExecution(config.execution, { profile: opts.profile, verify: opts.verify });
+
   const view = new SwarmView(resolved[0]!.config.name);
   view.start();
   let result;
@@ -93,6 +103,7 @@ export async function runSwarmSession(
       // --workers overrides the per-endpoint cap so 1 agent fans out to N parallel workers.
       concurrency: opts.workers ?? recommendConcurrency(resolved),
       idleTimeoutMs: idleTimeoutMs(),
+      execution: { verify: { enabled: exec.verify, maxFixes: exec.maxVerifyFixes }, planFirst: exec.planFirst },
       signal: controller.signal,
       events: {
         onDecomposed: (subtasks) => view.setSubtasks(subtasks),
@@ -117,7 +128,9 @@ export async function runSwarmSession(
   for (const o of result.outcomes) {
     const status = o.finished ? pc.green(t("swarm.statusDone")) : pc.yellow(t("swarm.statusIncomplete"));
     const committed = o.committed ? "" : pc.dim(` (${t("swarm.noChanges")})`);
-    console.log(`  ${pc.bold(o.subtask.id)} [${o.agentName}] ${status}${committed} — ${o.subtask.title}`);
+    // A worker whose checks never passed is kept on its branch but not merged.
+    const unverified = o.verified === false ? pc.red(` (${t("swarm.unverified")})`) : "";
+    console.log(`  ${pc.bold(o.subtask.id)} [${o.agentName}] ${status}${committed}${unverified} — ${o.subtask.title}`);
   }
   const conflicts = result.merges.filter((m) => !m.ok);
   if (conflicts.length > 0) {
@@ -139,5 +152,7 @@ export async function swarm(task: string, opts: SwarmCliOptions): Promise<void> 
       : undefined,
     maxSubtasks: opts.maxSubtasks ? Number(opts.maxSubtasks) : undefined,
     workers: opts.workers ? Number(opts.workers) : undefined,
+    profile: opts.fast ? "fast" : opts.quality ? "quality" : undefined,
+    verify: opts.verify,
   });
 }

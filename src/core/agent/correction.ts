@@ -130,6 +130,16 @@ async function deterministicCorrection(
     ].join("\n");
   }
 
+  // Unknown tool: the model invented a tool name or mistyped one. The raw error
+  // already lists the valid names; nudge it to use them verbatim.
+  if (/unknown tool/i.test(output)) {
+    return [
+      "AUTO-CORRECTION — you called a tool that does not exist.",
+      "Use ONLY the tools listed in your instructions, with their exact names",
+      "(they are case-sensitive and shown in the error above).",
+    ].join("\n");
+  }
+
   // Invalid / missing arguments: restate the exact schema of the tool.
   if (deps.toolSpec && /needs .* arguments|Invalid|required|Resend the tool call/i.test(output)) {
     return [

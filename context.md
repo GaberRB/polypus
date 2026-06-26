@@ -82,7 +82,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_96 módulos em `src/`._
+_102 módulos em `src/`._
 
 ### `src`
 - `lib.ts` — Public library surface for embedders of Polypus (e.g. the Cowork desktop app).
@@ -138,6 +138,8 @@ _96 módulos em `src/`._
 - `store.ts`
 
 ### `src/core/context`
+- `auto-context.ts`
+- `keyword.ts`
 - `mentions.ts`
 
 ### `src/core/git`
@@ -184,8 +186,12 @@ _96 módulos em `src/`._
 - `init.ts`
 - `templates.ts`
 
+### `src/core/skills`
+- `index.ts`
+
 ### `src/core/tools`
 - `apply-patch.ts`
+- `ask-user.ts`
 - `code-outline.ts`
 - `custom.ts`
 - `delete-file.ts`
@@ -201,6 +207,7 @@ _96 módulos em `src/`._
 - `run-python-script.ts`
 - `search-file.ts`
 - `types.ts`
+- `update-plan.ts`
 - `write-file.ts`
 
 ### `src/core/util`
@@ -209,6 +216,7 @@ _96 módulos em `src/`._
 ### `src/ui`
 - `banner.ts`
 - `cancel.ts`
+- `file-picker.ts`
 - `line-reader.ts`
 - `paste.ts` — Bracketed-paste handling for the REPL. When a terminal has bracketed paste
 - `repl.ts`

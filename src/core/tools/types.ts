@@ -1,9 +1,25 @@
 import type { ToolSpec } from "../providers/types.js";
 import type { PermissionEngine } from "../permissions/modes.js";
 
+/** A question the agent asks the user (single- or multi-choice). */
+export interface AskRequest {
+  question: string;
+  options: string[];
+  /** When true, the user may pick more than one option. */
+  multi?: boolean;
+}
+
 export interface ToolContext {
   workspace: string;
   permissions: PermissionEngine;
+  /**
+   * Ask the user a choice question interactively. Returns the chosen option(s),
+   * or null if cancelled. Undefined in headless mode (no TTY) — tools must
+   * degrade gracefully.
+   */
+  ask?(req: AskRequest): Promise<string[] | null>;
+  /** Notify the host that a skill was activated (for the "skill activated" line). */
+  onSkill?(name: string, scope: "project" | "global"): void;
 }
 
 export interface ToolResult {

@@ -12,9 +12,11 @@ import type { ToolCall } from "../providers/types.js";
  * </arg> before the next sibling <arg ...> (or the end of the tool block), which
  * tolerates angle brackets inside code without a strict XML parser.
  */
-const TOOL_OPEN = /<polypus:tool\s+name="([^"]+)"\s*>/g;
+// Quote-tolerant: accepts name="x", name='x' or bare name=x — weak models drift
+// between all three.
+const TOOL_OPEN = /<polypus:tool\s+name=["']?([^"'>\s]+)["']?\s*>/g;
 const TOOL_CLOSE = "</polypus:tool>";
-const ARG_OPEN = /<arg\s+name="([^"]+)"\s*>/g;
+const ARG_OPEN = /<arg\s+name=["']?([^"'>\s]+)["']?\s*>/g;
 
 export interface ParseResult {
   toolCalls: ToolCall[];

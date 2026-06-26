@@ -69,14 +69,83 @@ export type EmbeddingsConfig = z.infer<typeof EmbeddingsConfig>;
 
 /** Semantic-retrieval (RAG) settings for context selection. */
 export const RetrievalConfig = z.object({
-  /** When true, `polypus run` auto-injects the top matches for the task. Off by default. */
-  auto: z.boolean().default(false),
+  /**
+   * When true, `polypus run` auto-injects the top matches for the task. On by
+   * default: with embeddings configured it uses the semantic index; otherwise it
+   * falls back to a cheap keyword search so weak/local models still get context
+   * without any index setup.
+   */
+  auto: z.boolean().default(true),
   /** How many chunks to retrieve. */
   topK: z.number().int().positive().max(50).default(6),
   /** Cap on injected characters so retrieval never blows the context window. */
   maxChars: z.number().int().positive().default(8000),
 });
 export type RetrievalConfig = z.infer<typeof RetrievalConfig>;
+
+/**
+ * Execution profile: bundles the quality-vs-speed defaults behind one switch.
+ * - `quality` (default): verification, plan-first and proactive context are ON —
+ *   the engineering scaffolding that makes cheap/local models produce output on
+ *   par with expensive tools.
+ * - `fast`: that scaffolding is OFF for the cheapest, quickest runs.
+ * Individual fields below always override whatever the profile implies.
+ */
+export const ExecutionProfile = z.enum(["quality", "fast"]);
+export type ExecutionProfile = z.infer<typeof ExecutionProfile>;
+
+export const ExecutionConfig = z.object({
+  profile: ExecutionProfile.default("quality"),
+  /**
+   * Per-field overrides. Left `undefined`, each falls back to the profile's
+   * preset; set explicitly (in config or via a CLI flag) it always wins.
+   */
+  /** Run project checks (typecheck/build/test/lint) before accepting `finish`. */
+  verify: z.boolean().optional(),
+  /** Force a short numbered plan before the agent starts acting. */
+  planFirst: z.boolean().optional(),
+  /** Proactively inject task-relevant context (semantic index or keyword fallback). */
+  autoContext: z.boolean().optional(),
+  /** How many times the agent may re-try to make verification checks pass. */
+  maxVerifyFixes: z.number().int().min(0).max(10).default(3),
+});
+export type ExecutionConfig = z.infer<typeof ExecutionConfig>;
+
+/** The concrete scaffolding each profile turns on. */
+const PROFILE_PRESETS: Record<ExecutionProfile, { verify: boolean; planFirst: boolean; autoContext: boolean }> = {
+  quality: { verify: true, planFirst: true, autoContext: true },
+  fast: { verify: false, planFirst: false, autoContext: false },
+};
+
+/** Effective execution settings after resolution. */
+export interface ResolvedExecution {
+  profile: ExecutionProfile;
+  verify: boolean;
+  planFirst: boolean;
+  autoContext: boolean;
+  maxVerifyFixes: number;
+}
+
+/**
+ * Resolve effective execution settings. Precedence per field:
+ * CLI override → config field → profile preset. `overrides.profile` (e.g.
+ * `--fast`/`--quality`) selects the preset; individual `overrides` (e.g.
+ * `--no-verify`) win over everything.
+ */
+export function resolveExecution(
+  cfg: ExecutionConfig,
+  overrides: Partial<Pick<ResolvedExecution, "profile" | "verify" | "planFirst" | "autoContext">> = {},
+): ResolvedExecution {
+  const profile = overrides.profile ?? cfg.profile;
+  const preset = PROFILE_PRESETS[profile];
+  return {
+    profile,
+    verify: overrides.verify ?? cfg.verify ?? preset.verify,
+    planFirst: overrides.planFirst ?? cfg.planFirst ?? preset.planFirst,
+    autoContext: overrides.autoContext ?? cfg.autoContext ?? preset.autoContext,
+    maxVerifyFixes: cfg.maxVerifyFixes,
+  };
+}
 
 export const PolypusConfig = z.object({
   version: z.literal(1).default(1),
@@ -88,6 +157,8 @@ export const PolypusConfig = z.object({
   /** Embeddings backend for the repository index (optional until `polypus index` is used). */
   embeddings: EmbeddingsConfig.optional(),
   retrieval: RetrievalConfig.default({}),
+  /** Quality-vs-speed execution defaults (verification, plan-first, auto-context). */
+  execution: ExecutionConfig.default({}),
 });
 export type PolypusConfig = z.infer<typeof PolypusConfig>;
 

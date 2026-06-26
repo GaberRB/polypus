@@ -1,6 +1,6 @@
 import pc from "picocolors";
 import type { SessionState } from "../cli/commands/run.js";
-import type { PermissionMode, PolypusConfig } from "../core/config/schema.js";
+import { resolveExecution, type PermissionMode, type PolypusConfig } from "../core/config/schema.js";
 import { findAgent, loadConfig, saveConfig } from "../core/config/store.js";
 import { addAgentInteractive } from "./wizard.js";
 import { listSessions, loadSession } from "../core/agent/session-store.js";
@@ -10,6 +10,8 @@ import { readLine } from "./line-reader.js";
 
 export interface ReplContext {
   session: SessionState;
+  /** Workspace root, used by the `@` file picker. */
+  workspace: string;
   /** Run a task with the currently active agent. */
   runTask(task: string): Promise<void>;
   /** Run a task as a swarm across the configured agents (parallel worktrees). */
@@ -36,7 +38,7 @@ function cycleMode(current: PermissionMode, direction: number): PermissionMode {
 
 export async function startRepl(ctx: ReplContext): Promise<void> {
   for (;;) {
-    const line = await readLine(promptLabel(ctx.session.mode));
+    const line = await readLine(promptLabel(ctx.session.mode), { workspace: ctx.workspace });
     if (line === null) break; // EOF / Ctrl+D
     const trimmed = line.trim();
     if (!trimmed) continue;
@@ -103,6 +105,35 @@ async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promis
       session.history = [];
       console.log(pc.dim(t("repl.historyCleared")));
       return;
+
+    case "quality":
+    case "fast":
+      session.exec = resolveExecution(ctx.getConfig().execution, { profile: cmd });
+      console.log(pc.dim(t("repl.profileChanged", { profile: cmd })));
+      return;
+
+    case "verify": {
+      const on = parseToggle(arg);
+      if (on === undefined) {
+        console.log(pc.dim(t("repl.verifyShow", { state: onOff(session.exec.verify) })));
+        return;
+      }
+      session.exec.verify = on;
+      console.log(pc.dim(t("repl.verifyChanged", { state: onOff(on) })));
+      return;
+    }
+
+    case "plan-first":
+    case "planfirst": {
+      const on = parseToggle(arg);
+      if (on === undefined) {
+        console.log(pc.dim(t("repl.planFirstShow", { state: onOff(session.exec.planFirst) })));
+        return;
+      }
+      session.exec.planFirst = on;
+      console.log(pc.dim(t("repl.planFirstChanged", { state: onOff(on) })));
+      return;
+    }
 
     case "sessions": {
       const all = await listSessions();
@@ -192,6 +223,18 @@ async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promis
     default:
       console.log(pc.yellow(t("repl.unknown", { cmd })));
   }
+}
+
+/** Parse an on/off toggle argument; returns undefined when absent/unrecognized. */
+function parseToggle(arg: string): boolean | undefined {
+  const a = arg.trim().toLowerCase();
+  if (a === "on" || a === "true" || a === "yes") return true;
+  if (a === "off" || a === "false" || a === "no") return false;
+  return undefined;
+}
+
+function onOff(v: boolean): string {
+  return v ? "on" : "off";
 }
 
 function printAgents(config: PolypusConfig, activeName: string): void {

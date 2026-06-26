@@ -106,6 +106,9 @@ function buildProgram(): Command {
     .option("--json", t("cli.opt.json"))
     .option("--stream", t("cli.opt.stream"))
     .option("--verify", t("cli.opt.verify"))
+    .option("--no-verify", t("cli.opt.noVerify"))
+    .option("--fast", t("cli.opt.fast"))
+    .option("--quality", t("cli.opt.quality"))
     .option("--budget <usd>", t("cli.opt.budget"))
     .option("--continue", t("cli.opt.continue"))
     .option("--resume <id>", t("cli.opt.resume"))
@@ -118,6 +121,10 @@ function buildProgram(): Command {
     .option("--agents <names>", t("cli.opt.agents"))
     .option("--max-subtasks <n>", t("cli.opt.maxSubtasks"))
     .option("--workers <n>", t("cli.opt.workers"))
+    .option("--verify", t("cli.opt.verify"))
+    .option("--no-verify", t("cli.opt.noVerify"))
+    .option("--fast", t("cli.opt.fast"))
+    .option("--quality", t("cli.opt.quality"))
     .description(t("cli.cmd.swarm"))
     .action((task, opts) => swarm(task, opts));
 

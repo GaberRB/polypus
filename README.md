@@ -117,6 +117,39 @@ Edit `agents.md` to encode your conventions and reference new skills from it.
 Gitignore `.poly/` to keep it personal, or commit it to standardize the workflow
 across your team.
 
+### Skills (project + global)
+
+Skills are focused how-to guides the agent pulls in **on demand**. Drop markdown
+files in either place — project skills win over global ones of the same name:
+
+- **Project:** `.poly/skills/*.md`
+- **Global (all projects):** `~/.polypus/skills/*.md`
+
+Each file may start with frontmatter so only its summary is advertised to the
+model (cheap); the full body is loaded only when the agent decides it's relevant:
+
+```markdown
+---
+name: deploy
+description: how to cut and publish a release
+---
+# Deploy
+1. …
+```
+
+Polypus injects the skills **index** (name + description) into the system prompt
+and exposes a `use_skill` tool. When the agent activates one, you'll see a line
+like `🎯 skill activated: deploy (global)`, and its full instructions are loaded
+into context. Frontmatter is optional — without it the name comes from the
+filename and the description from the first line.
+
+### Interactive questions
+
+When a decision is genuinely yours, the agent can call the `ask_user` tool and
+Polypus shows an **arrow-key picker** right in the terminal — single-choice, or
+multi-select when the agent allows it. In headless mode (`--json`) there's no one
+to answer, so the agent is told to proceed with a sensible default instead.
+
 ## Commands
 
 | Command | Description |
@@ -126,8 +159,8 @@ across your team.
 | `polypus add-agent <name> --provider <p> --model <m> [--api-key ...] [--base-url ...] [--tool-mode auto\|native\|emulated] [--set-default]` | Register an agent. |
 | `polypus remove-agent <name>` | Remove an agent. |
 | `polypus list-agents` | List configured agents. |
-| `polypus run [task] [--agent <name>] [--mode plan\|review\|bypass] [--max-steps <n>]` | Run a task, or open a REPL if no task is given. |
-| `polypus swarm <task> [--agents a,b] [--max-subtasks <n>]` | Split a task across agents in parallel worktrees. |
+| `polypus run [task] [--agent <name>] [--mode plan\|review\|bypass] [--max-steps <n>] [--fast\|--quality] [--verify\|--no-verify]` | Run a task, or open a REPL if no task is given. |
+| `polypus swarm <task> [--agents a,b] [--max-subtasks <n>] [--fast\|--quality] [--verify\|--no-verify]` | Split a task across agents in parallel worktrees. |
 | `polypus models [--search x] [--tools] [--free] [--max-price <usd>] [--sort price\|price-desc\|context\|name] [--limit <n>]` | Browse the OpenRouter catalog (price, context, tool support). |
 
 ### Interactive slash commands (in `polypus run`)
@@ -140,6 +173,10 @@ across your team.
 /plan            read-only mode
 /review          confirm each write / command
 /bypass          auto-approve
+/quality         quality profile: verify + plan-first + auto-context ON (default)
+/fast            fast profile: that scaffolding OFF (cheapest, quickest)
+/verify on|off   toggle running project checks before "done"
+/planfirst on|off  toggle forcing a short plan before acting
 /allow <glob>    add a path to the allow-list
 /reset           clear the conversation
 /help            list commands
@@ -150,6 +187,14 @@ Pasting a large, multi-line block at the prompt is collapsed to a compact
 `[Pasted text #1 +16 lines]` marker so it doesn't flood the terminal — the full
 text is still sent to the agent. (Requires a terminal with bracketed paste, which
 most modern terminals support.)
+
+### Referencing files with `@`
+
+Type `@` at the prompt to open a **file picker**: it lists the files in the
+current directory and filters live as you keep typing (subsequence match, so
+`srvc` finds `src/service.ts`). Move with ↑/↓, press **Enter** to insert the
+chosen `@path`, or **Esc** to cancel. The referenced file's contents are then
+injected into the task as context (same as typing `@path` by hand).
 
 ## How non-tool models "code"
 
@@ -184,6 +229,72 @@ POLYPUS_LANG=en polypus list-agents
 
 The setup wizard asks for the language first and saves it to the config. The
 agent is also instructed to talk back to you in the configured language.
+
+## Execution modes — making cheap/local models deliver
+
+The hard part of using a cheap or local model as a coding agent isn't that it
+errs more — it's that it errs **silently** (invents an API, edits the wrong
+file, declares "done" without doing it). Polypus closes that gap with
+engineering scaffolding that's **on by default**, so a weaker model produces
+output you can actually trust:
+
+- **Closed-loop verification.** When the agent calls `finish`, Polypus runs the
+  project's own checks (`typecheck`/`build`/`test`/`lint` for Node; `cargo`,
+  `go`, `pytest`/`ruff`/`mypy` for Rust/Go/Python) and hands any failure back to
+  the agent to fix — it doesn't accept "done" until the project is actually
+  green. In a **swarm**, a worker whose checks never pass is kept on its branch
+  but **not merged**, so broken code never lands.
+- **Plan-first.** The agent must write a short numbered plan and ground itself in
+  the real files (read before edit) before acting — and there's an `update_plan`
+  tool to keep that checklist current.
+- **Proactive context.** Task-relevant code is injected automatically: the
+  semantic index when embeddings are configured, otherwise a zero-setup keyword
+  scan — so the model starts grounded even on Ollama with no index.
+
+This costs some extra tokens and time. When you want the cheapest, fastest run
+instead, switch to the **fast** profile, which turns all of the above off.
+
+| Profile | Verification | Plan-first | Auto-context |
+| --- | --- | --- | --- |
+| `quality` (default) | on | on | on |
+| `fast` | off | off | off |
+
+```bash
+polypus run "…"                 # quality by default
+polypus run --fast "…"          # cheapest/quickest, scaffolding off
+polypus run --no-verify "…"     # keep plan-first/context, skip the checks only
+polypus swarm --fast "…"        # same switches apply to swarm
+```
+
+In the REPL, toggle live with `/quality`, `/fast`, `/verify on|off` and
+`/planfirst on|off` (see `/help`). You can also set the defaults in
+`~/.polypus/config.json`:
+
+```json
+{
+  "execution": {
+    "profile": "quality",
+    "verify": true,
+    "planFirst": true,
+    "autoContext": true,
+    "maxVerifyFixes": 3
+  }
+}
+```
+
+Precedence per setting: **CLI flag → config field → profile preset.** So
+`--no-verify` always wins, a config field overrides the profile, and the profile
+fills in the rest.
+
+### Roadmap: prove it with numbers (`polypus eval`)
+
+The claim "a cheap model delivers the equivalent" should be measurable, not a
+slogan. Planned: a `polypus eval <suite>` command that runs a fixed set of tasks
+through two agents (e.g. an expensive vs. a cheap model) on the **same** harness
+and scores each by whether the project's checks pass (compiles / tests green /
+correct diff), emitting a comparison table (success %, cost, time). It doubles as
+an internal regression guard for the scaffolding above. Tracked as a roadmap item
+(not yet implemented) — open an issue to pick it up.
 
 ## Permissions
 

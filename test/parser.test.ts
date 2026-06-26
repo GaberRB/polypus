@@ -18,6 +18,20 @@ describe("parseEmulatedToolCalls", () => {
     expect(text).toBe("Sure, I'll do that.");
   });
 
+  it("tolerates single-quoted and unquoted name attributes", () => {
+    const single = parseEmulatedToolCalls(
+      `<polypus:tool name='read_file'><arg name='path'>a.ts</arg></polypus:tool>`,
+    );
+    expect(single.toolCalls[0]!.name).toBe("read_file");
+    expect(single.toolCalls[0]!.arguments).toEqual({ path: "a.ts" });
+
+    const bare = parseEmulatedToolCalls(
+      `<polypus:tool name=list_dir><arg name=path>src</arg></polypus:tool>`,
+    );
+    expect(bare.toolCalls[0]!.name).toBe("list_dir");
+    expect(bare.toolCalls[0]!.arguments).toEqual({ path: "src" });
+  });
+
   it("preserves angle brackets inside code content", () => {
     const out = `<polypus:tool name="write_file">
 <arg name="path">a.tsx</arg>
