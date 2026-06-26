@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-06-26
+
 ### Added
-- repl: novos slash commands `/usage`, `/models`, `/estimate`, `/index` e `/retrieve` — antes só existiam como subcomandos de CLI.
-- repl: autocomplete de slash — digitar `/` abre uma lista filtrável dos comandos (com descrição); continuar digitando filtra por subsequência e Enter insere o comando.
+- repl: novos slash commands `/usage`, `/models`, `/estimate`, `/index` e `/retrieve` — antes só existiam como subcomandos de CLI. (#180)
+- repl: autocomplete de slash — digitar `/` abre uma lista filtrável dos comandos (com descrição); continuar digitando filtra por subsequência e Enter insere o comando. (#180)
 
 ## [0.6.1] - 2026-06-26
 
@@ -524,7 +526,8 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/GaberRB/polypus/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/GaberRB/polypus/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/GaberRB/polypus/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/GaberRB/polypus/compare/v0.5.0...v0.5.1
