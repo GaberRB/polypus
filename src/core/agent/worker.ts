@@ -1,4 +1,4 @@
-import { runAgent, type AgentEvents, type VerifyOptions } from "./loop.js";
+import { runAgent, type AgentEvents, type Usage, type VerifyOptions } from "./loop.js";
 import { commitWorktree, type Worktree } from "../git/worktree.js";
 import { PermissionEngine } from "../permissions/modes.js";
 import type { ResolvedAgent } from "../providers/registry.js";
@@ -13,6 +13,9 @@ export interface Subtask {
 export interface WorkerOutcome {
   subtask: Subtask;
   agentName: string;
+  /** Provider + model that ran this worker, for usage accounting. */
+  provider: string;
+  model: string;
   branch: string;
   finished: boolean;
   summary?: string;
@@ -20,6 +23,8 @@ export interface WorkerOutcome {
   steps: number;
   /** Closed-loop verification result (undefined when verification was off/N-A). */
   verified?: boolean;
+  /** Token usage for this worker (zeroed if it never ran). */
+  usage: Usage;
 }
 
 /** Per-worker execution scaffolding, mirrored from the swarm's config. */
@@ -83,11 +88,14 @@ export async function runWorker(
   return {
     subtask,
     agentName: agent.config.name,
+    provider: agent.config.provider,
+    model: agent.config.model,
     branch: wt.branch,
     finished: result.finished,
     summary: result.summary,
     committed,
     steps: result.steps,
     verified: result.verified,
+    usage: result.usage,
   };
 }

@@ -377,7 +377,7 @@ async function executeTask(
     promptTokens: result.usage.promptTokens,
     completionTokens: result.usage.completionTokens,
     costUsd: runCost,
-  });
+  }, { workspace });
 
   if (streamer) {
     streamer.finalize(result);

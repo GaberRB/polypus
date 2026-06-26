@@ -2,7 +2,9 @@ import pc from "picocolors";
 import { loadConfig } from "../../core/config/store.js";
 import { createProvider, type ResolvedAgent } from "../../core/providers/registry.js";
 import { runSwarm } from "../../core/agent/orchestrator.js";
+import type { WorkerOutcome } from "../../core/agent/worker.js";
 import { recommendConcurrency, idleTimeoutMs, overallTimeoutMs } from "../../core/agent/concurrency.js";
+import { recordUsage, resolveModelPricing, estimateCost, type ModelPricing } from "../../core/agent/usage.js";
 import { SwarmView, describeToolCall } from "../../ui/swarm-view.js";
 import { listenForCancel } from "../../ui/cancel.js";
 import { t } from "../../core/i18n/index.js";
@@ -123,6 +125,10 @@ export async function runSwarmSession(
   }
   console.log("");
 
+  // Persist per-worker token/cost analytics (best-effort). Pricing is resolved
+  // once per agent; only OpenRouter advertises prices, others record cost 0.
+  await recordSwarmUsage(result.outcomes, resolved, workspace);
+
   // Final report.
   console.log(pc.bold("\n" + t("swarm.summary")));
   for (const o of result.outcomes) {
@@ -141,6 +147,47 @@ export async function runSwarmSession(
   } else {
     console.log(pc.green("\n" + t("swarm.allMerged")));
   }
+}
+
+/**
+ * Append one usage record per worker outcome to the global + project logs.
+ * Pricing is resolved once per agent (cached); failures are swallowed since
+ * analytics are best-effort and must not break the swarm.
+ */
+async function recordSwarmUsage(
+  outcomes: WorkerOutcome[],
+  resolved: ResolvedAgent[],
+  workspace: string,
+): Promise<void> {
+  const configByName = new Map(resolved.map((a) => [a.config.name, a.config]));
+  const pricingByAgent = new Map<string, Promise<ModelPricing | undefined>>();
+  await Promise.all(
+    outcomes.map(async (o) => {
+      const cfg = configByName.get(o.agentName);
+      let costUsd = 0;
+      if (cfg) {
+        let pricing = pricingByAgent.get(o.agentName);
+        if (!pricing) {
+          pricing = resolveModelPricing(cfg);
+          pricingByAgent.set(o.agentName, pricing);
+        }
+        const p = await pricing;
+        if (p) costUsd = estimateCost(o.usage, p);
+      }
+      await recordUsage(
+        {
+          ts: new Date().toISOString(),
+          agent: o.agentName,
+          provider: o.provider,
+          model: o.model,
+          promptTokens: o.usage.promptTokens,
+          completionTokens: o.usage.completionTokens,
+          costUsd,
+        },
+        { workspace },
+      );
+    }),
+  );
 }
 
 /** `polypus swarm <task>` — load config, parse CLI options and run the session. */

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- cli: `polypus usage` agora mostra **eficiência por modelo** (tabela com execuções, tokens, custo, custo/exec e US$/1k tokens) e barras comparativas de custo entre modelos, além da visão por dia. Nova flag `--global` agrega o uso de todos os projetos.
+- core: o uso passa a ser gravado também em `.poly/usage.jsonl` do projeto (além do log global `~/.polypus/usage.jsonl`), e o `swarm` agora registra uso por worker.
+
 ## [0.6.0] - 2026-06-26
 
 ### Added

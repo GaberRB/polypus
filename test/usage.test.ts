@@ -1,8 +1,15 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { aggregateUsage, estimateCost, fmtUsd, recordUsage } from "../src/core/agent/usage.js";
+import {
+  aggregateUsage,
+  aggregateUsageByModel,
+  estimateCost,
+  fmtUsd,
+  projectUsagePath,
+  recordUsage,
+} from "../src/core/agent/usage.js";
 
 describe("estimateCost", () => {
   it("computes USD from per-million pricing", () => {
@@ -69,5 +76,38 @@ describe("recordUsage + aggregateUsage", () => {
     const { days, total } = await aggregateUsage();
     expect(days).toEqual([]);
     expect(total.runs).toBe(0);
+  });
+
+  it("aggregates by model, ordered by cost then tokens, with a grand total", async () => {
+    const base = { ts: "2026-06-20T10:00:00.000Z", agent: "a", provider: "openrouter" };
+    await recordUsage({ ...base, model: "cheap", promptTokens: 1000, completionTokens: 0, costUsd: 0.001 });
+    await recordUsage({ ...base, model: "pricey", promptTokens: 100, completionTokens: 100, costUsd: 0.5 });
+    await recordUsage({ ...base, model: "pricey", promptTokens: 50, completionTokens: 50, costUsd: 0.25 });
+
+    const { models, total } = await aggregateUsageByModel();
+    expect(models.map((m) => m.model)).toEqual(["pricey", "cheap"]); // cost desc
+    const pricey = models[0]!;
+    expect(pricey.runs).toBe(2);
+    expect(pricey.promptTokens + pricey.completionTokens).toBe(300);
+    expect(pricey.costUsd).toBeCloseTo(0.75, 6);
+    expect(total.runs).toBe(3);
+    expect(total.costUsd).toBeCloseTo(0.751, 6);
+  });
+
+  it("also writes a per-project log when a workspace is given", async () => {
+    const workspace = mkdtempSync(join(tmpdir(), "polypus-ws-"));
+    try {
+      await recordUsage(
+        { ts: "2026-06-20T10:00:00.000Z", agent: "a", provider: "openrouter", model: "m", promptTokens: 10, completionTokens: 5, costUsd: 0.01 },
+        { workspace },
+      );
+      const line = readFileSync(projectUsagePath(workspace), "utf8").trim();
+      expect(JSON.parse(line).model).toBe("m");
+
+      const { total } = await aggregateUsageByModel(projectUsagePath(workspace));
+      expect(total.runs).toBe(1);
+    } finally {
+      rmSync(workspace, { recursive: true, force: true });
+    }
   });
 });

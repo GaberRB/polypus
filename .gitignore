@@ -4,5 +4,6 @@ dist/
 .DS_Store
 .env
 .polypus/
+.poly/usage.jsonl
 coverage/
 claude_desktop.png
