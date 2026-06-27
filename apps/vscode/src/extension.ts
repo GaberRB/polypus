@@ -6,6 +6,7 @@
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import { RunBridge } from "./host/runBridge.js";
+import { listConfiguredAgents } from "./host/agents.js";
 import type { HostToWebview, WebviewToHost } from "./protocol.js";
 import type { FileEntry, Mode } from "@gaberrb/polypus-chat-ui";
 
@@ -103,7 +104,7 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
         this.bridge.start(
           {
             task: msg.task,
-            mode: msg.mode,
+            controls: msg.controls,
             cwd,
             resumeSessionId: msg.resumeSessionId,
             env: { [KEY_ENV]: (await this.context.secrets.get(SECRET_KEY)) ?? "" },
@@ -152,6 +153,10 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
       if (msg.method === "readFile") {
         const bytes = await vscode.workspace.fs.readFile(vscode.Uri.file(msg.path));
         this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: Buffer.from(bytes).toString("utf8") });
+        return;
+      }
+      if (msg.method === "listAgents") {
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
         return;
       }
     } catch (err) {

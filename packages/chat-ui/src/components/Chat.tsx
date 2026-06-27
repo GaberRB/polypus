@@ -4,7 +4,7 @@
  * with their own transport. No Electron, no VSCode, no `window.*` here.
  */
 import { useEffect, useReducer, useRef, useState, type KeyboardEvent } from "react";
-import type { ChatTransport, ModelPrice, Mode, StreamEvent } from "../transport.js";
+import type { ChatTransport, ModelPrice, Mode, RunControls, StreamEvent } from "../transport.js";
 import {
   hasPendingAsk,
   initialState,
@@ -16,6 +16,8 @@ import {
 import { DiffViewer, isDiff } from "./DiffViewer.js";
 import { ChoiceCard } from "./ChoiceCard.js";
 import { UsageBar } from "./UsageBar.js";
+import { ControlsBar, MODE_META } from "./ControlsBar.js";
+import { PolypusMascot } from "./PolypusMascot.js";
 
 export interface ChatLabels {
   placeholder: string;
@@ -24,6 +26,7 @@ export interface ChatLabels {
   running: string;
   cancel: string;
   rateLimited: string;
+  shiftTabHint: string;
 }
 
 const DEFAULT_LABELS: ChatLabels = {
@@ -34,6 +37,7 @@ const DEFAULT_LABELS: ChatLabels = {
   cancel: "Cancelar",
   rateLimited:
     "Limite de requisições atingido no modelo atual. Tente o modo rápido (fast) ou troque para um modelo pago barato.",
+  shiftTabHint: "Pressione Shift+Tab para aprovar edições automaticamente",
 };
 
 const TOOL_ICONS: Record<string, string> = {
@@ -63,10 +67,14 @@ function isRateLimit(ev: StreamEvent): boolean {
 type Action =
   | { kind: "send"; userId: number; agentId: number; text: string }
   | { kind: "stream"; agentId: number; ev: StreamEvent }
-  | { kind: "lockAsk"; agentId: number; askId: number; selected: string[] };
+  | { kind: "lockAsk"; agentId: number; askId: number; selected: string[] }
+  | { kind: "clear" };
 
 function chatReducer(state: ChatState, action: Action, nextErrorId: () => number): ChatState {
   switch (action.kind) {
+    case "clear":
+      // Drop the thread and the session id so the next run starts fresh.
+      return { messages: [], usage: { promptTokens: 0, completionTokens: 0 }, sessionId: undefined, running: false };
     case "send":
       return {
         ...state,
@@ -100,6 +108,11 @@ export function Chat({
   const labels = { ...DEFAULT_LABELS, ...labelOverrides };
   const errorIdRef = useRef(-1);
   const nextErrorId = (): number => errorIdRef.current--;
+
+  // Run controls (mode/agent/profile) — surfaced by the ControlsBar (VA2-4).
+  const [controls, setControls] = useState<RunControls>({ mode });
+  const controlsRef = useRef(controls);
+  controlsRef.current = controls;
 
   const [state, dispatch] = useReducer(
     (s: ChatState, a: Action) => chatReducer(s, a, nextErrorId),
@@ -145,7 +158,9 @@ export function Chat({
       dispatch({ kind: "stream", agentId, ev });
     };
 
-    unsubRef.current = transport.runStream(task, mode, onEvent, { resumeSessionId: state.sessionId });
+    unsubRef.current = transport.runStream(task, controlsRef.current, onEvent, {
+      resumeSessionId: state.sessionId,
+    });
     sendingRef.current = false;
   };
 
@@ -161,7 +176,22 @@ export function Chat({
     setRunning(false);
   };
 
+  /** Shift+Tab toggles between "ask before edits" and "edit automatically". */
+  const toggleAutoApprove = (): void => {
+    setControls((c) => ({ ...c, mode: c.mode === "bypass" ? "review" : "bypass" }));
+  };
+
+  const clearConversation = (): void => {
+    cancel();
+    dispatch({ kind: "clear" });
+  };
+
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (e.key === "Tab" && e.shiftKey) {
+      e.preventDefault();
+      toggleAutoApprove();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
@@ -169,12 +199,19 @@ export function Chat({
   };
 
   const pendingAsk = hasPendingAsk(state.messages);
+  const modeMeta = MODE_META[controls.mode];
 
   return (
     <div className="chat">
       <div className="thread" aria-live="polite" aria-atomic="false">
         {!hasProject && <p className="empty">{labels.noProject}</p>}
-        {hasProject && state.messages.length === 0 && <p className="empty">{labels.empty}</p>}
+        {hasProject && state.messages.length === 0 && (
+          <div className="welcome">
+            <PolypusMascot size="lg" state="idle" />
+            <p className="empty">{labels.empty}</p>
+            <p className="shift-tab-banner">{labels.shiftTabHint}</p>
+          </div>
+        )}
         {state.messages.map((m) =>
           m.role === "agent" ? (
             <div key={m.id} className="msg msg-agent">
@@ -231,6 +268,14 @@ export function Chat({
         price={price}
       />
 
+      <ControlsBar
+        controls={controls}
+        onChange={setControls}
+        transport={transport}
+        onClear={clearConversation}
+        disabled={running && !pendingAsk}
+      />
+
       <div className="composer">
         <div className="composer-row">
           <textarea
@@ -247,6 +292,11 @@ export function Chat({
               ■
             </button>
           )}
+        </div>
+        {/* Active-mode indicator (RF3), bottom-right of the composer. */}
+        <div className="mode-indicator" title={modeMeta.hint}>
+          <span aria-hidden>{modeMeta.icon}</span>
+          <span>{modeMeta.label}</span>
         </div>
       </div>
     </div>

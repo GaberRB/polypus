@@ -6,9 +6,10 @@
 import type {
   ChatTransport,
   StreamEvent,
-  Mode,
+  RunControls,
   ModelPrice,
   FileEntry,
+  AgentInfo,
 } from "@gaberrb/polypus-chat-ui";
 import type { HostToWebview, WebviewToHost } from "../protocol.js";
 
@@ -54,12 +55,12 @@ export class VsCodeTransport implements ChatTransport {
 
   runStream(
     task: string,
-    mode: Mode,
+    controls: RunControls,
     onEvent: (ev: StreamEvent) => void,
     opts?: { resumeSessionId?: string },
   ): () => void {
     this.onEvent = onEvent;
-    this.vscode.postMessage({ type: "run", task, mode, resumeSessionId: opts?.resumeSessionId });
+    this.vscode.postMessage({ type: "run", task, controls, resumeSessionId: opts?.resumeSessionId });
     return () => {
       this.onEvent = null;
     };
@@ -94,5 +95,9 @@ export class VsCodeTransport implements ChatTransport {
 
   readFile(path: string): Promise<string> {
     return this.rpc<string>((rpcId) => ({ type: "rpc", rpcId, method: "readFile", path }));
+  }
+
+  listAgents(): Promise<AgentInfo[]> {
+    return this.rpc<AgentInfo[]>((rpcId) => ({ type: "rpc", rpcId, method: "listAgents" }));
   }
 }

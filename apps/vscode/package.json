@@ -47,6 +47,13 @@
         "title": "Polypus: Configurar chave do OpenRouter"
       }
     ],
+    "keybindings": [
+      {
+        "command": "polypus.focusChat",
+        "key": "ctrl+escape",
+        "mac": "cmd+escape"
+      }
+    ],
     "configuration": {
       "title": "Polypus",
       "properties": {
