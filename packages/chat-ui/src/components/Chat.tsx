@@ -4,7 +4,7 @@
  * with their own transport. No Electron, no VSCode, no `window.*` here.
  */
 import { useEffect, useReducer, useRef, useState, type KeyboardEvent } from "react";
-import type { ChatTransport, ModelPrice, Mode, RunControls, StreamEvent } from "../transport.js";
+import type { ChatTransport, FileEntry, ModelPrice, Mode, RunControls, StreamEvent } from "../transport.js";
 import {
   hasPendingAsk,
   initialState,
@@ -141,6 +141,11 @@ export function Chat({
   const [price, setPrice] = useState<ModelPrice | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
 
+  // @-mention file picker (VA6).
+  const [atFiles, setAtFiles] = useState<FileEntry[]>([]);
+  const [atQuery, setAtQuery] = useState("");
+  const [showAtPicker, setShowAtPicker] = useState(false);
+
   const nextId = useRef(1);
   const unsubRef = useRef<(() => void) | null>(null);
   const sendingRef = useRef(false);
@@ -215,7 +220,39 @@ export function Chat({
     if (newId) dispatch({ kind: "rewind", keepUserTurns: keep, newSessionId: newId });
   };
 
+  /** Detect a trailing `@query` and surface the file picker (VA6). */
+  const onInputChange = (value: string): void => {
+    setInput(value);
+    const match = /@(\S*)$/.exec(value);
+    if (match) {
+      const q = match[1] ?? "";
+      setAtQuery(q);
+      setShowAtPicker(true);
+      void transport.listFiles(q).then(setAtFiles).catch(() => setAtFiles([]));
+    } else {
+      setShowAtPicker(false);
+    }
+  };
+
+  /** Replace the trailing `@query` with the file's contents as a fenced block. */
+  const selectAtFile = async (file: FileEntry): Promise<void> => {
+    setShowAtPicker(false);
+    let block = `@${file.name}`;
+    try {
+      const content = await transport.readFile(file.path);
+      block = "```" + file.name + "\n" + content + "\n```";
+    } catch {
+      /* fall back to a bare @name reference */
+    }
+    setInput((prev) => prev.replace(/@\S*$/, block));
+  };
+
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (showAtPicker && e.key === "Escape") {
+      e.preventDefault();
+      setShowAtPicker(false);
+      return;
+    }
     if (e.key === "Tab" && e.shiftKey) {
       e.preventDefault();
       toggleAutoApprove();
@@ -226,6 +263,10 @@ export function Chat({
       send();
     }
   };
+
+  const filteredAtFiles = atFiles
+    .filter((f) => !atQuery || f.name.toLowerCase().includes(atQuery.toLowerCase()))
+    .slice(0, 12);
 
   const pendingAsk = hasPendingAsk(state.messages);
   const modeMeta = MODE_META[controls.mode];
@@ -316,13 +357,30 @@ export function Chat({
         disabled={running && !pendingAsk}
       />
 
-      <div className="composer">
+      <div className="composer" style={{ position: "relative" }}>
+        {showAtPicker && filteredAtFiles.length > 0 && (
+          <div className="at-picker">
+            {filteredAtFiles.map((f) => (
+              <button
+                key={f.path}
+                className="at-picker-item"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  void selectAtFile(f);
+                }}
+              >
+                <span className="at-picker-icon" aria-hidden>·</span>
+                {f.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="composer-row">
           <textarea
             className="composer-input"
             placeholder={labels.placeholder}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={onKey}
             disabled={(running && !pendingAsk) || !hasProject}
             rows={2}
