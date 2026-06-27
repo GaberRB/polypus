@@ -1,0 +1,88 @@
+{
+  "name": "polypus-vscode",
+  "displayName": "Polypus — agentic AI chat",
+  "description": "Chat agêntico no VSCode com a sua chave e modelos grátis/baratos (OpenRouter). Sem assinatura.",
+  "version": "0.1.0",
+  "private": true,
+  "publisher": "gaberrb",
+  "author": "Gabriel Rios",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GaberRB/polypus.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["AI", "Chat", "Machine Learning", "Programming Languages"],
+  "keywords": ["ai", "agent", "openrouter", "chat", "coding assistant", "copilot alternative"],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "polypus",
+          "title": "Polypus",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "polypus": [
+        {
+          "id": "polypus.chat",
+          "name": "Chat",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "polypus.focusChat",
+        "title": "Polypus: Abrir chat"
+      },
+      {
+        "command": "polypus.setApiKey",
+        "title": "Polypus: Configurar chave do OpenRouter"
+      }
+    ],
+    "configuration": {
+      "title": "Polypus",
+      "properties": {
+        "polypus.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Caminho para um CLI polypus externo. Vazio = usa o CLI empacotado na extensão."
+        },
+        "polypus.mode": {
+          "type": "string",
+          "enum": ["review", "plan", "bypass"],
+          "default": "review",
+          "description": "Modo de permissão das execuções."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "package": "vsce package --no-dependencies",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@gaberrb/polypus": "*",
+    "@gaberrb/polypus-chat-ui": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3"
+  }
+}

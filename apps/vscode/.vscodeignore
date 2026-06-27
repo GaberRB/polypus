@@ -1,0 +1,9 @@
+# Source & build config — only dist/ + media/ ship in the VSIX.
+src/**
+esbuild.mjs
+tsconfig.json
+**/*.map
+**/*.ts
+.vscode/**
+# Keep node_modules: the bundled @gaberrb/polypus CLI is spawned at runtime and
+# must be resolvable via require.resolve. Do NOT package with --no-dependencies.
