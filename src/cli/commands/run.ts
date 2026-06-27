@@ -39,6 +39,7 @@ import { loadSkills, makeUseSkillTool } from "../../core/skills/index.js";
 import type { AskRequest } from "../../core/tools/types.js";
 import { createJsonCollector, createNdjsonStreamer } from "./json-output.js";
 import { createStreamAsk } from "./stream-ask.js";
+import { createStreamConfirm } from "./stream-confirm.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
 import { runSwarmSession } from "./swarm.js";
@@ -263,13 +264,19 @@ async function executeTask(
   };
   const streamer = json && stream ? createNdjsonStreamer(emitLine) : undefined;
 
-  // Interactive ask_user over the stream: emit a choice-card prompt and await
-  // the host's selection on stdin (the desktop bridge writes the reply line).
+  // Interactive ask_user + permission confirmations over the stream: emit a card
+  // and await the host's reply on stdin (the VSCode/desktop bridge writes the
+  // line). The confirm channel is what makes `review` mode usable headlessly —
+  // without it, write/command approvals would all be auto-denied.
   const streamAsk = streamer ? createStreamAsk(emitLine) : undefined;
+  const streamConfirm = streamer ? createStreamConfirm(emitLine) : undefined;
   let askInput: readline.Interface | undefined;
-  if (streamAsk) {
+  if (streamAsk || streamConfirm) {
     askInput = readline.createInterface({ input: process.stdin });
-    askInput.on("line", (line) => streamAsk.handleLine(line));
+    askInput.on("line", (line) => {
+      streamAsk?.handleLine(line);
+      streamConfirm?.handleLine(line);
+    });
   }
 
   // Emit session ID immediately so the caller can wire --resume for follow-ups.
@@ -298,8 +305,11 @@ async function executeTask(
     policy: { workspace, allow: session.allow, deny: session.deny },
     allowedCommands: session.allowedCommands,
     network: session.network,
-    // Headless runs have no TTY for confirmations — use --mode bypass instead.
-    confirm: json
+    // Streaming runs confirm via the host (over the NDJSON stream); plain --json
+    // has no channel to ask, so it denies; a TTY uses the clack prompt.
+    confirm: streamConfirm
+      ? (req) => streamConfirm.confirm(req)
+      : json
       ? async () => false
       : async (req) => {
           spinner.stop();
@@ -385,6 +395,7 @@ async function executeTask(
     spinner.stop();
     cancel.dispose();
     streamAsk?.dispose(); // resolve any pending choice card so we don't hang
+    streamConfirm?.dispose(); // deny any pending approval so we don't hang
     askInput?.close();
     await mcp.close(); // shut down any spawned MCP servers
   }

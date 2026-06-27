@@ -79,6 +79,11 @@ export class RunBridge {
     this.child?.stdin?.write(JSON.stringify({ type: "ask_response", id, selected }) + "\n");
   }
 
+  /** Approve/reject a pending `confirm_request` by writing to stdin. */
+  respondConfirm(id: number, approved: boolean): void {
+    this.child?.stdin?.write(JSON.stringify({ type: "confirm_response", id, approved }) + "\n");
+  }
+
   /** Kill the active run, if any. */
   stop(): void {
     if (this.child) {

@@ -7,14 +7,17 @@ import { useEffect, useReducer, useRef, useState, type KeyboardEvent } from "rea
 import type { ChatTransport, FileEntry, ModelPrice, Mode, RunControls, StreamEvent } from "../transport.js";
 import {
   hasPendingAsk,
+  hasPendingConfirm,
   initialState,
   lockAsk,
+  lockConfirm,
   reduce,
   type ChatState,
   type Msg,
 } from "../reducer.js";
 import { DiffViewer, isDiff } from "./DiffViewer.js";
 import { ChoiceCard } from "./ChoiceCard.js";
+import { ConfirmCard } from "./ConfirmCard.js";
 import { UsageBar } from "./UsageBar.js";
 import { ControlsBar, MODE_META } from "./ControlsBar.js";
 import { PolypusMascot } from "./PolypusMascot.js";
@@ -69,6 +72,7 @@ type Action =
   | { kind: "send"; userId: number; agentId: number; text: string }
   | { kind: "stream"; agentId: number; ev: StreamEvent }
   | { kind: "lockAsk"; agentId: number; askId: number; selected: string[] }
+  | { kind: "lockConfirm"; agentId: number; confirmId: number; approved: boolean }
   | { kind: "clear" }
   | { kind: "rewind"; keepUserTurns: number; newSessionId: string };
 
@@ -98,13 +102,15 @@ function chatReducer(state: ChatState, action: Action, nextErrorId: () => number
         messages: [
           ...state.messages,
           { id: action.userId, role: "user", text: action.text },
-          { id: action.agentId, role: "agent", text: "", thinking: "", tools: [], asks: [], done: false },
+          { id: action.agentId, role: "agent", text: "", thinking: "", tools: [], asks: [], confirms: [], done: false },
         ],
       };
     case "stream":
       return reduce(state, action.agentId, action.ev, nextErrorId);
     case "lockAsk":
       return { ...state, messages: lockAsk(state.messages, action.agentId, action.askId, action.selected) };
+    case "lockConfirm":
+      return { ...state, messages: lockConfirm(state.messages, action.agentId, action.confirmId, action.approved) };
   }
 }
 
@@ -190,6 +196,11 @@ export function Chat({
     dispatch({ kind: "lockAsk", agentId, askId, selected }); // lock the card optimistically
   };
 
+  const answerConfirm = (agentId: number, confirmId: number, approved: boolean): void => {
+    transport.respondConfirm(confirmId, approved);
+    dispatch({ kind: "lockConfirm", agentId, confirmId, approved });
+  };
+
   const cancel = (): void => {
     unsubRef.current?.();
     unsubRef.current = null;
@@ -268,7 +279,7 @@ export function Chat({
     .filter((f) => !atQuery || f.name.toLowerCase().includes(atQuery.toLowerCase()))
     .slice(0, 12);
 
-  const pendingAsk = hasPendingAsk(state.messages);
+  const pendingAsk = hasPendingAsk(state.messages) || hasPendingConfirm(state.messages);
   const modeMeta = MODE_META[controls.mode];
 
   return (
@@ -317,7 +328,10 @@ export function Chat({
               {m.asks.map((ask) => (
                 <ChoiceCard key={ask.id} prompt={ask} onSubmit={(sel) => answerAsk(m.id, ask.id, sel)} />
               ))}
-              {!m.done && !m.text && m.tools.length === 0 && m.asks.length === 0 && (
+              {m.confirms.map((c) => (
+                <ConfirmCard key={c.id} prompt={c} onDecide={(approved) => answerConfirm(m.id, c.id, approved)} />
+              ))}
+              {!m.done && !m.text && m.tools.length === 0 && m.asks.length === 0 && m.confirms.length === 0 && (
                 <div className="thinking-state">
                   <span className="spinner-dot" aria-hidden />
                   <span>{labels.running}</span>

@@ -22,6 +22,17 @@ export interface AskPrompt {
   answered?: string[];
 }
 
+export interface ConfirmPrompt {
+  id: number;
+  kind: "write" | "command" | "network";
+  summary: string;
+  preview?: string;
+  /** Unified diff for writes, rendered by DiffViewer. */
+  diff?: string;
+  /** Set once the user decides — locks the card. */
+  answered?: boolean;
+}
+
 export type Msg =
   | { id: number; role: "user"; text: string }
   | {
@@ -32,6 +43,7 @@ export type Msg =
       thinking: string;
       tools: ToolItem[];
       asks: AskPrompt[];
+      confirms: ConfirmPrompt[];
       done: boolean;
     }
   | { id: number; role: "error"; text: string };
@@ -151,6 +163,22 @@ export function reduce(
       }
       return state;
 
+    case "confirm_request":
+      if (typeof ev.id === "number" && (ev.kind === "write" || ev.kind === "command" || ev.kind === "network")) {
+        const confirm: ConfirmPrompt = {
+          id: ev.id,
+          kind: ev.kind,
+          summary: String(ev.summary ?? ""),
+          preview: typeof ev.preview === "string" ? ev.preview : undefined,
+          diff: typeof ev.diff === "string" ? ev.diff : undefined,
+        };
+        return {
+          ...state,
+          messages: patchAgent(state.messages, agentId, (m) => ({ ...m, confirms: [...m.confirms, confirm] })),
+        };
+      }
+      return state;
+
     case "usage":
       return {
         ...state,
@@ -192,4 +220,17 @@ export function lockAsk(messages: Msg[], agentId: number, askId: number, selecte
 /** True when any agent message is blocked on an unanswered choice card. */
 export function hasPendingAsk(messages: Msg[]): boolean {
   return messages.some((m) => m.role === "agent" && m.asks.some((a) => !a.answered));
+}
+
+/** Lock a confirmation card once the user approves/rejects it. */
+export function lockConfirm(messages: Msg[], agentId: number, confirmId: number, approved: boolean): Msg[] {
+  return patchAgent(messages, agentId, (m) => ({
+    ...m,
+    confirms: m.confirms.map((c) => (c.id === confirmId ? { ...c, answered: approved } : c)),
+  }));
+}
+
+/** True when any agent message is blocked on an unanswered approval card. */
+export function hasPendingConfirm(messages: Msg[]): boolean {
+  return messages.some((m) => m.role === "agent" && m.confirms.some((c) => c.answered === undefined));
 }

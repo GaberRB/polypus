@@ -71,6 +71,10 @@ export class VsCodeTransport implements ChatTransport {
     this.vscode.postMessage({ type: "respondAsk", id, selected });
   }
 
+  respondConfirm(id: number, approved: boolean): void {
+    this.vscode.postMessage({ type: "respondConfirm", id, approved });
+  }
+
   stopRun(): void {
     this.vscode.postMessage({ type: "stop" });
   }

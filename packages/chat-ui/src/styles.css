@@ -213,6 +213,50 @@
 
 @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
+/* Permission approval card */
+.confirm-card {
+  border: 1px solid var(--vscode-inputValidation-warningBorder, #b89500);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--vscode-inputValidation-warningBackground, rgba(184, 149, 0, 0.07));
+}
+
+.confirm-head { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.confirm-icon { font-family: var(--vscode-editor-font-family, monospace); }
+.confirm-summary { word-break: break-word; }
+
+.confirm-preview {
+  margin: 0;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  color: var(--vscode-descriptionForeground, #aaa);
+}
+
+.confirm-actions { display: flex; gap: 8px; }
+
+.confirm-approve,
+.confirm-reject {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.confirm-approve { background: var(--vscode-button-background, #0e639c); color: var(--vscode-button-foreground, #fff); }
+.confirm-reject {
+  background: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.1));
+  color: var(--vscode-button-secondaryForeground, inherit);
+}
+
+.confirm-result { font-size: 0.88em; font-weight: 600; }
+.confirm-result--ok { color: var(--vscode-charts-green, #4caf50); }
+.confirm-result--no { color: var(--vscode-errorForeground, #f48771); }
+
 /* Thinking / reasoning block */
 .thinking-block {
   border-left: 2px solid var(--vscode-charts-purple, #b180d7);

@@ -19,6 +19,7 @@ export type WebviewToHost =
   | { type: "run"; task: string; controls: RunControls; resumeSessionId?: string }
   | { type: "stop" }
   | { type: "respondAsk"; id: number; selected: string[] | null }
+  | { type: "respondConfirm"; id: number; approved: boolean }
   | { type: "rpc"; rpcId: number; method: "getModelPrice" }
   | { type: "rpc"; rpcId: number; method: "listFiles"; query: string }
   | { type: "rpc"; rpcId: number; method: "readFile"; path: string }

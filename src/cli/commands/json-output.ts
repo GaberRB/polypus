@@ -97,6 +97,7 @@ export interface StreamEvent {
     | "tool_call"
     | "tool_result"
     | "ask_user"
+    | "confirm_request"
     | "correction"
     | "reprompt"
     | "compaction"

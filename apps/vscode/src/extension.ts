@@ -123,6 +123,10 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
         this.bridge.respond(msg.id, msg.selected);
         return;
 
+      case "respondConfirm":
+        this.bridge.respondConfirm(msg.id, msg.approved);
+        return;
+
       case "setApiKey":
         await this.promptApiKey();
         return;

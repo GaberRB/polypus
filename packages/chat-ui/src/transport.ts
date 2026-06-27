@@ -18,6 +18,7 @@ export interface StreamEvent {
     | "step"
     | "assistant_delta"
     | "thinking_delta"
+    | "confirm_request"
     | "assistant"
     | "tool_call"
     | "tool_result"
@@ -47,6 +48,11 @@ export interface StreamEvent {
   question?: string;
   options?: string[];
   multi?: boolean;
+  /** Present on `confirm_request` — a write/command/network approval. */
+  kind?: "write" | "command" | "network";
+  summary?: string;
+  preview?: string;
+  diff?: string;
   [key: string]: unknown;
 }
 
@@ -141,6 +147,9 @@ export interface ChatTransport {
 
   /** Answer a pending `ask_user` card (selected = null when dismissed). */
   respondAsk(id: number, selected: string[] | null): void;
+
+  /** Approve or reject a pending `confirm_request` (write/command/network). */
+  respondConfirm(id: number, approved: boolean): void;
 
   /** Cancel the active run (host kills the child process). */
   stopRun(): void;
