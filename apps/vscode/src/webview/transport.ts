@@ -109,4 +109,8 @@ export class VsCodeTransport implements ChatTransport {
   searchModels(query: string): Promise<OpenRouterModelInfo[]> {
     return this.rpc<OpenRouterModelInfo[]>((rpcId) => ({ type: "rpc", rpcId, method: "searchModels", query }));
   }
+
+  addModelAsAgent(modelId: string): Promise<AgentInfo[]> {
+    return this.rpc<AgentInfo[]>((rpcId) => ({ type: "rpc", rpcId, method: "addAgent", modelId }));
+  }
 }

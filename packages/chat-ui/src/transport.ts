@@ -124,6 +124,13 @@ export interface ChatTransport {
   searchModels(query: string): Promise<OpenRouterModelInfo[]>;
 
   /**
+   * Add an OpenRouter model to the user's config as a reusable agent, then
+   * return the refreshed agent list (so the switcher updates). Idempotent: if an
+   * agent for the model already exists it is left as-is.
+   */
+  addModelAsAgent(modelId: string): Promise<AgentInfo[]>;
+
+  /**
    * Fork `sessionId` truncated to its first `keepUserTurns` user turns
    * (non-destructive). Returns the new session id to resume from, or null.
    */

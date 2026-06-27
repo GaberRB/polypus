@@ -83,11 +83,11 @@ export function ControlsBar({
         </label>
       )}
 
-      {/* OpenRouter model browser (VC2) */}
+      {/* OpenRouter model browser (VC2) — adds the picked model to the agent list */}
       <button
-        className={`control-icon-btn${controls.model ? " control-icon-btn--active" : ""}`}
-        title={controls.model ? `Modelo: ${controls.model}` : "Buscar modelos do OpenRouter"}
-        aria-label="Buscar modelos"
+        className="control-icon-btn"
+        title="Adicionar modelo do OpenRouter aos agentes"
+        aria-label="Adicionar modelo do OpenRouter"
         disabled={disabled}
         onClick={() => setBrowsing(true)}
       >
@@ -96,10 +96,14 @@ export function ControlsBar({
       {browsing && (
         <ModelBrowser
           transport={transport}
-          current={controls.model}
+          current={agents.find((a) => a.name === activeAgent)?.model}
           onPick={(id) => {
-            onChange({ ...controls, model: id });
             setBrowsing(false);
+            void transport.addModelAsAgent(id).then((updated) => {
+              setAgents(updated);
+              const added = updated.find((a) => a.model === id);
+              onChange({ ...controls, agent: added?.name ?? controls.agent });
+            });
           }}
           onClose={() => setBrowsing(false)}
         />

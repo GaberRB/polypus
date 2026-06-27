@@ -6,7 +6,7 @@
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import { RunBridge } from "./host/runBridge.js";
-import { execCliJson } from "./host/cli.js";
+import { execCli, execCliJson } from "./host/cli.js";
 import { listConfiguredAgents } from "./host/agents.js";
 import type { HostToWebview, WebviewToHost } from "./protocol.js";
 import type { FileEntry, Mode } from "@gaberrb/polypus-chat-ui";
@@ -177,6 +177,19 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
           | { ok?: boolean; models?: unknown[] }
           | null;
         this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: (res?.models ?? []) as never });
+        return;
+      }
+      if (msg.method === "addAgent") {
+        // Derive a readable, unique-ish agent name from the model id.
+        const name = msg.modelId.split("/").pop()!.replace(/:free$/, "").replace(/[^a-zA-Z0-9._-]+/g, "-");
+        // The key lives in env at runtime; store a reference so config has no secret.
+        await execCli([
+          "add-agent", name,
+          "--provider", "openrouter",
+          "--model", msg.modelId,
+          "--api-key", "${OPENROUTER_API_KEY}",
+        ]);
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
         return;
       }
     } catch (err) {
