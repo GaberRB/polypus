@@ -65,6 +65,19 @@ export interface RunControls {
   profile?: Profile;
   /** Stream the model's reasoning/chain-of-thought (`--think`). */
   thinking?: boolean;
+  /** Override the agent's model with a specific OpenRouter model id (`--model`). */
+  model?: string;
+}
+
+/** An OpenRouter catalog model, for the model browser. Prices are per 1M tokens. */
+export interface OpenRouterModelInfo {
+  id: string;
+  name: string;
+  promptPrice: number;
+  completionPrice: number;
+  contextLength: number;
+  supportsTools: boolean;
+  free: boolean;
 }
 
 /** Per-million-token prices for the active model, for live cost estimation. */
@@ -106,6 +119,9 @@ export interface ChatTransport {
 
   /** List the configured agents (for the model switcher). */
   listAgents(): Promise<AgentInfo[]>;
+
+  /** Search the OpenRouter catalog (for the model browser). */
+  searchModels(query: string): Promise<OpenRouterModelInfo[]>;
 
   /**
    * Fork `sessionId` truncated to its first `keepUserTurns` user turns

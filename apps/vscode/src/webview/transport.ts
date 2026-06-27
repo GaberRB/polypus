@@ -10,6 +10,7 @@ import type {
   ModelPrice,
   FileEntry,
   AgentInfo,
+  OpenRouterModelInfo,
 } from "@gaberrb/polypus-chat-ui";
 import type { HostToWebview, WebviewToHost } from "../protocol.js";
 
@@ -103,5 +104,9 @@ export class VsCodeTransport implements ChatTransport {
 
   rewind(sessionId: string, keepUserTurns: number): Promise<string | null> {
     return this.rpc<string | null>((rpcId) => ({ type: "rpc", rpcId, method: "rewind", sessionId, keepUserTurns }));
+  }
+
+  searchModels(query: string): Promise<OpenRouterModelInfo[]> {
+    return this.rpc<OpenRouterModelInfo[]>((rpcId) => ({ type: "rpc", rpcId, method: "searchModels", query }));
   }
 }

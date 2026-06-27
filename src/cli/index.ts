@@ -99,6 +99,7 @@ function buildProgram(): Command {
 
   program
     .command("run")
+    .option("--model <id>", t("cli.opt.modelOverride"))
     .argument("[task]", t("cli.arg.runTask"))
     .option("--agent <name>", t("cli.opt.agent"))
     .option("--mode <mode>", t("cli.opt.mode"))
@@ -137,6 +138,7 @@ function buildProgram(): Command {
     .option("--max-price <usd>", t("cli.opt.maxPrice"))
     .option("--sort <order>", t("cli.opt.sort"))
     .option("--limit <n>", t("cli.opt.limit"))
+    .option("--json", t("cli.opt.json"))
     .description(t("cli.cmd.models"))
     .action((opts) => models(opts));
 

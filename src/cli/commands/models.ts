@@ -19,20 +19,26 @@ export interface ModelsCliOptions {
   minPopularity?: string;
   sort?: string;
   limit?: string;
+  /** Emit the filtered models as a JSON array (for UIs) instead of the table. */
+  json?: boolean;
 }
 
 /** `polypus models` — list OpenRouter models with filters. */
 export async function models(opts: ModelsCliOptions): Promise<void> {
   const apiKey = await resolveOpenRouterKey();
 
-  const spin = p.spinner();
-  spin.start(t("models.fetching"));
+  const spin = opts.json ? undefined : p.spinner();
+  spin?.start(t("models.fetching"));
   let all: OpenRouterModel[];
   try {
     all = await listOpenRouterModels(apiKey);
-    spin.stop(pc.green("✓ OpenRouter"));
+    spin?.stop(pc.green("✓ OpenRouter"));
   } catch (err) {
-    spin.stop(pc.red(t("models.fetchError", { msg: (err as Error).message })), 2);
+    if (opts.json) {
+      process.stdout.write(JSON.stringify({ ok: false, error: (err as Error).message, models: [] }) + "\n");
+      return;
+    }
+    spin?.stop(pc.red(t("models.fetchError", { msg: (err as Error).message })), 2);
     return;
   }
 
@@ -46,6 +52,10 @@ export async function models(opts: ModelsCliOptions): Promise<void> {
   });
 
   const limit = opts.limit ? Number(opts.limit) : 30;
+  if (opts.json) {
+    process.stdout.write(JSON.stringify({ ok: true, models: filtered.slice(0, limit) }) + "\n");
+    return;
+  }
   printModelsTable(filtered, limit, all.length);
 }
 

@@ -25,11 +25,12 @@ export class RunBridge {
     this.stop(); // never run two at once
 
     const { cmd, baseArgs, env } = resolveCli();
-    const { mode, agent, profile, thinking } = opts.controls;
+    const { mode, agent, profile, thinking, model } = opts.controls;
     const safeMode = mode === "plan" || mode === "review" || mode === "bypass" ? mode : "review";
 
     const args = [...baseArgs, "run", opts.task, "--json", "--stream", "--mode", safeMode];
     if (agent) args.push("--agent", agent);
+    if (model) args.push("--model", model);
     if (profile === "fast") args.push("--fast");
     else if (profile === "quality") args.push("--quality");
     if (thinking) args.push("--think");

@@ -7,6 +7,7 @@ export { UsageBar } from "./components/UsageBar.js";
 export { ControlsBar, MODE_META } from "./components/ControlsBar.js";
 export { PolypusMascot } from "./components/PolypusMascot.js";
 export { ThinkingBlock } from "./components/ThinkingBlock.js";
+export { ModelBrowser } from "./components/ModelBrowser.js";
 export {
   reduce,
   initialState,
@@ -27,4 +28,5 @@ export type {
   ModelPrice,
   FileEntry,
   AgentInfo,
+  OpenRouterModelInfo,
 } from "./transport.js";

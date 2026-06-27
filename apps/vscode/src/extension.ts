@@ -169,6 +169,16 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
         this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: res?.sessionId ?? null });
         return;
       }
+      if (msg.method === "searchModels") {
+        const key = (await this.context.secrets.get(SECRET_KEY)) ?? "";
+        const args = ["models", "--json", "--limit", "40"];
+        if (msg.query.trim()) args.push("--search", msg.query.trim());
+        const res = (await execCliJson(args, undefined, key ? { [KEY_ENV]: key } : undefined)) as
+          | { ok?: boolean; models?: unknown[] }
+          | null;
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: (res?.models ?? []) as never });
+        return;
+      }
     } catch (err) {
       this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: false, error: (err as Error).message });
     }

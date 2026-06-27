@@ -40,10 +40,10 @@ export function resolveCli(): CliInvocation {
 }
 
 /** Run a one-shot `--json` CLI command and parse stdout. Never rejects. */
-export function execCliJson(args: string[], cwd?: string): Promise<unknown> {
+export function execCliJson(args: string[], cwd?: string, extraEnv?: Record<string, string>): Promise<unknown> {
   const { cmd, baseArgs, env } = resolveCli();
   return new Promise((resolve) => {
-    execFile(cmd, [...baseArgs, ...args], { cwd, env, maxBuffer: 16 * 1024 * 1024 }, (err, stdout) => {
+    execFile(cmd, [...baseArgs, ...args], { cwd, env: { ...env, ...extraEnv }, maxBuffer: 16 * 1024 * 1024 }, (err, stdout) => {
       if (err && !stdout) return resolve(null);
       try {
         resolve(JSON.parse(stdout.trim().split("\n").pop() ?? "null"));

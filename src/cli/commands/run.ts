@@ -49,6 +49,8 @@ import { listenForCancel } from "../../ui/cancel.js";
 
 export interface RunOptions {
   agent?: string;
+  /** Override the resolved agent's model for this run (OpenRouter model id). */
+  model?: string;
   mode?: string;
   maxSteps?: string;
   /** Headless mode: emit a single JSON object instead of the colored TUI. */
@@ -105,6 +107,8 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   }
 
   const agentConfig = resolveAgent(config, opts.agent ?? seeded?.agentName);
+  // `--model` overrides the resolved agent's model (browse-and-run any OpenRouter model).
+  if (opts.model) agentConfig.model = opts.model;
 
   const session: SessionState = {
     id: seeded?.id ?? newSessionId(),

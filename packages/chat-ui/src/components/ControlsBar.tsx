@@ -5,6 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import type { AgentInfo, ChatTransport, Mode, Profile, RunControls } from "../transport.js";
+import { ModelBrowser } from "./ModelBrowser.js";
 
 /** Icon + label + hint per execution mode (shared with the input indicator). */
 export const MODE_META: Record<Mode, { icon: string; label: string; hint: string }> = {
@@ -29,6 +30,7 @@ export function ControlsBar({
   disabled?: boolean;
 }): JSX.Element {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
+  const [browsing, setBrowsing] = useState(false);
 
   useEffect(() => {
     void transport.listAgents().then(setAgents).catch(() => setAgents([]));
@@ -79,6 +81,28 @@ export function ControlsBar({
             ))}
           </select>
         </label>
+      )}
+
+      {/* OpenRouter model browser (VC2) */}
+      <button
+        className={`control-icon-btn${controls.model ? " control-icon-btn--active" : ""}`}
+        title={controls.model ? `Modelo: ${controls.model}` : "Buscar modelos do OpenRouter"}
+        aria-label="Buscar modelos"
+        disabled={disabled}
+        onClick={() => setBrowsing(true)}
+      >
+        🔎
+      </button>
+      {browsing && (
+        <ModelBrowser
+          transport={transport}
+          current={controls.model}
+          onPick={(id) => {
+            onChange({ ...controls, model: id });
+            setBrowsing(false);
+          }}
+          onClose={() => setBrowsing(false)}
+        />
       )}
 
       {/* Profile / effort (VA4) */}
