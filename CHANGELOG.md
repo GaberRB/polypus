@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-06-27
+
+### Added
+- tools: a tool `ask_user` agora é interativa no modo headless de streaming. Em `run --json --stream`, em vez de devolver "sem UI", o agente emite um evento NDJSON `ask_user` (`{ id, question, options, multi }`) e bloqueia até o host responder com uma linha `ask_response` no stdin — permitindo que UIs (ex.: o Cowork desktop) rendam as escolhas como botões clicáveis. O evento genérico de `tool_call`/`tool_result` do `ask_user` é suprimido no stream para não duplicar.
+
+### Changed
+- prompt: o system prompt e a descrição do `ask_user` agora instruem o agente a chamar `ask_user` sempre que ofereceria 2+ opções/abordagens, em vez de listá-las em prosa para o usuário digitar de volta (`multi=true` quando cabe escolher mais de uma).
+
 ## [0.6.4] - 2026-06-26
 
 ### Fixed
@@ -541,7 +549,8 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/GaberRB/polypus/compare/v0.6.4...v0.6.5
 [0.6.2]: https://github.com/GaberRB/polypus/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/GaberRB/polypus/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/GaberRB/polypus/compare/v0.5.1...v0.6.0

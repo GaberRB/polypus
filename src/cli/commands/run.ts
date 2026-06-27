@@ -1,3 +1,4 @@
+import * as readline from "node:readline";
 import pc from "picocolors";
 import * as p from "@clack/prompts";
 import {
@@ -37,6 +38,7 @@ import { loadMcpTools } from "../../core/mcp/index.js";
 import { loadSkills, makeUseSkillTool } from "../../core/skills/index.js";
 import type { AskRequest } from "../../core/tools/types.js";
 import { createJsonCollector, createNdjsonStreamer } from "./json-output.js";
+import { createStreamAsk } from "./stream-ask.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
 import { runSwarmSession } from "./swarm.js";
@@ -248,9 +250,19 @@ async function executeTask(
   const controller = new AbortController();
   const cancel = listenForCancel(controller); // ESC / Ctrl+C aborts the task
   // --json buffers a single final object; --json --stream emits NDJSON live.
-  const streamer = json && stream
-    ? createNdjsonStreamer((e) => process.stdout.write(JSON.stringify(e) + "\n"))
-    : undefined;
+  const emitLine = (e: unknown): void => {
+    process.stdout.write(JSON.stringify(e) + "\n");
+  };
+  const streamer = json && stream ? createNdjsonStreamer(emitLine) : undefined;
+
+  // Interactive ask_user over the stream: emit a choice-card prompt and await
+  // the host's selection on stdin (the desktop bridge writes the reply line).
+  const streamAsk = streamer ? createStreamAsk(emitLine) : undefined;
+  let askInput: readline.Interface | undefined;
+  if (streamAsk) {
+    askInput = readline.createInterface({ input: process.stdin });
+    askInput.on("line", (line) => streamAsk.handleLine(line));
+  }
 
   // Emit session ID immediately so the caller can wire --resume for follow-ups.
   if (streamer) process.stdout.write(JSON.stringify({ type: "session_start", sessionId: session.id }) + "\n");
@@ -314,16 +326,20 @@ async function executeTask(
     console.log(pc.dim(t("skills.loaded", { names: skills.map((s) => s.name).join(", ") })));
   }
 
-  // Interactive choice prompt for the ask_user tool — only when we own a TTY.
-  const ask = json
-    ? undefined
-    : async (req: AskRequest): Promise<string[] | null> => {
-        spinner.stop();
-        cancel.pause();
-        const answer = await promptChoice(req);
-        cancel.resume();
-        return answer;
-      };
+  // Interactive choice prompt for the ask_user tool. When streaming, answers
+  // come from the host over stdin (the choice card); on a TTY, from the clack
+  // picker; plain --json stays headless (no one to answer).
+  const ask = streamAsk
+    ? streamAsk.ask
+    : json
+      ? undefined
+      : async (req: AskRequest): Promise<string[] | null> => {
+          spinner.stop();
+          cancel.pause();
+          const answer = await promptChoice(req);
+          cancel.resume();
+          return answer;
+        };
 
   const runOnce = (taskText: string): Promise<RunResult> =>
     runAgent({
@@ -359,6 +375,8 @@ async function executeTask(
   } finally {
     spinner.stop();
     cancel.dispose();
+    streamAsk?.dispose(); // resolve any pending choice card so we don't hang
+    askInput?.close();
     await mcp.close(); // shut down any spawned MCP servers
   }
 

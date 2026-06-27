@@ -95,6 +95,7 @@ export interface StreamEvent {
     | "assistant"
     | "tool_call"
     | "tool_result"
+    | "ask_user"
     | "correction"
     | "reprompt"
     | "compaction"
@@ -124,9 +125,13 @@ export function createNdjsonStreamer(emit: (event: StreamEvent) => void): {
       if (text.trim()) emit({ type: "assistant", text });
     },
     onToolCall(call) {
+      // ask_user is surfaced as a dedicated `ask_user` event (the interactive
+      // card), so skip the generic timeline row to avoid a duplicate entry.
+      if (call.name === "ask_user") return;
       emit({ type: "tool_call", name: call.name, arguments: call.arguments });
     },
     onToolResult(call, result) {
+      if (call.name === "ask_user") return; // see onToolCall above
       emit({
         type: "tool_result",
         name: call.name,
