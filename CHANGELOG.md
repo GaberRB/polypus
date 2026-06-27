@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-06-27
+
+### Changed
+- repl: o `/agents` agora abre um seletor interativo em vez de só imprimir a lista — navegue pelos agentes com ↑/↓ (o ativo já vem pré-selecionado, com `provider · model · toolMode` e `[padrão]` no hint) e Enter ativa o escolhido na sessão; Esc mantém o atual. Sem TTY, cai na lista estática de antes. O `/agent <nome>` continua para troca direta por nome.
+
 ## [0.6.5] - 2026-06-27
 
 ### Added
@@ -549,7 +554,8 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.5...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.6...HEAD
+[0.6.6]: https://github.com/GaberRB/polypus/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/GaberRB/polypus/compare/v0.6.4...v0.6.5
 [0.6.2]: https://github.com/GaberRB/polypus/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/GaberRB/polypus/compare/v0.6.0...v0.6.1
