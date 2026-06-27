@@ -6,6 +6,7 @@
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import { RunBridge } from "./host/runBridge.js";
+import { execCliJson } from "./host/cli.js";
 import { listConfiguredAgents } from "./host/agents.js";
 import type { HostToWebview, WebviewToHost } from "./protocol.js";
 import type { FileEntry, Mode } from "@gaberrb/polypus-chat-ui";
@@ -157,6 +158,15 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
       }
       if (msg.method === "listAgents") {
         this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
+        return;
+      }
+      if (msg.method === "rewind") {
+        const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const res = (await execCliJson(
+          ["rewind", msg.sessionId, "--turns", String(msg.keepUserTurns), "--json"],
+          cwd,
+        )) as { ok?: boolean; sessionId?: string } | null;
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: res?.sessionId ?? null });
         return;
       }
     } catch (err) {

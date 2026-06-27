@@ -15,6 +15,7 @@ export type WebviewToHost =
   | { type: "rpc"; rpcId: number; method: "listFiles"; query: string }
   | { type: "rpc"; rpcId: number; method: "readFile"; path: string }
   | { type: "rpc"; rpcId: number; method: "listAgents" }
+  | { type: "rpc"; rpcId: number; method: "rewind"; sessionId: string; keepUserTurns: number }
   | { type: "setApiKey" };
 
 /** Messages the host sends to the webview. */

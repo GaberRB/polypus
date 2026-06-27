@@ -9,7 +9,7 @@ import { init } from "./commands/init.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
 import { usage } from "./commands/usage.js";
-import { sessions } from "./commands/sessions.js";
+import { sessions, rewind } from "./commands/sessions.js";
 import { estimate } from "./commands/estimate.js";
 import { prd } from "./commands/prd.js";
 import { review } from "./commands/review.js";
@@ -158,6 +158,13 @@ function buildProgram(): Command {
     .command("sessions")
     .description(t("cli.cmd.sessions"))
     .action(() => sessions());
+
+  program
+    .command("rewind <id>")
+    .option("--turns <n>", t("cli.opt.rewindTurns"))
+    .option("--json", t("cli.opt.json"))
+    .description(t("cli.cmd.rewind"))
+    .action((id, opts) => rewind(id, opts));
 
   program
     .command("prd")

@@ -69,13 +69,28 @@ type Action =
   | { kind: "send"; userId: number; agentId: number; text: string }
   | { kind: "stream"; agentId: number; ev: StreamEvent }
   | { kind: "lockAsk"; agentId: number; askId: number; selected: string[] }
-  | { kind: "clear" };
+  | { kind: "clear" }
+  | { kind: "rewind"; keepUserTurns: number; newSessionId: string };
 
 function chatReducer(state: ChatState, action: Action, nextErrorId: () => number): ChatState {
   switch (action.kind) {
     case "clear":
       // Drop the thread and the session id so the next run starts fresh.
       return { messages: [], usage: { promptTokens: 0, completionTokens: 0 }, sessionId: undefined, running: false };
+    case "rewind": {
+      // Truncate the thread to the first `keepUserTurns` user turns and point at
+      // the forked session so the next send resumes from there.
+      let userSeen = 0;
+      const kept: Msg[] = [];
+      for (const m of state.messages) {
+        if (m.role === "user") {
+          if (userSeen >= action.keepUserTurns) break;
+          userSeen++;
+        }
+        kept.push(m);
+      }
+      return { ...state, messages: kept, sessionId: action.newSessionId, running: false };
+    }
     case "send":
       return {
         ...state,
@@ -187,6 +202,19 @@ export function Chat({
     dispatch({ kind: "clear" });
   };
 
+  /** Rewind to (and including the chance to redo) a prior user turn. */
+  const rewindTo = async (userMsgId: number): Promise<void> => {
+    if (!state.sessionId || running) return;
+    // How many user turns precede this one — that's what we keep.
+    let keep = 0;
+    for (const m of state.messages) {
+      if (m.id === userMsgId) break;
+      if (m.role === "user") keep++;
+    }
+    const newId = await transport.rewind(state.sessionId, keep);
+    if (newId) dispatch({ kind: "rewind", keepUserTurns: keep, newSessionId: newId });
+  };
+
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === "Tab" && e.shiftKey) {
       e.preventDefault();
@@ -258,6 +286,16 @@ export function Chat({
           ) : (
             <div key={m.id} className={`msg msg-${m.role}`}>
               <pre className="msg-text">{m.text}</pre>
+              {m.role === "user" && state.sessionId && !running && (
+                <button
+                  className="rewind-btn"
+                  title="Voltar para este ponto (cria uma sessão derivada)"
+                  aria-label="Rewind para aqui"
+                  onClick={() => void rewindTo(m.id)}
+                >
+                  ↺
+                </button>
+              )}
             </div>
           ),
         )}

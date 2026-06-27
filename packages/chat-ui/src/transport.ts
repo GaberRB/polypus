@@ -107,6 +107,12 @@ export interface ChatTransport {
   /** List the configured agents (for the model switcher). */
   listAgents(): Promise<AgentInfo[]>;
 
+  /**
+   * Fork `sessionId` truncated to its first `keepUserTurns` user turns
+   * (non-destructive). Returns the new session id to resume from, or null.
+   */
+  rewind(sessionId: string, keepUserTurns: number): Promise<string | null>;
+
   /** Answer a pending `ask_user` card (selected = null when dismissed). */
   respondAsk(id: number, selected: string[] | null): void;
 

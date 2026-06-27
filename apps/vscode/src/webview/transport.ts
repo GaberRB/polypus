@@ -100,4 +100,8 @@ export class VsCodeTransport implements ChatTransport {
   listAgents(): Promise<AgentInfo[]> {
     return this.rpc<AgentInfo[]>((rpcId) => ({ type: "rpc", rpcId, method: "listAgents" }));
   }
+
+  rewind(sessionId: string, keepUserTurns: number): Promise<string | null> {
+    return this.rpc<string | null>((rpcId) => ({ type: "rpc", rpcId, method: "rewind", sessionId, keepUserTurns }));
+  }
 }

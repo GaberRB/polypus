@@ -41,6 +41,25 @@
   gap: 6px;
 }
 
+.msg-user { position: relative; }
+
+.rewind-btn {
+  position: absolute;
+  left: -4px;
+  bottom: -2px;
+  border: none;
+  background: transparent;
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+  font-size: 0.9em;
+  padding: 2px 4px;
+}
+
+.msg-user:hover .rewind-btn { opacity: 1; }
+.rewind-btn:hover { color: var(--vscode-foreground, #ddd); }
+
 .msg-user .msg-text {
   align-self: flex-end;
   background: var(--vscode-button-background, #0e639c);
