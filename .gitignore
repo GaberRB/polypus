@@ -7,3 +7,6 @@ dist/
 .poly/usage.jsonl
 coverage/
 claude_desktop.png
+
+# VSCode extension build artifacts
+*.vsix

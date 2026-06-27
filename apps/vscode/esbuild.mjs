@@ -24,9 +24,8 @@ const extension = {
   outfile: "dist/extension.js",
   platform: "node",
   format: "cjs",
-  // `vscode` is provided by the host; `@gaberrb/polypus` is the CLI we spawn and
-  // resolve at runtime — never bundle it.
-  external: ["vscode", "@gaberrb/polypus"],
+  // `vscode` is provided by the host at runtime — never bundle it.
+  external: ["vscode"],
 };
 
 const webview = {
@@ -40,12 +39,34 @@ const webview = {
   define: { "process.env.NODE_ENV": prod ? '"production"' : '"development"' },
 };
 
+// Self-contained CLI bundle (T6): inline the whole Polypus CLI + its deps into a
+// single file shipped in dist/, so the VSIX needs no node_modules at runtime.
+// Spawned via VSCode's Node (ELECTRON_RUN_AS_NODE). See host/cli.ts.
+const cli = {
+  ...common,
+  entryPoints: ["../../src/cli/index.ts"],
+  outfile: "dist/cli.mjs",
+  platform: "node",
+  target: "node20",
+  format: "esm",
+  // ESM-bundle interop: shim require/__dirname for any CJS dep that needs them.
+  banner: {
+    js: [
+      "import { createRequire as __cr } from 'node:module';",
+      "import { fileURLToPath as __f } from 'node:url';",
+      "import { dirname as __d } from 'node:path';",
+      "const require = __cr(import.meta.url);",
+      "const __filename = __f(import.meta.url);",
+      "const __dirname = __d(__filename);",
+    ].join("\n"),
+  },
+};
+
 if (watch) {
-  const ctxE = await esbuild.context(extension);
-  const ctxW = await esbuild.context(webview);
-  await Promise.all([ctxE.watch(), ctxW.watch()]);
+  const ctxs = await Promise.all([esbuild.context(extension), esbuild.context(webview), esbuild.context(cli)]);
+  await Promise.all(ctxs.map((c) => c.watch()));
   console.log("esbuild: watching…");
 } else {
-  await Promise.all([esbuild.build(extension), esbuild.build(webview)]);
+  await Promise.all([esbuild.build(extension), esbuild.build(webview), esbuild.build(cli)]);
   console.log("esbuild: build complete");
 }

@@ -71,7 +71,6 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@gaberrb/polypus": "*",
     "@gaberrb/polypus-chat-ui": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
