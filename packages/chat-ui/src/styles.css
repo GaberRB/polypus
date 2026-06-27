@@ -408,6 +408,9 @@
 
 .control-icon-btn:hover { background: var(--vscode-toolbar-hoverBackground, rgba(255,255,255,0.08)); }
 
+.control-remove-agent { font-size: 0.8em; opacity: 0.6; padding: 2px 4px; }
+.control-remove-agent:hover { opacity: 1; color: var(--vscode-errorForeground, #f48771); }
+
 /* Active-mode indicator inside the composer */
 .mode-indicator {
   display: flex;

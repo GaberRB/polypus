@@ -130,6 +130,9 @@ export interface ChatTransport {
    */
   addModelAsAgent(modelId: string): Promise<AgentInfo[]>;
 
+  /** Remove a configured agent by name; returns the refreshed agent list. */
+  removeAgent(name: string): Promise<AgentInfo[]>;
+
   /**
    * Fork `sessionId` truncated to its first `keepUserTurns` user turns
    * (non-destructive). Returns the new session id to resume from, or null.

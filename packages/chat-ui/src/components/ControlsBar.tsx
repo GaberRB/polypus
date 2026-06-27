@@ -80,6 +80,27 @@ export function ControlsBar({
               </option>
             ))}
           </select>
+          {activeAgent && (
+            <button
+              type="button"
+              className="control-icon-btn control-remove-agent"
+              title={`Remover agente ${activeAgent}`}
+              aria-label={`Remover agente ${activeAgent}`}
+              disabled={disabled}
+              onClick={(e) => {
+                e.preventDefault();
+                const name = activeAgent;
+                void transport.removeAgent(name).then((updated) => {
+                  setAgents(updated);
+                  if (controls.agent === name) {
+                    onChange({ ...controls, agent: updated.find((a) => a.isDefault)?.name ?? updated[0]?.name });
+                  }
+                });
+              }}
+            >
+              ✕
+            </button>
+          )}
         </label>
       )}
 

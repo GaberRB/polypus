@@ -26,6 +26,7 @@ export type WebviewToHost =
   | { type: "rpc"; rpcId: number; method: "rewind"; sessionId: string; keepUserTurns: number }
   | { type: "rpc"; rpcId: number; method: "searchModels"; query: string }
   | { type: "rpc"; rpcId: number; method: "addAgent"; modelId: string }
+  | { type: "rpc"; rpcId: number; method: "removeAgent"; name: string }
   | { type: "setApiKey" };
 
 /** Messages the host sends to the webview. */

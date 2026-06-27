@@ -113,4 +113,8 @@ export class VsCodeTransport implements ChatTransport {
   addModelAsAgent(modelId: string): Promise<AgentInfo[]> {
     return this.rpc<AgentInfo[]>((rpcId) => ({ type: "rpc", rpcId, method: "addAgent", modelId }));
   }
+
+  removeAgent(name: string): Promise<AgentInfo[]> {
+    return this.rpc<AgentInfo[]>((rpcId) => ({ type: "rpc", rpcId, method: "removeAgent", name }));
+  }
 }

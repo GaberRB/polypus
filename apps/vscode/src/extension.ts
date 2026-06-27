@@ -192,6 +192,11 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
         this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
         return;
       }
+      if (msg.method === "removeAgent") {
+        await execCli(["remove-agent", msg.name]);
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
+        return;
+      }
     } catch (err) {
       this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: false, error: (err as Error).message });
     }
