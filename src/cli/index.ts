@@ -109,6 +109,7 @@ function buildProgram(): Command {
     .option("--no-verify", t("cli.opt.noVerify"))
     .option("--fast", t("cli.opt.fast"))
     .option("--quality", t("cli.opt.quality"))
+    .option("--think", t("cli.opt.think"))
     .option("--budget <usd>", t("cli.opt.budget"))
     .option("--continue", t("cli.opt.continue"))
     .option("--resume <id>", t("cli.opt.resume"))

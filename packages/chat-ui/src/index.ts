@@ -6,6 +6,7 @@ export { DiffViewer, isDiff } from "./components/DiffViewer.js";
 export { UsageBar } from "./components/UsageBar.js";
 export { ControlsBar, MODE_META } from "./components/ControlsBar.js";
 export { PolypusMascot } from "./components/PolypusMascot.js";
+export { ThinkingBlock } from "./components/ThinkingBlock.js";
 export {
   reduce,
   initialState,

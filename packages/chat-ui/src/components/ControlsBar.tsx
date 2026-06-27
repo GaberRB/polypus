@@ -96,6 +96,18 @@ export function ControlsBar({
         </select>
       </label>
 
+      {/* Thinking toggle (VB3) */}
+      <button
+        className={`control-icon-btn${controls.thinking ? " control-icon-btn--active" : ""}`}
+        title="Mostrar raciocínio (thinking) — requer modelo compatível"
+        aria-label="Alternar raciocínio"
+        aria-pressed={Boolean(controls.thinking)}
+        disabled={disabled}
+        onClick={() => onChange({ ...controls, thinking: !controls.thinking })}
+      >
+        🧠
+      </button>
+
       {/* Clear conversation (VA5) */}
       <button className="control-icon-btn" title="Limpar conversa" aria-label="Limpar conversa" onClick={onClear}>
         🗑

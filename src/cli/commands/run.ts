@@ -61,6 +61,8 @@ export interface RunOptions {
   fast?: boolean;
   /** Shortcut for the `quality` execution profile (the default scaffolding on). */
   quality?: boolean;
+  /** Stream the model's reasoning/chain-of-thought (when the model supports it). */
+  think?: boolean;
   /** Abort the run when the estimated session cost reaches this USD amount. */
   budget?: string;
   /** Resume the most recently saved session. */
@@ -159,6 +161,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
       opts.json ?? false,
       { embeddings: config.embeddings, retrieval: config.retrieval },
       opts.stream ?? false,
+      opts.think ?? false,
     );
     if (session.budget !== undefined && !opts.json) {
       console.log(pc.dim(t("budget.session", { spent: fmtUsd(session.costUsd), budget: fmtUsd(session.budget) })));
@@ -220,6 +223,7 @@ async function executeTask(
   json = false,
   retrievalCfg?: { embeddings?: EmbeddingsConfig; retrieval: RetrievalConfig },
   stream = false,
+  think = false,
 ): Promise<void> {
   // Inject @file / @dir mentions into the task as explicit context before sending.
   const mention = await resolveMentions(task, {
@@ -347,6 +351,7 @@ async function executeTask(
       workspace,
       agent: resolved,
       permissions,
+      params: think ? { reasoning: true } : undefined,
       promptContext: {
         workspace,
         mode: session.mode,

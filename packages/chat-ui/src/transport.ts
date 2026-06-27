@@ -17,6 +17,7 @@ export interface StreamEvent {
     | "session_start"
     | "step"
     | "assistant_delta"
+    | "thinking_delta"
     | "assistant"
     | "tool_call"
     | "tool_result"
@@ -62,6 +63,8 @@ export interface RunControls {
   agent?: string;
   /** Execution profile (`--fast`/`--quality`); undefined = config default. */
   profile?: Profile;
+  /** Stream the model's reasoning/chain-of-thought (`--think`). */
+  thinking?: boolean;
 }
 
 /** Per-million-token prices for the active model, for live cost estimation. */

@@ -24,7 +24,16 @@ export interface AskPrompt {
 
 export type Msg =
   | { id: number; role: "user"; text: string }
-  | { id: number; role: "agent"; text: string; tools: ToolItem[]; asks: AskPrompt[]; done: boolean }
+  | {
+      id: number;
+      role: "agent";
+      text: string;
+      /** Streamed reasoning/chain-of-thought (when `--think` is on). */
+      thinking: string;
+      tools: ToolItem[];
+      asks: AskPrompt[];
+      done: boolean;
+    }
   | { id: number; role: "error"; text: string };
 
 /** Cumulative token totals surfaced by `usage` events. */
@@ -82,6 +91,12 @@ export function reduce(
   switch (ev.type) {
     case "session_start":
       return ev.sessionId ? { ...state, sessionId: ev.sessionId } : state;
+
+    case "thinking_delta":
+      return {
+        ...state,
+        messages: patchAgent(state.messages, agentId, (m) => ({ ...m, thinking: m.thinking + String(ev.text ?? "") })),
+      };
 
     case "assistant_delta":
       return {

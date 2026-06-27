@@ -37,6 +37,23 @@ describe("aggregateStream", () => {
     expect(agg.finishReason).toBe("tool_calls");
   });
 
+  it("forwards reasoning deltas to onReasoningDelta, separate from content", async () => {
+    const reasoning: string[] = [];
+    const content: string[] = [];
+    const agg = await aggregateStream(
+      iter([
+        { choices: [{ delta: { reasoning: "Let me " } }] },
+        { choices: [{ delta: { reasoning: "think." } }] },
+        { choices: [{ delta: { content: "Answer" }, finish_reason: "stop" }] },
+      ]),
+      (c) => content.push(c),
+      (r) => reasoning.push(r),
+    );
+    expect(reasoning).toEqual(["Let me ", "think."]);
+    expect(content).toEqual(["Answer"]);
+    expect(agg.content).toBe("Answer"); // reasoning is not mixed into the answer
+  });
+
   it("handles multiple parallel tool calls and empty chunks", async () => {
     const agg = await aggregateStream(
       iter([

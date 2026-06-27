@@ -55,15 +55,17 @@ export class OpenAICompatibleProvider implements Provider {
       temperature: req.params?.temperature,
       // Generous default so large files aren't truncated mid tool-call.
       max_tokens: req.params?.maxTokens ?? 8192,
+      // OpenRouter reasoning (opt-in). Ignored by endpoints that don't support it.
+      ...(req.params?.reasoning ? { reasoning: { effort: "medium" } } : {}),
     };
 
-    // Streaming path: emit text chunks live while aggregating the full response.
-    if (req.onDelta) {
+    // Streaming path: emit text (and reasoning) chunks live while aggregating.
+    if (req.onDelta || req.onReasoningDelta) {
       const stream = await this.client.chat.completions.create(
         { ...base, stream: true, stream_options: { include_usage: true } },
         { signal: req.signal },
       );
-      const agg = await aggregateStream(stream as AsyncIterable<StreamChunk>, req.onDelta);
+      const agg = await aggregateStream(stream as AsyncIterable<StreamChunk>, req.onDelta, req.onReasoningDelta);
       return {
         content: agg.content,
         toolCalls: agg.toolCalls.map((tc, i) => ({
@@ -108,6 +110,8 @@ export interface StreamChunk {
   choices?: Array<{
     delta?: {
       content?: string | null;
+      /** OpenRouter/OpenAI reasoning models stream chain-of-thought here. */
+      reasoning?: string | null;
       tool_calls?: Array<{
         index: number;
         id?: string;
@@ -134,6 +138,7 @@ export interface AggregatedStream {
 export async function aggregateStream(
   stream: AsyncIterable<StreamChunk>,
   onDelta?: (chunk: string) => void,
+  onReasoningDelta?: (chunk: string) => void,
 ): Promise<AggregatedStream> {
   let content = "";
   let finishReason = "";
@@ -143,6 +148,7 @@ export async function aggregateStream(
   for await (const chunk of stream) {
     const choice = chunk.choices?.[0];
     const delta = choice?.delta;
+    if (delta?.reasoning) onReasoningDelta?.(delta.reasoning);
     if (delta?.content) {
       content += delta.content;
       onDelta?.(delta.content);

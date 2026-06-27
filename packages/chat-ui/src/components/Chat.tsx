@@ -18,6 +18,7 @@ import { ChoiceCard } from "./ChoiceCard.js";
 import { UsageBar } from "./UsageBar.js";
 import { ControlsBar, MODE_META } from "./ControlsBar.js";
 import { PolypusMascot } from "./PolypusMascot.js";
+import { ThinkingBlock } from "./ThinkingBlock.js";
 
 export interface ChatLabels {
   placeholder: string;
@@ -82,7 +83,7 @@ function chatReducer(state: ChatState, action: Action, nextErrorId: () => number
         messages: [
           ...state.messages,
           { id: action.userId, role: "user", text: action.text },
-          { id: action.agentId, role: "agent", text: "", tools: [], asks: [], done: false },
+          { id: action.agentId, role: "agent", text: "", thinking: "", tools: [], asks: [], done: false },
         ],
       };
     case "stream":
@@ -215,6 +216,7 @@ export function Chat({
         {state.messages.map((m) =>
           m.role === "agent" ? (
             <div key={m.id} className="msg msg-agent">
+              <ThinkingBlock text={m.thinking} running={!m.done} />
               {m.tools.length > 0 && (
                 <div className="timeline">
                   {m.tools.map((tool, i) => (

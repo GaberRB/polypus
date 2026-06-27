@@ -30,6 +30,8 @@ export interface Message {
 export interface ChatParams {
   temperature?: number;
   maxTokens?: number;
+  /** Ask the model to expose its reasoning/chain-of-thought (opt-in, `--think`). */
+  reasoning?: boolean;
 }
 
 export interface ChatRequest {
@@ -45,6 +47,12 @@ export interface ChatRequest {
    * ChatResponse. Providers without streaming support ignore it.
    */
   onDelta?: (textChunk: string) => void;
+  /**
+   * When provided and the model emits reasoning, the provider streams reasoning
+   * chunks here (separate from `onDelta`'s answer text). Providers/models without
+   * reasoning ignore it.
+   */
+  onReasoningDelta?: (textChunk: string) => void;
 }
 
 export interface Usage {

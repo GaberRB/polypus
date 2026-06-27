@@ -194,6 +194,44 @@
 
 @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
+/* Thinking / reasoning block */
+.thinking-block {
+  border-left: 2px solid var(--vscode-charts-purple, #b180d7);
+  padding-left: 8px;
+  margin-bottom: 4px;
+}
+
+.thinking-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: pointer;
+  font-size: 0.82em;
+  font-style: italic;
+  padding: 2px 0;
+}
+
+.thinking-caret { font-style: normal; }
+
+.thinking-text {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground, #999);
+  opacity: 0.9;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.control-icon-btn--active {
+  background: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.12));
+  color: var(--vscode-foreground, #ddd);
+}
+
 /* Rate-limit note */
 .rate-limit-note {
   border: 1px solid var(--vscode-inputValidation-warningBorder, #b89500);
