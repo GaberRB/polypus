@@ -25,8 +25,10 @@ export const askUserTool: Tool = {
     name: "ask_user",
     description:
       "Ask the user to choose between options when a decision is genuinely theirs " +
-      "(not something you can infer). Renders an interactive picker. Set multi=true " +
-      "to allow selecting more than one option.",
+      "(not something you can infer). Whenever you would otherwise list 2+ options or " +
+      "approaches in prose for the user to type back, call this tool instead — it renders " +
+      "the choices as clickable buttons with a submit. Set multi=true to let the user pick " +
+      "more than one option.",
     parameters: {
       type: "object",
       properties: {

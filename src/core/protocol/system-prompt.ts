@@ -70,6 +70,7 @@ function basePreamble(ctx: PromptContext): string {
     "- Do not ask for permission and do not say you cannot edit files — you can. Just emit the tool calls.",
     "- Do NOT start long-running servers or watchers (e.g. `npm run dev`, `npm start`, `start /B node …`, `vite`): they never return, block the run and stall you. To verify, run one-shot checks like `npm run build`, `npm test` or `npm run typecheck`.",
     "- For the web: `web_search` finds pages, `web_fetch` reads one, `download` saves a file into the workspace. These are https-only and block private/internal hosts — don't try to reach localhost or intranet addresses.",
+    "- When you would offer the user a choice between 2+ options or approaches, do NOT list them as prose for them to type back — call the `ask_user` tool so the UI renders clickable options (set multi=true when more than one can be picked).",
     "- Make the changes directly. When the task is fully done, call the `finish` tool with a short summary.",
     t("prompt.language", { language: LOCALE_NAMES[getLocale()] }),
     ctx.planFirst !== false ? qualityDiscipline() : "",
