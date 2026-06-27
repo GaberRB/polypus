@@ -191,6 +191,9 @@ const en: Catalog = {
   "repl.pasted": "[Pasted text #{id} +{lines} lines]",
   "repl.agentSwitched": "active agent → {name}",
   "repl.switchedTo": "active agent is now {name}",
+  "repl.agentPick": "Choose the active agent  (↑/↓ to move · Enter to select · Esc to keep)",
+  "repl.agentActiveTag": "(active)",
+  "repl.agentUnchanged": "still using {name}",
   "repl.noAgentsLeft": "No agents left. Use /add to create one.",
   "repl.needName": "Usage: {usage}",
   "repl.profileChanged": "execution profile → {profile}",
@@ -200,8 +203,8 @@ const en: Catalog = {
   "repl.planFirstChanged": "plan-first → {state}",
   "repl.help": [
     "Slash commands:",
-    "  /agents          list configured agents",
-    "  /agent <name>    switch the active agent",
+    "  /agents          pick the active agent from a ↑/↓ list",
+    "  /agent <name>    switch the active agent by name",
     "  /add             add a new agent (wizard)",
     "  /remove <name>   remove an agent",
     "  /plan            switch to plan mode (read-only)",
@@ -230,8 +233,8 @@ const en: Catalog = {
   // Slash-command picker (typing `/`): "/label\thint" per line. The bare command
   // (first token, no slash) is inserted on select.
   "repl.slashList": [
-    "/agents\tlist configured agents",
-    "/agent <name>\tswitch the active agent",
+    "/agents\tpick the active agent (↑/↓ list)",
+    "/agent <name>\tswitch the active agent by name",
     "/add\tadd a new agent (wizard)",
     "/remove <name>\tremove an agent",
     "/plan\tplan mode (read-only)",
@@ -574,6 +577,9 @@ const ptBR: Catalog = {
   "repl.pasted": "[Texto colado #{id} +{lines} linhas]",
   "repl.agentSwitched": "agente ativo → {name}",
   "repl.switchedTo": "agente ativo agora é {name}",
+  "repl.agentPick": "Escolha o agente ativo  (↑/↓ move · Enter seleciona · Esc mantém)",
+  "repl.agentActiveTag": "(ativo)",
+  "repl.agentUnchanged": "continua usando {name}",
   "repl.noAgentsLeft": "Nenhum agente restante. Use /add para criar um.",
   "repl.needName": "Uso: {usage}",
   "repl.profileChanged": "perfil de execução → {profile}",
@@ -583,8 +589,8 @@ const ptBR: Catalog = {
   "repl.planFirstChanged": "plano-primeiro → {state}",
   "repl.help": [
     "Comandos de barra:",
-    "  /agents          lista os agentes configurados",
-    "  /agent <nome>    troca o agente ativo",
+    "  /agents          escolhe o agente ativo numa lista ↑/↓",
+    "  /agent <nome>    troca o agente ativo pelo nome",
     "  /add             adiciona um novo agente (wizard)",
     "  /remove <nome>   remove um agente",
     "  /plan            muda para o modo plan (somente leitura)",
@@ -613,8 +619,8 @@ const ptBR: Catalog = {
   // Picker de slash (ao digitar `/`): "/label\tdica" por linha. O comando puro
   // (primeiro token, sem barra) é inserido ao selecionar.
   "repl.slashList": [
-    "/agents\tlista os agentes configurados",
-    "/agent <nome>\ttroca o agente ativo",
+    "/agents\tescolhe o agente ativo (lista ↑/↓)",
+    "/agent <nome>\ttroca o agente ativo pelo nome",
     "/add\tadiciona um novo agente (wizard)",
     "/remove <nome>\tremove um agente",
     "/plan\tmodo plan (somente leitura)",

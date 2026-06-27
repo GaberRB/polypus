@@ -1,3 +1,4 @@
+import * as p from "@clack/prompts";
 import pc from "picocolors";
 import type { SessionState } from "../cli/commands/run.js";
 import { resolveExecution, type PermissionMode, type PolypusConfig } from "../core/config/schema.js";
@@ -227,7 +228,7 @@ async function handleCommand(cmd: string, arg: string, ctx: ReplContext): Promis
       return;
 
     case "agents":
-      printAgents(ctx.getConfig(), session.agentName);
+      await pickAgent(ctx);
       return;
 
     case "agent": {
@@ -277,6 +278,46 @@ function parseToggle(arg: string): boolean | undefined {
 
 function onOff(v: boolean): string {
   return v ? "on" : "off";
+}
+
+/**
+ * Interactive `/agents` switcher: arrow through the configured agents (the active
+ * one preselected, provider/model/default shown as a hint) and press Enter to make
+ * the chosen one active for the session. Esc keeps the current agent. Falls back to
+ * the static list when there is no TTY to drive the picker.
+ */
+async function pickAgent(ctx: ReplContext): Promise<void> {
+  const { session } = ctx;
+  const config = ctx.getConfig();
+  if (config.agents.length === 0) {
+    console.log(pc.yellow(t("agent.none")));
+    return;
+  }
+  if (!process.stdin.isTTY) {
+    printAgents(config, session.agentName);
+    return;
+  }
+
+  const choice = await p.select({
+    message: t("repl.agentPick"),
+    initialValue: session.agentName,
+    options: config.agents.map((a) => ({
+      value: a.name,
+      label: a.name === session.agentName ? `${a.name} ${t("repl.agentActiveTag")}` : a.name,
+      hint:
+        `${a.provider} · ${a.model} · ${a.toolMode}` +
+        (config.defaultAgent === a.name ? ` · ${t("common.default")}` : ""),
+    })),
+  });
+
+  if (p.isCancel(choice)) return; // Esc / Ctrl+C → keep the current agent
+  const name = choice as string;
+  if (name === session.agentName) {
+    console.log(pc.dim(t("repl.agentUnchanged", { name })));
+    return;
+  }
+  session.agentName = name;
+  console.log(pc.green(t("repl.agentSwitched", { name })));
 }
 
 function printAgents(config: PolypusConfig, activeName: string): void {
