@@ -6,6 +6,8 @@
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import { RunBridge } from "./host/runBridge.js";
+import { execCli, execCliJson } from "./host/cli.js";
+import { listConfiguredAgents } from "./host/agents.js";
 import type { HostToWebview, WebviewToHost } from "./protocol.js";
 import type { FileEntry, Mode } from "@gaberrb/polypus-chat-ui";
 
@@ -103,7 +105,7 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
         this.bridge.start(
           {
             task: msg.task,
-            mode: msg.mode,
+            controls: msg.controls,
             cwd,
             resumeSessionId: msg.resumeSessionId,
             env: { [KEY_ENV]: (await this.context.secrets.get(SECRET_KEY)) ?? "" },
@@ -152,6 +154,47 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
       if (msg.method === "readFile") {
         const bytes = await vscode.workspace.fs.readFile(vscode.Uri.file(msg.path));
         this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: Buffer.from(bytes).toString("utf8") });
+        return;
+      }
+      if (msg.method === "listAgents") {
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
+        return;
+      }
+      if (msg.method === "rewind") {
+        const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const res = (await execCliJson(
+          ["rewind", msg.sessionId, "--turns", String(msg.keepUserTurns), "--json"],
+          cwd,
+        )) as { ok?: boolean; sessionId?: string } | null;
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: res?.sessionId ?? null });
+        return;
+      }
+      if (msg.method === "searchModels") {
+        const key = (await this.context.secrets.get(SECRET_KEY)) ?? "";
+        const args = ["models", "--json", "--limit", "40"];
+        if (msg.query.trim()) args.push("--search", msg.query.trim());
+        const res = (await execCliJson(args, undefined, key ? { [KEY_ENV]: key } : undefined)) as
+          | { ok?: boolean; models?: unknown[] }
+          | null;
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: (res?.models ?? []) as never });
+        return;
+      }
+      if (msg.method === "addAgent") {
+        // Derive a readable, unique-ish agent name from the model id.
+        const name = msg.modelId.split("/").pop()!.replace(/:free$/, "").replace(/[^a-zA-Z0-9._-]+/g, "-");
+        // The key lives in env at runtime; store a reference so config has no secret.
+        await execCli([
+          "add-agent", name,
+          "--provider", "openrouter",
+          "--model", msg.modelId,
+          "--api-key", "${OPENROUTER_API_KEY}",
+        ]);
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
+        return;
+      }
+      if (msg.method === "removeAgent") {
+        await execCli(["remove-agent", msg.name]);
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
         return;
       }
     } catch (err) {

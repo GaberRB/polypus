@@ -109,6 +109,30 @@ export async function latestSession(): Promise<SessionRecord | undefined> {
   return latest ? loadSession(latest.id) : undefined;
 }
 
+/**
+ * Rewind a session to an earlier point: keep the first `keepUserTurns` user
+ * messages (and their following assistant/tool messages), drop the rest, and
+ * save the result as a NEW derived session — the original is never mutated, so
+ * rewinding is non-destructive. Returns the new session id, or undefined if the
+ * source session does not exist.
+ */
+export async function rewindSession(id: string, keepUserTurns: number): Promise<string | undefined> {
+  const rec = await loadSession(id);
+  if (!rec) return undefined;
+  let userSeen = 0;
+  const kept: Message[] = [];
+  for (const m of rec.messages) {
+    if (m.role === "user") {
+      if (userSeen >= keepUserTurns) break;
+      userSeen++;
+    }
+    kept.push(m);
+  }
+  const newId = newSessionId();
+  await saveSession({ ...rec, id: newId, updatedAt: new Date().toISOString(), messages: kept });
+  return newId;
+}
+
 /** Derive a short title from the first user message of a history. */
 export function deriveTitle(messages: Message[]): string {
   const firstUser = messages.find((m) => m.role === "user");

@@ -17,6 +17,7 @@ export interface StreamEvent {
     | "session_start"
     | "step"
     | "assistant_delta"
+    | "thinking_delta"
     | "assistant"
     | "tool_call"
     | "tool_result"
@@ -52,6 +53,33 @@ export interface StreamEvent {
 /** Permission mode for a run (mirrors the CLI's PermissionMode). */
 export type Mode = "plan" | "review" | "bypass";
 
+/** Execution profile — discrete levels the CLI exposes (no continuous slider). */
+export type Profile = "fast" | "quality";
+
+/** Everything the user can tune for a run, surfaced as panel controls. */
+export interface RunControls {
+  mode: Mode;
+  /** Configured agent name (`--agent`); undefined = default agent. */
+  agent?: string;
+  /** Execution profile (`--fast`/`--quality`); undefined = config default. */
+  profile?: Profile;
+  /** Stream the model's reasoning/chain-of-thought (`--think`). */
+  thinking?: boolean;
+  /** Override the agent's model with a specific OpenRouter model id (`--model`). */
+  model?: string;
+}
+
+/** An OpenRouter catalog model, for the model browser. Prices are per 1M tokens. */
+export interface OpenRouterModelInfo {
+  id: string;
+  name: string;
+  promptPrice: number;
+  completionPrice: number;
+  contextLength: number;
+  supportsTools: boolean;
+  free: boolean;
+}
+
 /** Per-million-token prices for the active model, for live cost estimation. */
 export interface ModelPrice {
   promptPrice: number;
@@ -62,6 +90,14 @@ export interface ModelPrice {
 export interface FileEntry {
   name: string;
   path: string;
+}
+
+/** A configured agent, for the model switcher. */
+export interface AgentInfo {
+  name: string;
+  provider: string;
+  model: string;
+  isDefault: boolean;
 }
 
 /**
@@ -76,10 +112,32 @@ export interface ChatTransport {
    */
   runStream(
     task: string,
-    mode: Mode,
+    controls: RunControls,
     onEvent: (ev: StreamEvent) => void,
     opts?: { resumeSessionId?: string },
   ): () => void;
+
+  /** List the configured agents (for the model switcher). */
+  listAgents(): Promise<AgentInfo[]>;
+
+  /** Search the OpenRouter catalog (for the model browser). */
+  searchModels(query: string): Promise<OpenRouterModelInfo[]>;
+
+  /**
+   * Add an OpenRouter model to the user's config as a reusable agent, then
+   * return the refreshed agent list (so the switcher updates). Idempotent: if an
+   * agent for the model already exists it is left as-is.
+   */
+  addModelAsAgent(modelId: string): Promise<AgentInfo[]>;
+
+  /** Remove a configured agent by name; returns the refreshed agent list. */
+  removeAgent(name: string): Promise<AgentInfo[]>;
+
+  /**
+   * Fork `sessionId` truncated to its first `keepUserTurns` user turns
+   * (non-destructive). Returns the new session id to resume from, or null.
+   */
+  rewind(sessionId: string, keepUserTurns: number): Promise<string | null>;
 
   /** Answer a pending `ask_user` card (selected = null when dismissed). */
   respondAsk(id: number, selected: string[] | null): void;

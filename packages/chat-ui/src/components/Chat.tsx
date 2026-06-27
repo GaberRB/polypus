@@ -4,7 +4,7 @@
  * with their own transport. No Electron, no VSCode, no `window.*` here.
  */
 import { useEffect, useReducer, useRef, useState, type KeyboardEvent } from "react";
-import type { ChatTransport, ModelPrice, Mode, StreamEvent } from "../transport.js";
+import type { ChatTransport, FileEntry, ModelPrice, Mode, RunControls, StreamEvent } from "../transport.js";
 import {
   hasPendingAsk,
   initialState,
@@ -16,6 +16,9 @@ import {
 import { DiffViewer, isDiff } from "./DiffViewer.js";
 import { ChoiceCard } from "./ChoiceCard.js";
 import { UsageBar } from "./UsageBar.js";
+import { ControlsBar, MODE_META } from "./ControlsBar.js";
+import { PolypusMascot } from "./PolypusMascot.js";
+import { ThinkingBlock } from "./ThinkingBlock.js";
 
 export interface ChatLabels {
   placeholder: string;
@@ -24,6 +27,7 @@ export interface ChatLabels {
   running: string;
   cancel: string;
   rateLimited: string;
+  shiftTabHint: string;
 }
 
 const DEFAULT_LABELS: ChatLabels = {
@@ -34,6 +38,7 @@ const DEFAULT_LABELS: ChatLabels = {
   cancel: "Cancelar",
   rateLimited:
     "Limite de requisições atingido no modelo atual. Tente o modo rápido (fast) ou troque para um modelo pago barato.",
+  shiftTabHint: "Pressione Shift+Tab para aprovar edições automaticamente",
 };
 
 const TOOL_ICONS: Record<string, string> = {
@@ -63,10 +68,29 @@ function isRateLimit(ev: StreamEvent): boolean {
 type Action =
   | { kind: "send"; userId: number; agentId: number; text: string }
   | { kind: "stream"; agentId: number; ev: StreamEvent }
-  | { kind: "lockAsk"; agentId: number; askId: number; selected: string[] };
+  | { kind: "lockAsk"; agentId: number; askId: number; selected: string[] }
+  | { kind: "clear" }
+  | { kind: "rewind"; keepUserTurns: number; newSessionId: string };
 
 function chatReducer(state: ChatState, action: Action, nextErrorId: () => number): ChatState {
   switch (action.kind) {
+    case "clear":
+      // Drop the thread and the session id so the next run starts fresh.
+      return { messages: [], usage: { promptTokens: 0, completionTokens: 0 }, sessionId: undefined, running: false };
+    case "rewind": {
+      // Truncate the thread to the first `keepUserTurns` user turns and point at
+      // the forked session so the next send resumes from there.
+      let userSeen = 0;
+      const kept: Msg[] = [];
+      for (const m of state.messages) {
+        if (m.role === "user") {
+          if (userSeen >= action.keepUserTurns) break;
+          userSeen++;
+        }
+        kept.push(m);
+      }
+      return { ...state, messages: kept, sessionId: action.newSessionId, running: false };
+    }
     case "send":
       return {
         ...state,
@@ -74,7 +98,7 @@ function chatReducer(state: ChatState, action: Action, nextErrorId: () => number
         messages: [
           ...state.messages,
           { id: action.userId, role: "user", text: action.text },
-          { id: action.agentId, role: "agent", text: "", tools: [], asks: [], done: false },
+          { id: action.agentId, role: "agent", text: "", thinking: "", tools: [], asks: [], done: false },
         ],
       };
     case "stream":
@@ -101,6 +125,11 @@ export function Chat({
   const errorIdRef = useRef(-1);
   const nextErrorId = (): number => errorIdRef.current--;
 
+  // Run controls (mode/agent/profile) — surfaced by the ControlsBar (VA2-4).
+  const [controls, setControls] = useState<RunControls>({ mode });
+  const controlsRef = useRef(controls);
+  controlsRef.current = controls;
+
   const [state, dispatch] = useReducer(
     (s: ChatState, a: Action) => chatReducer(s, a, nextErrorId),
     undefined,
@@ -111,6 +140,11 @@ export function Chat({
   const [running, setRunning] = useState(false);
   const [price, setPrice] = useState<ModelPrice | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
+
+  // @-mention file picker (VA6).
+  const [atFiles, setAtFiles] = useState<FileEntry[]>([]);
+  const [atQuery, setAtQuery] = useState("");
+  const [showAtPicker, setShowAtPicker] = useState(false);
 
   const nextId = useRef(1);
   const unsubRef = useRef<(() => void) | null>(null);
@@ -145,7 +179,9 @@ export function Chat({
       dispatch({ kind: "stream", agentId, ev });
     };
 
-    unsubRef.current = transport.runStream(task, mode, onEvent, { resumeSessionId: state.sessionId });
+    unsubRef.current = transport.runStream(task, controlsRef.current, onEvent, {
+      resumeSessionId: state.sessionId,
+    });
     sendingRef.current = false;
   };
 
@@ -161,23 +197,95 @@ export function Chat({
     setRunning(false);
   };
 
+  /** Shift+Tab toggles between "ask before edits" and "edit automatically". */
+  const toggleAutoApprove = (): void => {
+    setControls((c) => ({ ...c, mode: c.mode === "bypass" ? "review" : "bypass" }));
+  };
+
+  const clearConversation = (): void => {
+    cancel();
+    dispatch({ kind: "clear" });
+  };
+
+  /** Rewind to (and including the chance to redo) a prior user turn. */
+  const rewindTo = async (userMsgId: number): Promise<void> => {
+    if (!state.sessionId || running) return;
+    // How many user turns precede this one — that's what we keep.
+    let keep = 0;
+    for (const m of state.messages) {
+      if (m.id === userMsgId) break;
+      if (m.role === "user") keep++;
+    }
+    const newId = await transport.rewind(state.sessionId, keep);
+    if (newId) dispatch({ kind: "rewind", keepUserTurns: keep, newSessionId: newId });
+  };
+
+  /** Detect a trailing `@query` and surface the file picker (VA6). */
+  const onInputChange = (value: string): void => {
+    setInput(value);
+    const match = /@(\S*)$/.exec(value);
+    if (match) {
+      const q = match[1] ?? "";
+      setAtQuery(q);
+      setShowAtPicker(true);
+      void transport.listFiles(q).then(setAtFiles).catch(() => setAtFiles([]));
+    } else {
+      setShowAtPicker(false);
+    }
+  };
+
+  /** Replace the trailing `@query` with the file's contents as a fenced block. */
+  const selectAtFile = async (file: FileEntry): Promise<void> => {
+    setShowAtPicker(false);
+    let block = `@${file.name}`;
+    try {
+      const content = await transport.readFile(file.path);
+      block = "```" + file.name + "\n" + content + "\n```";
+    } catch {
+      /* fall back to a bare @name reference */
+    }
+    setInput((prev) => prev.replace(/@\S*$/, block));
+  };
+
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (showAtPicker && e.key === "Escape") {
+      e.preventDefault();
+      setShowAtPicker(false);
+      return;
+    }
+    if (e.key === "Tab" && e.shiftKey) {
+      e.preventDefault();
+      toggleAutoApprove();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
     }
   };
 
+  const filteredAtFiles = atFiles
+    .filter((f) => !atQuery || f.name.toLowerCase().includes(atQuery.toLowerCase()))
+    .slice(0, 12);
+
   const pendingAsk = hasPendingAsk(state.messages);
+  const modeMeta = MODE_META[controls.mode];
 
   return (
     <div className="chat">
       <div className="thread" aria-live="polite" aria-atomic="false">
         {!hasProject && <p className="empty">{labels.noProject}</p>}
-        {hasProject && state.messages.length === 0 && <p className="empty">{labels.empty}</p>}
+        {hasProject && state.messages.length === 0 && (
+          <div className="welcome">
+            <PolypusMascot size="lg" state="idle" />
+            <p className="empty">{labels.empty}</p>
+            <p className="shift-tab-banner">{labels.shiftTabHint}</p>
+          </div>
+        )}
         {state.messages.map((m) =>
           m.role === "agent" ? (
             <div key={m.id} className="msg msg-agent">
+              <ThinkingBlock text={m.thinking} running={!m.done} />
               {m.tools.length > 0 && (
                 <div className="timeline">
                   {m.tools.map((tool, i) => (
@@ -219,6 +327,16 @@ export function Chat({
           ) : (
             <div key={m.id} className={`msg msg-${m.role}`}>
               <pre className="msg-text">{m.text}</pre>
+              {m.role === "user" && state.sessionId && !running && (
+                <button
+                  className="rewind-btn"
+                  title="Voltar para este ponto (cria uma sessão derivada)"
+                  aria-label="Rewind para aqui"
+                  onClick={() => void rewindTo(m.id)}
+                >
+                  ↺
+                </button>
+              )}
             </div>
           ),
         )}
@@ -231,13 +349,38 @@ export function Chat({
         price={price}
       />
 
-      <div className="composer">
+      <ControlsBar
+        controls={controls}
+        onChange={setControls}
+        transport={transport}
+        onClear={clearConversation}
+        disabled={running && !pendingAsk}
+      />
+
+      <div className="composer" style={{ position: "relative" }}>
+        {showAtPicker && filteredAtFiles.length > 0 && (
+          <div className="at-picker">
+            {filteredAtFiles.map((f) => (
+              <button
+                key={f.path}
+                className="at-picker-item"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  void selectAtFile(f);
+                }}
+              >
+                <span className="at-picker-icon" aria-hidden>·</span>
+                {f.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="composer-row">
           <textarea
             className="composer-input"
             placeholder={labels.placeholder}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={onKey}
             disabled={(running && !pendingAsk) || !hasProject}
             rows={2}
@@ -247,6 +390,11 @@ export function Chat({
               ■
             </button>
           )}
+        </div>
+        {/* Active-mode indicator (RF3), bottom-right of the composer. */}
+        <div className="mode-indicator" title={modeMeta.hint}>
+          <span aria-hidden>{modeMeta.icon}</span>
+          <span>{modeMeta.label}</span>
         </div>
       </div>
     </div>

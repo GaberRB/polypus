@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus para VSCode 🐙 — chat agêntico com a sua chave</title>
+  <meta name="description" content="A extensão do Polypus traz um chat agêntico para o VSCode: rode com a SUA chave do OpenRouter e modelos grátis/baratos, com qualidade quase-frontier. Sem assinatura." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Page-local touches layered on top of the shared theme */
+    .ext-hero { align-items: center; }
+    .kbd { display:inline-block; padding:1px 7px; border-radius:5px; border:1px solid var(--line,#3a2a6b);
+           background:rgba(255,255,255,.04); font-family:ui-monospace,monospace; font-size:.85em; }
+    .pill { display:inline-flex; gap:6px; align-items:center; padding:4px 12px; border-radius:999px;
+            background:rgba(146,102,245,.16); color:#cdb6fd; font-weight:600; font-size:.82rem; margin-bottom:14px; }
+    .video-wrap.big video { width:100%; border-radius:14px; box-shadow:0 18px 60px rgba(122,74,222,.35); }
+    .use-grid { display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); margin-top:8px; }
+    .use { display:flex; gap:14px; align-items:flex-start; }
+    .use .step-n { flex:0 0 auto; }
+    .use h4 { margin:0 0 4px; }
+    .use p { margin:0; }
+    .wedge { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+    .wedge .card h3 { font-size:1.05rem; }
+    .center-cta { text-align:center; margin-top:30px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="index.html">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">CLI</a>
+      <a href="#demo">Demo</a>
+      <a href="#use">Como usar</a>
+      <a href="#features">Recursos</a>
+      <a class="nav-ext" href="https://marketplace.visualstudio.com/items?itemName=gaberrb.polypus-vscode" target="_blank" rel="noopener">Marketplace ↗</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- ===================== HERO ===================== -->
+    <section class="hero ext-hero">
+      <div class="hero-art">
+        <svg class="mascot" viewBox="0 0 260 260" aria-label="Polypus mascot">
+          <defs>
+            <radialGradient id="head" cx="50%" cy="36%" r="68%">
+              <stop offset="0%" stop-color="#D8C5FF" />
+              <stop offset="55%" stop-color="#AB8EFA" />
+              <stop offset="100%" stop-color="#7A4ADE" />
+            </radialGradient>
+          </defs>
+          <g class="mascot-float">
+            <g class="tentacles" fill="#7A4ADE">
+              <path class="t t1" d="M70 150 q-34 18 -42 54 q16 6 22 -10 q6 -20 22 -32 z" />
+              <path class="t t2" d="M95 168 q-16 28 -10 56 q14 0 16 -16 q2 -22 6 -36 z" />
+              <path class="t t3" d="M130 174 q-6 30 0 58 q12 -2 12 -18 q0 -22 0 -38 z" />
+              <path class="t t4" d="M165 168 q16 28 10 56 q-14 0 -16 -16 q-2 -22 -6 -36 z" />
+              <path class="t t5" d="M190 150 q34 18 42 54 q-16 6 -22 -10 q-6 -20 -22 -32 z" />
+            </g>
+            <ellipse cx="130" cy="108" rx="86" ry="78" fill="url(#head)" />
+            <ellipse cx="78" cy="128" rx="13" ry="8" fill="#FF8ABE" opacity=".7" />
+            <ellipse cx="182" cy="128" rx="13" ry="8" fill="#FF8ABE" opacity=".7" />
+            <g class="glasses">
+              <circle cx="103" cy="100" r="27" fill="#fff" stroke="#5B2DB9" stroke-width="5" />
+              <circle cx="157" cy="100" r="27" fill="#fff" stroke="#5B2DB9" stroke-width="5" />
+              <line x1="128" y1="98" x2="132" y2="98" stroke="#5B2DB9" stroke-width="5" />
+              <circle class="pupil" cx="104" cy="102" r="10" fill="#3a2a6b" />
+              <circle class="pupil" cx="156" cy="102" r="10" fill="#3a2a6b" />
+            </g>
+            <path d="M112 138 q18 18 36 0" fill="none" stroke="#3a2a6b" stroke-width="5" stroke-linecap="round" />
+          </g>
+        </svg>
+      </div>
+      <div class="hero-copy">
+        <span class="pill">🐙 Extensão para VSCode</span>
+        <h1 class="hero-title">Polypus no seu editor</h1>
+        <p class="hero-tag">
+          Um chat <b>agêntico</b> dentro do VSCode que roda com a <b>sua chave</b> e
+          <b>modelos grátis/baratos</b> do OpenRouter — e usa engenharia (verificação, planejamento,
+          contexto) pra entregar qualidade <b>quase-frontier</b> nas tarefas do dia a dia.
+          <b>Sem assinatura.</b>
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=gaberrb.polypus-vscode" target="_blank" rel="noopener">⬇️ Instalar do Marketplace</a>
+          <a class="btn" href="#demo">▶️ Ver a demo</a>
+          <a class="btn btn-ghost" href="#use">Como usar</a>
+        </div>
+        <p class="muted" style="margin-top:14px">
+          Ou no VSCode: <span class="kbd">Ctrl+Shift+X</span> → busque <b>“Polypus”</b> → Install.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===================== A CUNHA ===================== -->
+    <section class="band">
+      <h2 class="section-title">Por que Polypus e não o resto?</h2>
+      <p class="section-sub">Copilot e companhia te prendem no provedor e na assinatura deles. Aqui é o contrário.</p>
+      <div class="wedge" style="max-width:980px;margin:0 auto">
+        <div class="card"><h3>🔑 A sua chave</h3><p>BYO-key do OpenRouter. Você controla o custo e os limites — nada de mensalidade.</p></div>
+        <div class="card"><h3>🆓 Modelos grátis</h3><p>Comece com modelos free (ex.: <code>gpt-oss-120b:free</code>) ou troque por um pago barato em 2 cliques.</p></div>
+        <div class="card"><h3>🧠 Qualidade por engenharia</h3><p>Verify-loop, plan-first e auto-contexto fazem um modelo barato render acima do peso.</p></div>
+        <div class="card"><h3>🧩 Nativo do VSCode</h3><p>Painel lateral com o tema do editor, diffs inline e aprovação — sem depender do Copilot.</p></div>
+      </div>
+    </section>
+
+    <!-- ===================== DEMO ===================== -->
+    <section id="demo" class="section">
+      <h2 class="section-title">Veja em ação</h2>
+      <p class="section-sub">Do prompt ao código aplicado, dentro do editor.</p>
+      <div class="video-wrap big" style="max-width:900px;margin:0 auto">
+        <video controls preload="metadata" playsinline poster="assets/favicon.svg">
+          <source src="assets/vscodePolypus.mp4" type="video/mp4" />
+          Seu navegador não suporta vídeo. <a href="assets/vscodePolypus.mp4">Baixe a demo</a>.
+        </video>
+      </div>
+    </section>
+
+    <!-- ===================== COMO USAR ===================== -->
+    <section id="use" class="section band">
+      <h2 class="section-title">Como usar — passo a passo</h2>
+      <p class="section-sub">Do zero ao primeiro código gerado em poucos minutos.</p>
+
+      <div class="use-grid" style="max-width:1000px;margin:0 auto">
+        <div class="use"><span class="step-n">1</span><div>
+          <h4>Instale</h4>
+          <p>No Marketplace, ou <span class="kbd">Ctrl+Shift+X</span> → “Polypus” → Install. Abra a pasta do seu projeto.</p>
+        </div></div>
+        <div class="use"><span class="step-n">2</span><div>
+          <h4>Configure a chave</h4>
+          <p>Clique no 🐙 na barra lateral. Sem chave, o onboarding abre um link pra criar uma grátis em <b>openrouter.ai/keys</b> — cole e pronto (fica guardada no <i>SecretStorage</i> do VSCode).</p>
+        </div></div>
+        <div class="use"><span class="step-n">3</span><div>
+          <h4>Escolha o modelo 🔎</h4>
+          <p>Clique na lupa, busque no catálogo do OpenRouter (com <b>preço</b>, <b>contexto</b> e se tem <b>tools</b>) e adicione o modelo. Ele entra na lista de agentes; troque ou remova quando quiser.</p>
+        </div></div>
+        <div class="use"><span class="step-n">4</span><div>
+          <h4>Escolha o modo de autonomia</h4>
+          <p>✋ <b>Ask</b> (pede aprovação antes de editar) · <code>&lt;/&gt;</code> <b>Auto</b> (edita sozinho) · ▤ <b>Plan</b> (planeja sem tocar no código). Alterne ask↔auto na hora com <span class="kbd">Shift+Tab</span>.</p>
+        </div></div>
+        <div class="use"><span class="step-n">5</span><div>
+          <h4>Mande a tarefa</h4>
+          <p>Descreva o que quer. Use <span class="kbd">@arquivo</span> pra dar contexto. Veja a timeline de ações e o texto em streaming. Ative o 🧠 <b>thinking</b> pra ver o raciocínio (em modelos compatíveis).</p>
+        </div></div>
+        <div class="use"><span class="step-n">6</span><div>
+          <h4>Aprove os diffs</h4>
+          <p>As edições aparecem como <b>diff inline</b> — aceite ou rejeite. Cancele a qualquer momento. Precisou voltar atrás? Use o ↺ <b>rewind</b> num turno anterior.</p>
+        </div></div>
+      </div>
+
+      <p class="muted center" style="margin-top:22px">
+        Dica: <span class="kbd">Ctrl+Esc</span> foca o painel do chat sem tirar a mão do teclado.
+      </p>
+    </section>
+
+    <!-- ===================== RECURSOS ===================== -->
+    <section id="features" class="section">
+      <h2 class="section-title">O que vem na extensão</h2>
+      <div class="cards grid4">
+        <div class="card"><h3>✋ Modos de autonomia</h3><p>Ask / Auto / Plan, com <span class="kbd">Shift+Tab</span> e indicador de modo no input.</p></div>
+        <div class="card"><h3>🔎 Browser de modelos</h3><p>Busca no OpenRouter por preço, contexto e suporte a tools — adiciona como agente.</p></div>
+        <div class="card"><h3>🔁 Troca/remoção de agentes</h3><p>Múltiplos modelos salvos; escolha com qual codar e remova os que não usa.</p></div>
+        <div class="card"><h3>🧠 Thinking</h3><p>Bloco colapsável com o raciocínio do modelo (quando ele expõe reasoning).</p></div>
+        <div class="card"><h3>↺ Rewind</h3><p>Volte a um turno anterior — cria uma sessão derivada, sem destruir a original.</p></div>
+        <div class="card"><h3>📎 @mention</h3><p>Cite arquivos do projeto direto no prompt pra dar contexto preciso.</p></div>
+        <div class="card"><h3>🩹 Diffs inline</h3><p>Cada edição é revisável e aprovável dentro do editor, com tema nativo.</p></div>
+        <div class="card"><h3>💸 Tokens & custo</h3><p>Veja tokens e custo estimado ao vivo; aviso amigável quando bate rate-limit.</p></div>
+      </div>
+    </section>
+
+    <!-- ===================== CTA FINAL ===================== -->
+    <section class="section band">
+      <h2 class="section-title">Pronto pra codar de graça (ou quase)?</h2>
+      <p class="section-sub">Instale, plugue a sua chave e mande a primeira tarefa.</p>
+      <div class="center-cta">
+        <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=gaberrb.polypus-vscode" target="_blank" rel="noopener">⬇️ Instalar a extensão</a>
+        <a class="btn btn-ghost" href="index.html">Conhecer o CLI Polypus</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-octo">🐙</div>
+    <p class="footer-by">Feito por <a href="https://github.com/GaberRB" target="_blank" rel="noopener">Gabriel Rios</a></p>
+    <p class="footer-links">
+      <a href="https://marketplace.visualstudio.com/items?itemName=gaberrb.polypus-vscode" target="_blank" rel="noopener">Marketplace</a> ·
+      <a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
+    </p>
+    <p class="footer-lic">MIT © Gabriel Rios</p>
+  </footer>
+</body>
+</html>

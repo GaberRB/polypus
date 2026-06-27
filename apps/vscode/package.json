@@ -2,7 +2,7 @@
   "name": "polypus-vscode",
   "displayName": "Polypus — agentic AI chat",
   "description": "Chat agêntico no VSCode com a sua chave e modelos grátis/baratos (OpenRouter). Sem assinatura.",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "publisher": "gaberrb",
   "author": "Gabriel Rios",
@@ -16,6 +16,7 @@
   },
   "categories": ["AI", "Chat", "Machine Learning", "Programming Languages"],
   "keywords": ["ai", "agent", "openrouter", "chat", "coding assistant", "copilot alternative"],
+  "icon": "media/icon.png",
   "main": "./dist/extension.js",
   "activationEvents": [],
   "contributes": {
@@ -45,6 +46,13 @@
       {
         "command": "polypus.setApiKey",
         "title": "Polypus: Configurar chave do OpenRouter"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "polypus.focusChat",
+        "key": "ctrl+escape",
+        "mac": "cmd+escape"
       }
     ],
     "configuration": {

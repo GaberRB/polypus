@@ -9,7 +9,7 @@ import { init } from "./commands/init.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
 import { usage } from "./commands/usage.js";
-import { sessions } from "./commands/sessions.js";
+import { sessions, rewind } from "./commands/sessions.js";
 import { estimate } from "./commands/estimate.js";
 import { prd } from "./commands/prd.js";
 import { review } from "./commands/review.js";
@@ -99,6 +99,7 @@ function buildProgram(): Command {
 
   program
     .command("run")
+    .option("--model <id>", t("cli.opt.modelOverride"))
     .argument("[task]", t("cli.arg.runTask"))
     .option("--agent <name>", t("cli.opt.agent"))
     .option("--mode <mode>", t("cli.opt.mode"))
@@ -109,6 +110,7 @@ function buildProgram(): Command {
     .option("--no-verify", t("cli.opt.noVerify"))
     .option("--fast", t("cli.opt.fast"))
     .option("--quality", t("cli.opt.quality"))
+    .option("--think", t("cli.opt.think"))
     .option("--budget <usd>", t("cli.opt.budget"))
     .option("--continue", t("cli.opt.continue"))
     .option("--resume <id>", t("cli.opt.resume"))
@@ -136,6 +138,7 @@ function buildProgram(): Command {
     .option("--max-price <usd>", t("cli.opt.maxPrice"))
     .option("--sort <order>", t("cli.opt.sort"))
     .option("--limit <n>", t("cli.opt.limit"))
+    .option("--json", t("cli.opt.json"))
     .description(t("cli.cmd.models"))
     .action((opts) => models(opts));
 
@@ -157,6 +160,13 @@ function buildProgram(): Command {
     .command("sessions")
     .description(t("cli.cmd.sessions"))
     .action(() => sessions());
+
+  program
+    .command("rewind <id>")
+    .option("--turns <n>", t("cli.opt.rewindTurns"))
+    .option("--json", t("cli.opt.json"))
+    .description(t("cli.cmd.rewind"))
+    .action((id, opts) => rewind(id, opts));
 
   program
     .command("prd")

@@ -4,6 +4,10 @@ export type { ChatLabels } from "./components/Chat.js";
 export { ChoiceCard } from "./components/ChoiceCard.js";
 export { DiffViewer, isDiff } from "./components/DiffViewer.js";
 export { UsageBar } from "./components/UsageBar.js";
+export { ControlsBar, MODE_META } from "./components/ControlsBar.js";
+export { PolypusMascot } from "./components/PolypusMascot.js";
+export { ThinkingBlock } from "./components/ThinkingBlock.js";
+export { ModelBrowser } from "./components/ModelBrowser.js";
 export {
   reduce,
   initialState,
@@ -19,6 +23,10 @@ export type {
   ChatTransport,
   StreamEvent,
   Mode,
+  Profile,
+  RunControls,
   ModelPrice,
   FileEntry,
+  AgentInfo,
+  OpenRouterModelInfo,
 } from "./transport.js";

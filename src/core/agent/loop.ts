@@ -20,6 +20,8 @@ export interface AgentEvents {
   onAssistantText?(text: string): void;
   /** Fired for each streamed text chunk (native mode only) before onAssistantText. */
   onAssistantDelta?(text: string): void;
+  /** Fired for each streamed reasoning/thinking chunk (opt-in via params.reasoning). */
+  onThinkingDelta?(text: string): void;
   onToolCall?(call: ToolCall): void;
   onToolResult?(call: ToolCall, result: ToolResult): void;
   onReprompt?(attempt: number): void;
@@ -185,6 +187,8 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     // Stream live tokens only in native mode (emulated would leak raw XML) and
     // only when a consumer is listening (e.g. not in --json mode).
     const wantDelta = driver.kind === "native" && typeof events?.onAssistantDelta === "function";
+    const wantThinking =
+      driver.kind === "native" && opts.params?.reasoning === true && typeof events?.onThinkingDelta === "function";
 
     let response;
     try {
@@ -194,6 +198,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         params: opts.params,
         signal: opts.signal,
         onDelta: wantDelta ? (chunk) => events!.onAssistantDelta!(chunk) : undefined,
+        onReasoningDelta: wantThinking ? (chunk) => events!.onThinkingDelta!(chunk) : undefined,
       });
     } catch (err) {
       if (opts.signal?.aborted) return { finished: false, reason: "cancelled", steps: step, messages, usage };

@@ -5,12 +5,12 @@
  * `ask_user` card over the child's stdin.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import type { StreamEvent, Mode } from "@gaberrb/polypus-chat-ui";
+import type { StreamEvent, RunControls } from "@gaberrb/polypus-chat-ui";
 import { resolveCli } from "./cli.js";
 
 export interface RunOptions {
   task: string;
-  mode: Mode;
+  controls: RunControls;
   cwd: string;
   resumeSessionId?: string;
   /** Extra env (e.g. the OpenRouter key from SecretStorage). */
@@ -25,10 +25,15 @@ export class RunBridge {
     this.stop(); // never run two at once
 
     const { cmd, baseArgs, env } = resolveCli();
-    const mode: Mode =
-      opts.mode === "plan" || opts.mode === "review" || opts.mode === "bypass" ? opts.mode : "review";
+    const { mode, agent, profile, thinking, model } = opts.controls;
+    const safeMode = mode === "plan" || mode === "review" || mode === "bypass" ? mode : "review";
 
-    const args = [...baseArgs, "run", opts.task, "--json", "--stream", "--mode", mode];
+    const args = [...baseArgs, "run", opts.task, "--json", "--stream", "--mode", safeMode];
+    if (agent) args.push("--agent", agent);
+    if (model) args.push("--model", model);
+    if (profile === "fast") args.push("--fast");
+    else if (profile === "quality") args.push("--quality");
+    if (thinking) args.push("--think");
     if (opts.resumeSessionId) args.push("--resume", opts.resumeSessionId);
 
     const child = spawn(cmd, args, {

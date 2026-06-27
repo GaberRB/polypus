@@ -1,0 +1,166 @@
+/**
+ * The run-controls bar (VA2-VA5): execution mode, model switcher, execution
+ * profile, and clear-conversation. Every control maps to a real CLI flag — no
+ * decorative toggles (RNF1). Mode/profile changes take effect on the next run.
+ */
+import { useEffect, useState } from "react";
+import type { AgentInfo, ChatTransport, Mode, Profile, RunControls } from "../transport.js";
+import { ModelBrowser } from "./ModelBrowser.js";
+
+/** Icon + label + hint per execution mode (shared with the input indicator). */
+export const MODE_META: Record<Mode, { icon: string; label: string; hint: string }> = {
+  review: { icon: "✋", label: "Ask before edits", hint: "Pede aprovação antes de editar" },
+  bypass: { icon: "</>", label: "Edit automatically", hint: "Aplica edições sem perguntar" },
+  plan: { icon: "▤", label: "Plan mode", hint: "Planeja antes de tocar no código" },
+};
+
+const MODES: Mode[] = ["review", "bypass", "plan"];
+
+export function ControlsBar({
+  controls,
+  onChange,
+  transport,
+  onClear,
+  disabled = false,
+}: {
+  controls: RunControls;
+  onChange: (next: RunControls) => void;
+  transport: ChatTransport;
+  onClear: () => void;
+  disabled?: boolean;
+}): JSX.Element {
+  const [agents, setAgents] = useState<AgentInfo[]>([]);
+  const [browsing, setBrowsing] = useState(false);
+
+  useEffect(() => {
+    void transport.listAgents().then(setAgents).catch(() => setAgents([]));
+  }, [transport]);
+
+  const activeAgent = controls.agent ?? agents.find((a) => a.isDefault)?.name;
+
+  return (
+    <div className="controls-bar">
+      {/* Modes (VA2) */}
+      <div className="mode-group" role="radiogroup" aria-label="Modo de execução">
+        {MODES.map((m) => {
+          const meta = MODE_META[m];
+          const active = controls.mode === m;
+          return (
+            <button
+              key={m}
+              className={`mode-btn${active ? " mode-btn--active" : ""}`}
+              role="radio"
+              aria-checked={active}
+              title={meta.hint}
+              disabled={disabled}
+              onClick={() => onChange({ ...controls, mode: m })}
+            >
+              <span className="mode-icon" aria-hidden>{meta.icon}</span>
+              <span className="mode-label">{meta.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="controls-spacer" />
+
+      {/* Model switcher (VA3) */}
+      {agents.length > 0 && (
+        <label className="control-select" title="Trocar modelo/agente">
+          <span className="control-select-icon" aria-hidden>◇</span>
+          <select
+            aria-label="Modelo"
+            value={activeAgent ?? ""}
+            disabled={disabled}
+            onChange={(e) => onChange({ ...controls, agent: e.target.value || undefined })}
+          >
+            {agents.map((a) => (
+              <option key={a.name} value={a.name}>
+                {a.name} · {a.model}
+              </option>
+            ))}
+          </select>
+          {activeAgent && (
+            <button
+              type="button"
+              className="control-icon-btn control-remove-agent"
+              title={`Remover agente ${activeAgent}`}
+              aria-label={`Remover agente ${activeAgent}`}
+              disabled={disabled}
+              onClick={(e) => {
+                e.preventDefault();
+                const name = activeAgent;
+                void transport.removeAgent(name).then((updated) => {
+                  setAgents(updated);
+                  if (controls.agent === name) {
+                    onChange({ ...controls, agent: updated.find((a) => a.isDefault)?.name ?? updated[0]?.name });
+                  }
+                });
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </label>
+      )}
+
+      {/* OpenRouter model browser (VC2) — adds the picked model to the agent list */}
+      <button
+        className="control-icon-btn"
+        title="Adicionar modelo do OpenRouter aos agentes"
+        aria-label="Adicionar modelo do OpenRouter"
+        disabled={disabled}
+        onClick={() => setBrowsing(true)}
+      >
+        🔎
+      </button>
+      {browsing && (
+        <ModelBrowser
+          transport={transport}
+          current={agents.find((a) => a.name === activeAgent)?.model}
+          onPick={(id) => {
+            setBrowsing(false);
+            void transport.addModelAsAgent(id).then((updated) => {
+              setAgents(updated);
+              const added = updated.find((a) => a.model === id);
+              onChange({ ...controls, agent: added?.name ?? controls.agent });
+            });
+          }}
+          onClose={() => setBrowsing(false)}
+        />
+      )}
+
+      {/* Profile / effort (VA4) */}
+      <label className="control-select" title="Esforço / perfil de execução">
+        <span className="control-select-icon" aria-hidden>⚡</span>
+        <select
+          aria-label="Perfil"
+          value={controls.profile ?? ""}
+          disabled={disabled}
+          onChange={(e) => onChange({ ...controls, profile: (e.target.value || undefined) as Profile | undefined })}
+        >
+          <option value="">Padrão</option>
+          <option value="fast">Rápido</option>
+          <option value="quality">Qualidade</option>
+        </select>
+      </label>
+
+      {/* Thinking toggle (VB3) */}
+      <button
+        className={`control-icon-btn${controls.thinking ? " control-icon-btn--active" : ""}`}
+        title="Mostrar raciocínio (thinking) — requer modelo compatível"
+        aria-label="Alternar raciocínio"
+        aria-pressed={Boolean(controls.thinking)}
+        disabled={disabled}
+        onClick={() => onChange({ ...controls, thinking: !controls.thinking })}
+      >
+        🧠
+      </button>
+
+      {/* Clear conversation (VA5) */}
+      <button className="control-icon-btn" title="Limpar conversa" aria-label="Limpar conversa" onClick={onClear}>
+        🗑
+      </button>
+    </div>
+  );
+}

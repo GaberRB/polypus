@@ -92,6 +92,7 @@ export interface StreamEvent {
   type:
     | "step"
     | "assistant_delta"
+    | "thinking_delta"
     | "assistant"
     | "tool_call"
     | "tool_result"
@@ -120,6 +121,9 @@ export function createNdjsonStreamer(emit: (event: StreamEvent) => void): {
     },
     onAssistantDelta(text) {
       emit({ type: "assistant_delta", text });
+    },
+    onThinkingDelta(text) {
+      emit({ type: "thinking_delta", text });
     },
     onAssistantText(text) {
       if (text.trim()) emit({ type: "assistant", text });
