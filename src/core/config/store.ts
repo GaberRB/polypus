@@ -4,8 +4,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import {
   AgentConfig,
+  CustomProviderConfig,
   DEFAULT_CONFIG,
   PolypusConfig,
+  type CustomProviderConfig as CustomProviderConfigType,
+  type PolypusConfig as PolypusConfigType,
   type ProviderKind,
   type ToolMode,
 } from "./schema.js";
@@ -119,6 +122,32 @@ export function resolveAgent(
   throw new Error(
     t("agent.multipleNoDefault", { names: config.agents.map((a) => a.name).join(", ") }),
   );
+}
+
+/** Add or replace a custom provider by name. Mutates and returns `config`. */
+export function upsertCustomProvider(
+  config: PolypusConfig,
+  input: CustomProviderConfigType,
+): PolypusConfig {
+  const validated = CustomProviderConfig.parse(input);
+  const idx = config.customProviders.findIndex((p) => p.name === validated.name);
+  if (idx === -1) config.customProviders.push(validated);
+  else config.customProviders[idx] = validated;
+  return config;
+}
+
+/** Remove a custom provider by name. No-op if not found. */
+export function removeCustomProvider(config: PolypusConfig, name: string): PolypusConfig {
+  config.customProviders = config.customProviders.filter((p) => p.name !== name);
+  return config;
+}
+
+/** Find a custom provider by name. */
+export function findCustomProvider(
+  config: PolypusConfig,
+  name: string,
+): CustomProviderConfigType | undefined {
+  return config.customProviders.find((p) => p.name === name);
 }
 
 /**

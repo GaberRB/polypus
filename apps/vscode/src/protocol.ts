@@ -13,6 +13,38 @@ import type {
   OpenRouterModelInfo,
 } from "@gaberrb/polypus-chat-ui";
 
+// Custom provider payload (mirrors CustomProviderConfig from core schema)
+export interface CustomProviderPayload {
+  name: string;
+  auth:
+    | { type: "none" }
+    | { type: "api-key"; headerName: string; apiKey: string }
+    | {
+        type: "oauth2-client-credentials";
+        tokenUrl: string;
+        clientId: string;
+        clientSecret: string;
+        tokenPath: string;
+        expiresPath?: string;
+      };
+  chat: {
+    url: string;
+    method: string;
+    headers: Record<string, string>;
+    bodyTemplate: string;
+  };
+  responsePath: string;
+  sessionPath?: string;
+  params: Record<string, string>;
+  safetyMode: "bypass" | "read-only" | "review";
+}
+
+export interface CustomProviderInfo {
+  name: string;
+  authType: string;
+  safetyMode: string;
+}
+
 /** Messages the webview sends to the host. */
 export type WebviewToHost =
   | { type: "ready" }
@@ -27,6 +59,10 @@ export type WebviewToHost =
   | { type: "rpc"; rpcId: number; method: "searchModels"; query: string }
   | { type: "rpc"; rpcId: number; method: "addAgent"; modelId: string }
   | { type: "rpc"; rpcId: number; method: "removeAgent"; name: string }
+  | { type: "rpc"; rpcId: number; method: "listCustomProviders" }
+  | { type: "rpc"; rpcId: number; method: "addCustomProvider"; payload: CustomProviderPayload }
+  | { type: "rpc"; rpcId: number; method: "removeCustomProvider"; name: string }
+  | { type: "rpc"; rpcId: number; method: "testCustomProvider"; payload: CustomProviderPayload }
   | { type: "setApiKey" };
 
 /** Messages the host sends to the webview. */
@@ -36,7 +72,14 @@ export type HostToWebview =
       type: "rpcResult";
       rpcId: number;
       ok: true;
-      data: ModelPrice | null | FileEntry[] | AgentInfo[] | OpenRouterModelInfo[] | string;
+      data:
+        | ModelPrice
+        | null
+        | FileEntry[]
+        | AgentInfo[]
+        | OpenRouterModelInfo[]
+        | CustomProviderInfo[]
+        | string;
     }
   | { type: "rpcResult"; rpcId: number; ok: false; error: string }
   | { type: "init"; hasProject: boolean; hasKey: boolean; mode: Mode; model?: string };

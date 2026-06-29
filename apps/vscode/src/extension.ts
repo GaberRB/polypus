@@ -8,6 +8,12 @@ import { randomBytes } from "node:crypto";
 import { RunBridge } from "./host/runBridge.js";
 import { execCli, execCliJson } from "./host/cli.js";
 import { listConfiguredAgents } from "./host/agents.js";
+import {
+  listCustomProviders,
+  addCustomProvider,
+  removeCustomProvider,
+} from "./host/custom-providers.js";
+import { CustomProviderPanelProvider } from "./host/custom-provider-panel.js";
 import type { HostToWebview, WebviewToHost } from "./protocol.js";
 import type { FileEntry, Mode } from "@gaberrb/polypus-chat-ui";
 
@@ -16,15 +22,23 @@ const SECRET_KEY = "polypus.openrouterApiKey";
 const KEY_ENV = "OPENROUTER_API_KEY";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const provider = new PolypusChatProvider(context);
+  const chatProvider = new PolypusChatProvider(context);
+  const customProviderPanel = new CustomProviderPanelProvider(context);
+
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider("polypus.chat", provider, {
+    vscode.window.registerWebviewViewProvider("polypus.chat", chatProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+    vscode.window.registerWebviewViewProvider("polypus.customProvider", customProviderPanel, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.commands.registerCommand("polypus.focusChat", () => {
       void vscode.commands.executeCommand("polypus.chat.focus");
     }),
-    vscode.commands.registerCommand("polypus.setApiKey", () => provider.promptApiKey()),
+    vscode.commands.registerCommand("polypus.setApiKey", () => chatProvider.promptApiKey()),
+    vscode.commands.registerCommand("polypus.addCustomProvider", () => {
+      void vscode.commands.executeCommand("polypus.customProvider.focus");
+    }),
   );
 }
 
@@ -195,6 +209,33 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
       if (msg.method === "removeAgent") {
         await execCli(["remove-agent", msg.name]);
         this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
+        return;
+      }
+      if (msg.method === "listCustomProviders") {
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listCustomProviders() });
+        return;
+      }
+      if (msg.method === "addCustomProvider") {
+        await addCustomProvider(msg.payload);
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listCustomProviders() });
+        return;
+      }
+      if (msg.method === "removeCustomProvider") {
+        await removeCustomProvider(msg.name);
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listCustomProviders() });
+        return;
+      }
+      if (msg.method === "testCustomProvider") {
+        const res = (await execCliJson(
+          ["test-custom-provider", "--json", "--payload", JSON.stringify(msg.payload)],
+          undefined,
+        )) as { ok?: boolean; message?: string; reply?: string } | null;
+        this.post({
+          type: "rpcResult",
+          rpcId: msg.rpcId,
+          ok: true,
+          data: res?.message ?? (res?.ok ? "✅ OK" : "❌ Falha"),
+        });
         return;
       }
     } catch (err) {

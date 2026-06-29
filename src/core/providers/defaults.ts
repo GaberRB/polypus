@@ -23,3 +23,18 @@ export const SUGGESTED_KEY_ENV: Record<ProviderKind, string | undefined> = {
   "openai-compatible": "OPENAI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
 };
+
+/** Display label for each auth type in the custom-provider wizard. */
+export const CUSTOM_AUTH_LABELS = {
+  none: "Sem autenticação",
+  "api-key": "API Key (Header)",
+  "oauth2-client-credentials": "OAuth2 — Client Credentials (2 chamadas)",
+} as const;
+
+/** One-line explanation shown to the user when selecting an auth type. */
+export const CUSTOM_AUTH_DESCRIPTION = {
+  none: "A API é aberta — basta enviar o request direto.",
+  "api-key": "Uma chave fixa é enviada em um header a cada chamada.",
+  "oauth2-client-credentials":
+    "Primeiro busca um token de acesso (POST /token), depois usa no header do chat. O token é renovado automaticamente quando expira.",
+} as const;

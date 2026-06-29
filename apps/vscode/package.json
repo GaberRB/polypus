@@ -35,6 +35,11 @@
           "id": "polypus.chat",
           "name": "Chat",
           "type": "webview"
+        },
+        {
+          "id": "polypus.customProvider",
+          "name": "Provedores Custom",
+          "type": "webview"
         }
       ]
     },
@@ -46,6 +51,10 @@
       {
         "command": "polypus.setApiKey",
         "title": "Polypus: Configurar chave do OpenRouter"
+      },
+      {
+        "command": "polypus.addCustomProvider",
+        "title": "Polypus: Adicionar provedor custom"
       }
     ],
     "keybindings": [
