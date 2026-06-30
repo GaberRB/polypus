@@ -50,15 +50,27 @@ import { listenForCancel } from "../../ui/cancel.js";
 /**
  * Resolve a named agent from regular agents OR custom providers.
  * Accepts names with or without the "🔌 " prefix added by the VSCode switcher.
+ * When name is empty and there are no regular agents, falls back to the first
+ * custom provider so custom-only setups work without an explicit --agent flag.
  */
 function resolveAnyAgent(
   config: Awaited<ReturnType<typeof loadConfig>>,
   name?: string,
 ): ReturnType<typeof createProvider> {
   const cleanName = name?.replace(/^🔌\s*/u, "") ?? name;
-  const cp = cleanName ? findCustomProvider(config, cleanName) : undefined;
-  if (cp) return createCustomProvider(cp);
-  return createProvider(resolveAgent(config, name));
+
+  // Explicit custom provider lookup.
+  if (cleanName) {
+    const cp = findCustomProvider(config, cleanName);
+    if (cp) return createCustomProvider(cp);
+  }
+
+  // No name given (or empty) and no regular agents → use first custom provider.
+  if (!cleanName && config.agents.length === 0 && config.customProviders?.length) {
+    return createCustomProvider(config.customProviders[0]!);
+  }
+
+  return createProvider(resolveAgent(config, cleanName || undefined));
 }
 
 export interface RunOptions {
