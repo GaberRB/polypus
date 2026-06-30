@@ -153,4 +153,10 @@ export interface ChatTransport {
 
   /** Read a file's contents (for inlining an `@`-mention). */
   readFile(path: string): Promise<string>;
+
+  /**
+   * Return the active text selection in the host editor, or null when there is
+   * none. VSCode implements this; other hosts may return null.
+   */
+  getEditorSelection?(): Promise<{ file: string; path: string; text: string } | null>;
 }

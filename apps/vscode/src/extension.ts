@@ -59,8 +59,25 @@ export function deactivate(): void {
 class PolypusChatProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private readonly bridge = new RunBridge();
+  private lastSelection: { file: string; path: string; text: string } | null = null;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly context: vscode.ExtensionContext) {
+    context.subscriptions.push(
+      vscode.window.onDidChangeTextEditorSelection((e) => {
+        const sel = e.selections[0];
+        if (!sel || sel.isEmpty) {
+          this.lastSelection = null;
+          return;
+        }
+        const doc = e.textEditor.document;
+        this.lastSelection = {
+          file: doc.fileName.split(/[\\/]/).pop() ?? doc.fileName,
+          path: doc.fileName,
+          text: doc.getText(sel),
+        };
+      }),
+    );
+  }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
@@ -282,6 +299,10 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
           ok: true,
           data: res?.message ?? (res?.ok ? "✅ OK" : "❌ Falha"),
         });
+        return;
+      }
+      if (msg.method === "getEditorSelection") {
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: this.lastSelection as never });
         return;
       }
     } catch (err) {

@@ -164,7 +164,6 @@ export function Chat({
     const userId = nextId.current;
     const agentId = nextId.current + 1;
     nextId.current += 2;
-    dispatch({ kind: "send", userId, agentId, text: task });
 
     setInput("");
     setRunning(true);
@@ -179,10 +178,26 @@ export function Chat({
       dispatch({ kind: "stream", agentId, ev });
     };
 
-    unsubRef.current = transport.runStream(task, controlsRef.current, onEvent, {
-      resumeSessionId: state.sessionId,
-    });
-    sendingRef.current = false;
+    const startRun = (finalTask: string): void => {
+      dispatch({ kind: "send", userId, agentId, text: finalTask });
+      unsubRef.current = transport.runStream(finalTask, controlsRef.current, onEvent, {
+        resumeSessionId: state.sessionId,
+      });
+      sendingRef.current = false;
+    };
+
+    if (transport.getEditorSelection) {
+      void transport.getEditorSelection().then((sel) => {
+        if (sel) {
+          const prefix = `[Selected in ${sel.file}]\n\`\`\`\n${sel.text}\n\`\`\`\n\n`;
+          startRun(prefix + task);
+        } else {
+          startRun(task);
+        }
+      }).catch(() => startRun(task));
+    } else {
+      startRun(task);
+    }
   };
 
   const answerAsk = (agentId: number, askId: number, selected: string[]): void => {
@@ -234,17 +249,11 @@ export function Chat({
     }
   };
 
-  /** Replace the trailing `@query` with the file's contents as a fenced block. */
-  const selectAtFile = async (file: FileEntry): Promise<void> => {
+  /** Replace the trailing `@query` with a path reference — agent reads when needed. */
+  const selectAtFile = (file: FileEntry): void => {
     setShowAtPicker(false);
-    let block = `@${file.name}`;
-    try {
-      const content = await transport.readFile(file.path);
-      block = "```" + file.name + "\n" + content + "\n```";
-    } catch {
-      /* fall back to a bare @name reference */
-    }
-    setInput((prev) => prev.replace(/@\S*$/, block));
+    const ref = `@[${file.name}](${file.path})`;
+    setInput((prev) => prev.replace(/@\S*$/, ref));
   };
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {

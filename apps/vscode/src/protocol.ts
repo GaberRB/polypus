@@ -73,6 +73,7 @@ export type WebviewToHost =
   | { type: "rpc"; rpcId: number; method: "addCustomProvider"; payload: CustomProviderPayload }
   | { type: "rpc"; rpcId: number; method: "removeCustomProvider"; name: string }
   | { type: "rpc"; rpcId: number; method: "testCustomProvider"; payload: CustomProviderPayload }
+  | { type: "rpc"; rpcId: number; method: "getEditorSelection" }
   | { type: "setApiKey" }
   | { type: "clearApiKey" };
 
