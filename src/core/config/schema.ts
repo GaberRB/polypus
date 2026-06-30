@@ -31,6 +31,12 @@ export const CustomAuthConfig = z.discriminatedUnion("type", [
     clientId: z.string().min(1),
     /** Value or env reference like "${CLIENT_SECRET}". */
     clientSecret: z.string().min(1),
+    /** OAuth2 grant type sent in the token request body. */
+    grantType: z.string().default("client_credentials"),
+    /** Extra headers to include in the token request. */
+    tokenHeaders: z.record(z.string()).default({}),
+    /** Extra body params to include in the token request (merged with grant_type/client_id/secret). */
+    tokenParams: z.record(z.string()).default({}),
     /** JSONPath to extract token from auth response. */
     tokenPath: z.string().default("$.access_token"),
     /** JSONPath to extract expiry seconds from auth response. */

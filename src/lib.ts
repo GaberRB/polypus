@@ -64,6 +64,7 @@ export {
 export { CustomProvider } from "./core/providers/custom.js";
 export { testCustomProvider, type CustomProviderTestResult } from "./core/providers/custom-test.js";
 export { query as jsonPathQuery } from "./core/protocol/jsonpath.js";
+export { parseCurl, type CurlResult } from "./core/protocol/curl-parser.js";
 
 export type {
   AgentConfig,

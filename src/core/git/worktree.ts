@@ -1,4 +1,6 @@
+import { execFileSync } from "node:child_process";
 import { mkdtemp } from "node:fs/promises";
+import { readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { simpleGit, type SimpleGit } from "simple-git";
@@ -47,7 +49,8 @@ export async function createWorktree(
   git: SimpleGit,
   label: string,
 ): Promise<Worktree> {
-  const branch = `polypus/${label}-${Date.now().toString(36)}`;
+  const rand = crypto.randomUUID().slice(0, 8);
+  const branch = `polypus/${label}-${Date.now().toString(36)}-${rand}`;
   const path = await mkdtemp(join(tmpdir(), "polypus-wt-"));
   await git.raw(["worktree", "add", "-b", branch, path, "HEAD"]);
   return { path, branch };
@@ -56,12 +59,28 @@ export async function createWorktree(
 /** Stage and commit everything a worker produced in its worktree. */
 export async function commitWorktree(wt: Worktree, message: string): Promise<boolean> {
   const wtGit = simpleGit(wt.path);
-  await wtGit.add(["-A"]);
-  const status = await wtGit.status();
-  if (status.staged.length === 0 && status.files.length === 0) return false;
   const identity = await identityArgs(wtGit);
-  await wtGit.raw([...identity, "commit", "-m", message]);
-  return true;
+  // Debug: list files in worktree before attempting git operations
+  const { readdirSync, existsSync } = await import("node:fs");
+  let filesBefore: string[] = [];
+  try { filesBefore = readdirSync(wt.path, { withFileTypes: true }).map(d => d.name).filter(n => n !== ".git"); } catch {}
+  // Use execFileSync directly instead of simple-git.raw() for git operations
+  // in worktrees on Windows, where simple-git can behave unreliably.
+  try {
+    console.error(`[commitWorktree] path=${wt.path} branch=${wt.branch} files=[${filesBefore.join(",")}] identity=[${identity.join(" ")}]`);
+    const addArgs = ["-C", wt.path, ...identity, "add", "-A"];
+    execFileSync("git", addArgs, { stdio: "pipe", shell: false });
+    const statusOut = execFileSync("git", ["-C", wt.path, "status", "--porcelain"], { stdio: "pipe", shell: false, encoding: "utf-8" });
+    console.error(`[commitWorktree] after-add status:\n${statusOut}`);
+    const commitArgs = ["-C", wt.path, ...identity, "commit", "-m", message];
+    execFileSync("git", commitArgs, { stdio: "pipe", shell: false });
+    return true;
+  } catch (e: any) {
+    const stderr = e?.stderr?.toString()?.trim() || "";
+    const stdout = e?.stdout?.toString()?.trim() || "";
+    console.error(`[commitWorktree] FAILED | stderr=${stderr} | stdout=${stdout} | msg=${e?.message}`);
+    return false;
+  }
 }
 
 /** Merge a worker branch into the workspace's current branch, reporting conflicts. */
@@ -71,7 +90,13 @@ export async function mergeWorktreeBranch(
 ): Promise<MergeResult> {
   try {
     const identity = await identityArgs(git);
-    await git.raw([...identity, "merge", "--no-edit", branch]);
+    // On Windows, `git merge` with just --no-edit can complete at the index
+    // level but leave the working tree stale. Using --no-ff avoids the
+    // fast-forward code path (where the staleness is known to happen), and
+    // forcing a checkout of HEAD afterwards refreshes the working tree.
+    await git.raw([...identity, "merge", "--no-ff", "--no-edit", branch]);
+    // Force the working tree to match the new HEAD (required on Windows).
+    await git.raw(["checkout", "-f", "HEAD"]);
     return { branch, ok: true, conflicts: [] };
   } catch (err) {
     // simple-git throws on conflict; collect conflicted files and abort cleanly.

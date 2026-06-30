@@ -15,6 +15,7 @@ import { prd } from "./commands/prd.js";
 import { review } from "./commands/review.js";
 import { indexRepo } from "./commands/repo-index.js";
 import { retrieveCmd } from "./commands/retrieve.js";
+import { webServerCommand } from "./commands/web-server.js";
 import { join } from "node:path";
 import { configDir, loadConfig } from "../core/config/store.js";
 import { loadDotenv } from "../core/config/dotenv.js";
@@ -203,6 +204,13 @@ function buildProgram(): Command {
     .option("-k, --k <n>", t("cli.opt.topK"))
     .description(t("cli.cmd.retrieve"))
     .action((query, opts) => retrieveCmd(query, opts));
+
+  program
+    .command("web-server")
+    .option("--port <n>", t("cli.opt.wsPort"))
+    .option("--allow-origin <origin>", t("cli.opt.wsAllowOrigin"))
+    .description(t("cli.cmd.webServer"))
+    .action((opts) => webServerCommand(opts));
 
   return program;
 }

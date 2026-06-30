@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus Web Agent 🐙 — extensão Chrome para IA no navegador</title>
+  <meta name="description" content="Extensão Chrome do Polypus: seu agente de IA age no navegador — pesquisa, preenche formulários, gerencia repositórios com qualquer modelo, sua chave. Open source." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .ext-hero { align-items: center; }
+    .pill { display:inline-flex; gap:6px; align-items:center; padding:4px 12px; border-radius:999px;
+            background:rgba(146,102,245,.16); color:#cdb6fd; font-weight:600; font-size:.82rem; margin-bottom:14px; }
+    .arch-diagram { background:rgba(122,74,222,.07); border-radius:16px; padding:24px; margin:20px 0;
+                    font-family:ui-monospace,monospace; font-size:.85rem; line-height:1.6; white-space:pre; overflow-x:auto; }
+    .step-list { counter-reset:step; }
+    .step-list li { counter-increment:step; margin-bottom:12px; padding-left:32px; position:relative; }
+    .step-list li::before { content:counter(step); position:absolute; left:0; top:0; width:22px; height:22px;
+                            border-radius:50%; background:#7A4ADE; color:#fff; font-weight:700; font-size:.8rem;
+                            display:flex; align-items:center; justify-content:center; }
+    .center-cta { text-align:center; margin-top:30px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="index.html">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">CLI</a>
+      <a href="vscode.html">VSCode</a>
+      <a href="cicd.html" data-i18n="nav.cicd">CI/CD</a>
+      <a href="agent.html">Autônomo</a>
+      <a href="chrome.html" class="active">Chrome</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- ===== HERO ===== -->
+    <section class="hero ext-hero">
+      <div class="hero-art">
+        <svg class="mascot" viewBox="0 0 260 260" aria-label="Polypus mascot">
+          <defs>
+            <radialGradient id="head" cx="50%" cy="36%" r="68%">
+              <stop offset="0%" stop-color="#D8C5FF" />
+              <stop offset="55%" stop-color="#AB8EFA" />
+              <stop offset="100%" stop-color="#7A4ADE" />
+            </radialGradient>
+          </defs>
+          <g class="mascot-float">
+            <g class="tentacles" fill="#7A4ADE">
+              <path class="t t1" d="M70 150 q-34 18 -42 54 q16 6 22 -10 q6 -20 22 -32 z" />
+              <path class="t t2" d="M95 168 q-16 28 -10 56 q14 0 16 -16 q2 -22 6 -36 z" />
+              <path class="t t3" d="M130 174 q-6 30 0 58 q12 -2 12 -18 q0 -22 0 -38 z" />
+              <path class="t t4" d="M165 168 q16 28 10 56 q-14 0 -16 -16 q-2 -22 -6 -36 z" />
+              <path class="t t5" d="M190 150 q34 18 42 54 q-16 6 -22 -10 q-6 -20 -22 -32 z" />
+            </g>
+            <ellipse cx="130" cy="108" rx="86" ry="78" fill="url(#head)" />
+            <ellipse cx="78" cy="128" rx="13" ry="8" fill="#FF8ABE" opacity=".7" />
+            <ellipse cx="182" cy="128" rx="13" ry="8" fill="#FF8ABE" opacity=".7" />
+            <!-- óculos -->
+            <circle cx="78" cy="104" r="22" fill="none" stroke="#222" stroke-width="3" />
+            <circle cx="182" cy="104" r="22" fill="none" stroke="#222" stroke-width="3" />
+            <path d="M100 104 q30 16 60 0" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round" />
+            <circle cx="78" cy="102" r="5" fill="#222" />
+            <circle cx="182" cy="102" r="5" fill="#222" />
+            <!-- boca sorrindo -->
+            <path d="M100 140 q30 18 60 0" fill="none" stroke="#6a3ac9" stroke-width="3" stroke-linecap="round" />
+            <!-- braços-tentáculos segurando o globo -->
+            <path class="t t-arm" d="M48 88 q-20 -24 8 -44 q14 10 0 26 q-16 8 -6 20 z" />
+            <path class="t t-arm" d="M212 88 q20 -24 -8 -44 q-14 10 0 26 q16 8 6 20 z" />
+          </g>
+        </svg>
+      </div>
+      <div class="hero-content">
+        <div class="pill">🧩 Manifest V3 · Open source · BYO-key</div>
+        <h1 data-i18n="chrome.title">Polypus Web Agent <span class="badge">Extensão Chrome</span></h1>
+        <p class="hero-sub" data-i18n="chrome.sub">
+          Seu agente de IA age <strong>dentro do navegador</strong>. Pesquisa docs, preenche formulários,
+          cria issues, gerencia PRs — com o modelo que você escolher, sem assinatura.
+        </p>
+        <div class="center-cta">
+          <a class="btn" href="#instalar" data-i18n="chrome.installBtn">Instalar extensão</a>
+          <a class="btn btn-secondary" href="https://github.com/GaberRB/polypus/blob/main/apps/chrome/" target="_blank" rel="noopener">Código fonte ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COMO FUNCIONA ===== -->
+    <section>
+      <h2 class="section-title" data-i18n="chrome.how.title">Como funciona</h2>
+      <p data-i18n="chrome.how.desc">
+        O Polypus CLI (que você já tem ou instala agora) se conecta via WebSocket com a extensão.
+        O agente "vê" a página, decide ações, e a extensão as executa no navegador.
+      </p>
+      <div class="arch-diagram">
+┌─ Navegador (Chrome) ─────────────────────────────────┐
+│  ┌──────────┐  ┌──────────────┐  ┌────────────────┐  │
+│  │ Popup    │  │ Side Panel   │  │ Content Script │  │
+│  │ (rápido) │◄►│ (chat +      │◄►│ (executa ações │  │
+│  │          │  │  timeline)   │  │  na página)    │  │
+│  └────┬─────┘  └──────┬───────┘  └───────┬────────┘  │
+│       └───────────────┼──────────────────┘            │
+│              ┌────────┴────────┐                       │
+│              │ Service Worker  │                       │
+│              │ (WebSocket client)                      │
+│              └────────┬────────┘                       │
+└───────────────────────┼────────────────────────────────┘
+                        │ WebSocket
+┌───────────────────────┴────────────────────────────────┐
+│  Máquina Local                                          │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │  polypus web-server (CLI)                        │   │
+│  │  → spawna polypus run --json --stream            │   │
+│  │  → agente decide → ferramentas → NDJSON events   │   │
+│  └──────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────┘</div>
+    </section>
+
+    <!-- ===== CASOS DE USO ===== -->
+    <section>
+      <h2 class="section-title" data-i18n="chrome.use.title">O que o agente pode fazer na web</h2>
+      <div class="use-grid">
+        <div class="use">
+          <div class="step-n">📋</div>
+          <div>
+            <h4 data-i18n="chrome.use.issues">Gerenciar Issues/PRs</h4>
+            <p data-i18n="chrome.use.issuesDesc">"Crie uma issue no repositório X descrevendo o bug Y com os logs Z" — o agente navega, preenche título/corpo e submete.</p>
+          </div>
+        </div>
+        <div class="use">
+          <div class="step-n">🔍</div>
+          <div>
+            <h4 data-i18n="chrome.use.docs">Pesquisar documentação</h4>
+            <p data-i18n="chrome.use.docsDesc">"Encontre como usar a API tal e adapte pro nosso código" — o agente navega, extrai e adapta.</p>
+          </div>
+        </div>
+        <div class="use">
+          <div class="step-n">🧪</div>
+          <div>
+            <h4 data-i18n="chrome.use.test">Testar funcionalidades</h4>
+            <p data-i18n="chrome.use.testDesc">"Entre no admin panel, crie um usuário teste e verifique se aparece na listagem" — preenche login, navega, preenche formulários.</p>
+          </div>
+        </div>
+        <div class="use">
+          <div class="step-n">📊</div>
+          <div>
+            <h4 data-i18n="chrome.use.scrape">Web scraping inteligente</h4>
+            <p data-i18n="chrome.use.scrapeDesc">"Extraia todos os preços dessa página de produtos e salve num CSV" — extrai, estrutura e salva.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== INSTALAÇÃO ===== -->
+    <section id="instalar">
+      <h2 class="section-title" data-i18n="chrome.install.title">Instalação</h2>
+      <ol class="step-list">
+        <li>
+          <strong data-i18n="chrome.install.step1">Instale o CLI Polypus</strong>
+          <pre><code>npm install -g @gaberrb/polypus</code></pre>
+        </li>
+        <li>
+          <strong data-i18n="chrome.install.step2">Inicie o servidor WebSocket</strong>
+          <pre><code>polypus web-server --port 9876</code></pre>
+          <p data-i18n="chrome.install.step2note">Deixe rodando em segundo plano. Use um terminal separado ou um gerenciador de processos.</p>
+        </li>
+        <li>
+          <strong data-i18n="chrome.install.step3">Instale a extensão</strong>
+          <p><span data-i18n="chrome.install.step3desc">Carregue a extensão no Chrome:</span></p>
+          <ol type="a">
+            <li data-i18n="chrome.install.step3a">Abra <code>chrome://extensions</code></li>
+            <li data-i18n="chrome.install.step3b">Ative "Modo do desenvolvedor"</li>
+            <li data-i18n="chrome.install.step3c">Clique "Carregar sem compactação" e selecione a pasta <code>apps/chrome/</code></li>
+          </ol>
+        </li>
+        <li>
+          <strong data-i18n="chrome.install.step4">Conecte e use!</strong>
+          <p data-i18n="chrome.install.step4desc">Abra uma página, clique no 🐙 na barra de ferramentas e digite sua tarefa.</p>
+        </li>
+      </ol>
+      <div class="note" data-i18n="chrome.install.note">
+        ⚡ A extensão se conecta automaticamente ao WebSocket. O status "🟢 Conectado" aparece no popup quando tudo está funcionando.
+      </div>
+    </section>
+
+    <!-- ===== MODOS DE PERMISSÃO ===== -->
+    <section>
+      <h2 class="section-title" data-i18n="chrome.modes.title">Modos de permissão</h2>
+      <div class="wedge">
+        <div class="card">
+          <h3>📖 Plan</h3>
+          <p data-i18n="chrome.modes.plan">Somente leitura. O agente navega e extrai conteúdo, mas nunca clica, digita ou modifica nada. Ideal para pesquisas.</p>
+        </div>
+        <div class="card">
+          <h3>🔍 Review <span class="badge">padrão</span></h3>
+          <p data-i18n="chrome.modes.review">Cada ação do agente (clicar, digitar, navegar) é exibida no side panel para você aprovar ou rejeitar antes de executar.</p>
+        </div>
+        <div class="card">
+          <h3>⚡ Bypass</h3>
+          <p data-i18n="chrome.modes.bypass">Ações são executadas automaticamente. Use com allow-list de domínios para segurança.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GUIAS DE USO AVANÇADO ===== -->
+    <section>
+      <h2 class="section-title" data-i18n="chrome.examples.title">Guias de uso avançado</h2>
+      <div class="wedge">
+        <div class="card">
+          <h3>📋 <span data-i18n="chrome.examples.createIssue">Criar uma issue no GitHub</span></h3>
+          <p data-i18n="chrome.examples.createIssueBody">
+            1. Configure permissão: modo <b>review</b>, allow-list com <code>github.com</code>.<br>
+            2. Navegue até o repositório: "Vá para github.com/GaberRB/polypus".<br>
+            3. Peça: "Crie uma issue com título 'Bug no parse de XML' e corpo 'Quando o modelo devolve XML malformado, o parser falha silenciosamente'".<br>
+            4. O agente clica em "New Issue", preenche título e corpo, e submete. Cada ação aparece para aprovação.
+          </p>
+        </div>
+        <div class="card">
+          <h3>📊 <span data-i18n="chrome.examples.extractData">Extrair dados estruturados</span></h3>
+          <p data-i18n="chrome.examples.extractDataBody">
+            1. Navegue até a página com os dados.<br>
+            2. Peça: "Extraia todos os produtos desta página e salve num arquivo CSV com as colunas: nome, preço, link".<br>
+            3. O agente extrai o texto, estrutura os dados e chama <code>write_file</code> para salvar.<br>
+            4. O CSV estará no diretório onde o <code>polypus web-server</code> foi iniciado.
+          </p>
+        </div>
+        <div class="card">
+          <h3>🧪 <span data-i18n="chrome.examples.autoForm">Preencher formulário automaticamente</span></h3>
+          <p data-i18n="chrome.examples.autoFormBody">
+            1. Permita o domínio do site na allow-list.<br>
+            2. Modo <b>review</b> (padrão) para conferir cada campo.<br>
+            3. Peça: "Preencha o formulário de cadastro com nome 'Teste', email 'teste@example.com', e selecione a opção 'Plano Pro'".<br>
+            4. O agente preenche campo por campo. Você aprova antes de cada envio.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section>
+      <h2 class="section-title" data-i18n="chrome.faq.title">FAQ</h2>
+      <div class="wedge" style="flex-direction:column; gap:6px">
+        <details style="background:rgba(122,74,222,.06); border-radius:10px; padding:12px 18px; cursor:pointer">
+          <summary style="font-weight:600; color:#cdb6fd" data-i18n="chrome.faq.q1">Preciso pagar alguma assinatura?</summary>
+          <p style="margin-top:8px; color:#bbb" data-i18n="chrome.faq.a1">Não. Você usa sua própria chave de API. A extensão é open source e gratuita. Você paga apenas o consumo dos modelos de IA que escolher.</p>
+        </details>
+        <details style="background:rgba(122,74,222,.06); border-radius:10px; padding:12px 18px; cursor:pointer">
+          <summary style="font-weight:600; color:#cdb6fd" data-i18n="chrome.faq.q2">A extensão consegue ver minhas senhas?</summary>
+          <p style="margin-top:8px; color:#bbb" data-i18n="chrome.faq.a2">A extensão só vê o que está visível na página. No modo <code>review</code>, cada ação precisa da sua aprovação. Em modo <code>plan</code>, ela não clica nem digita. O código é open source e auditável.</p>
+        </details>
+        <details style="background:rgba(122,74,222,.06); border-radius:10px; padding:12px 18px; cursor:pointer">
+          <summary style="font-weight:600; color:#cdb6fd" data-i18n="chrome.faq.q3">Funciona com qualquer modelo de IA?</summary>
+          <p style="margin-top:8px; color:#bbb" data-i18n="chrome.faq.a3">Sim. Funciona com qualquer modelo via OpenRouter, Ollama (local) ou API compatível com OpenAI. Modelos com visão podem usar screenshots como contexto.</p>
+        </details>
+        <details style="background:rgba(122,74,222,.06); border-radius:10px; padding:12px 18px; cursor:pointer">
+          <summary style="font-weight:600; color:#cdb6fd" data-i18n="chrome.faq.q4">Os dados saem da minha máquina?</summary>
+          <p style="margin-top:8px; color:#bbb" data-i18n="chrome.faq.a4">Apenas as chamadas para o provedor de IA que você configurou. O WebSocket entre a extensão e o CLI é local. Nenhum dado é enviado para servidores do Polypus.</p>
+        </details>
+        <details style="background:rgba(122,74,222,.06); border-radius:10px; padding:12px 18px; cursor:pointer">
+          <summary style="font-weight:600; color:#cdb6fd" data-i18n="chrome.faq.q5">Como atualizar a extensão?</summary>
+          <p style="margin-top:8px; color:#bbb" data-i18n="chrome.faq.a5">Puxe as mudanças do repositório (<code>git pull</code>), rode <code>npm run build</code> em <code>apps/chrome/</code>, e clique em "Atualizar" em <code>chrome://extensions</code>.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ===== TROUBLESHOOTING ===== -->
+    <section>
+      <h2 class="section-title" data-i18n="chrome.trouble.title">Solução de problemas</h2>
+      <div class="wedge" style="flex-direction:column; gap:6px">
+        <details style="background:rgba(239,68,68,.06); border-radius:10px; padding:12px 18px; cursor:pointer">
+          <summary style="font-weight:600; color:#fca5a5" data-i18n="chrome.trouble.ws.title">WebSocket não conecta</summary>
+          <p style="margin-top:8px; color:#bbb" data-i18n="chrome.trouble.ws.body">Verifique: (1) O <code>polypus web-server</code> está rodando? (2) A porta 9876 está livre? (3) Algum firewall está bloqueando conexões locais?</p>
+        </details>
+        <details style="background:rgba(239,68,68,.06); border-radius:10px; padding:12px 18px; cursor:pointer">
+          <summary style="font-weight:600; color:#fca5a5" data-i18n="chrome.trouble.inst.title">Extensão não carrega</summary>
+          <p style="margin-top:8px; color:#bbb" data-i18n="chrome.trouble.inst.body">Confirme que está em "Modo do desenvolvedor" em <code>chrome://extensions</code>. Selecione a pasta <code>apps/chrome/</code> inteira. Se houver erro de manifest, leia a mensagem.</p>
+        </details>
+        <details style="background:rgba(239,68,68,.06); border-radius:10px; padding:12px 18px; cursor:pointer">
+          <summary style="font-weight:600; color:#fca5a5" data-i18n="chrome.trouble.action.title">Ação web não executa</summary>
+          <p style="margin-top:8px; color:#bbb" data-i18n="chrome.trouble.action.body">Tente "extraia todos os elementos interativos" para ver seletores disponíveis. Confirme que a página carregou. Use modo <code>review</code> para ver a ação exata.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ===== ARQUITETURA ===== -->
+    <section>
+      <h2 class="section-title" data-i18n="chrome.architecture.title">Arquitetura</h2>
+      <p data-i18n="chrome.architecture.desc">
+        A extensão Chrome se comunica com o CLI Polypus via WebSocket local (porta 9876).
+        O service worker gerencia a conexão, o side panel exibe o chat com streaming, e o content script
+        executa as ações (navegar, extrair, clicar, digitar) na página ativa.
+      </p>
+      <p data-i18n="chrome.architecture.privacy">
+        🔒 Tudo roda localmente. Nenhum dado sai da sua máquina além da chamada ao provedor de IA
+        que você escolheu (OpenRouter, OpenAI, Anthropic, Ollama…). A extensão não exfiltra informações
+        das páginas que você visita.
+      </p>
+      <div class="center-cta">
+        <a class="btn" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">⭐ GitHub — código aberto</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>🐙 Polypus · MIT · <a href="https://github.com/GaberRB/polypus" target="_blank">github.com/GaberRB/polypus</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

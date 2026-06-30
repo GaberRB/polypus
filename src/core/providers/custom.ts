@@ -11,41 +11,54 @@ interface CachedToken {
   expiresAt: number; // ms since epoch; Infinity if no expiry info
 }
 
+interface OAuth2Options {
+  tokenUrl: string;
+  clientId: string;
+  clientSecret: string;
+  grantType: string;
+  tokenHeaders: Record<string, string>;
+  tokenParams: Record<string, string>;
+  tokenPath: string;
+  expiresPath: string | undefined;
+}
+
 class OAuth2Client {
   private cache: CachedToken | null = null;
 
-  constructor(
-    private readonly tokenUrl: string,
-    private readonly clientId: string,
-    private readonly clientSecret: string,
-    private readonly tokenPath: string,
-    private readonly expiresPath: string | undefined,
-  ) {}
+  constructor(private readonly opts: OAuth2Options) {}
 
   async getToken(): Promise<string> {
     const now = Date.now();
     if (this.cache && now < this.cache.expiresAt - 30_000) return this.cache.token;
 
-    const res = await fetch(this.tokenUrl, {
+    const { tokenUrl, clientId, clientSecret, grantType, tokenHeaders, tokenParams, tokenPath, expiresPath } = this.opts;
+    const res = await fetch(tokenUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        ...tokenHeaders,
+      },
       body: new URLSearchParams({
-        grant_type: "client_credentials",
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
+        grant_type: grantType,
+        client_id: clientId,
+        client_secret: clientSecret,
+        ...tokenParams,
       }),
     });
-    if (!res.ok) throw new Error(`Auth failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Auth failed (${res.status}): ${body}`);
+    }
     const body = (await res.json()) as unknown;
 
-    const token = query(body, this.tokenPath);
+    const token = query(body, this.opts.tokenPath);
     if (typeof token !== "string" || !token) {
-      throw new Error(`Token not found at path "${this.tokenPath}" in auth response`);
+      throw new Error(`Token not found at path "${this.opts.tokenPath}" in auth response`);
     }
 
     let expiresAt = Infinity;
-    if (this.expiresPath) {
-      const exp = query(body, this.expiresPath);
+    if (this.opts.expiresPath) {
+      const exp = query(body, this.opts.expiresPath);
       if (typeof exp === "number" && exp > 0) expiresAt = now + exp * 1000;
     }
 
@@ -88,13 +101,16 @@ export class CustomProvider implements Provider {
     this.model = cfg.name;
 
     if (cfg.auth.type === "oauth2-client-credentials") {
-      this.oauth2 = new OAuth2Client(
-        cfg.auth.tokenUrl,
-        cfg.auth.clientId,
-        cfg.auth.clientSecret,
-        cfg.auth.tokenPath,
-        cfg.auth.expiresPath,
-      );
+      this.oauth2 = new OAuth2Client({
+        tokenUrl: cfg.auth.tokenUrl,
+        clientId: cfg.auth.clientId,
+        clientSecret: cfg.auth.clientSecret,
+        grantType: cfg.auth.grantType,
+        tokenHeaders: cfg.auth.tokenHeaders,
+        tokenParams: cfg.auth.tokenParams,
+        tokenPath: cfg.auth.tokenPath,
+        expiresPath: cfg.auth.expiresPath,
+      });
     }
   }
 

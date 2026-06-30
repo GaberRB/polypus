@@ -24,6 +24,9 @@ export interface CustomProviderPayload {
         tokenUrl: string;
         clientId: string;
         clientSecret: string;
+        grantType: string;
+        tokenHeaders: Record<string, string>;
+        tokenParams: Record<string, string>;
         tokenPath: string;
         expiresPath?: string;
       };

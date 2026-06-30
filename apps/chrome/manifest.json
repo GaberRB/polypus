@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Polypus Web Agent",
+  "short_name": "Polypus",
+  "version": "0.1.0",
+  "description": "Agentic AI co-pilot for your browser. Research, fill forms, manage repos — with any AI model, your own key.",
+  "description_pt_BR": "Copiloto agêntico de IA para seu navegador. Pesquise, preencha formulários, gerencie repositórios — com qualquer modelo de IA, sua própria chave.",
+  "author": "Gabriel Rios",
+  "homepage_url": "https://gaberrb.github.io/polypus/chrome.html",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "http://localhost/*",
+    "https://localhost/*"
+  ],
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+  "action": {
+    "default_title": "Polypus Web Agent",
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+P",
+        "mac": "MacCtrl+P"
+      },
+      "description": "Open Polypus popup"
+    }
+  }
+}
