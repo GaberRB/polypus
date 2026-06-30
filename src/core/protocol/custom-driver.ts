@@ -1,7 +1,7 @@
 /**
  * CustomDriver — protocol driver exclusively for user-defined custom providers.
  *
- * Custom providers are generic chat LLMs (e.g. StackSpot, internal APIs) that
+ * Custom providers are generic chat LLMs (e.g. external AI APIs, internal APIs) that
  * have no native tool API and do NOT produce <polypus:tool> XML.  Instead they
  * naturally output markdown code blocks.  This driver:
  *
