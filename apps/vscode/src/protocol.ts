@@ -77,6 +77,12 @@ export type WebviewToHost =
   | { type: "setApiKey" }
   | { type: "clearApiKey" };
 
+export interface EditorSelection {
+  file: string;
+  path: string;
+  text: string;
+}
+
 /** Messages the host sends to the webview. */
 export type HostToWebview =
   | { type: "event"; event: StreamEvent }
@@ -91,6 +97,7 @@ export type HostToWebview =
         | AgentInfo[]
         | OpenRouterModelInfo[]
         | CustomProviderInfo[]
+        | EditorSelection
         | string;
     }
   | { type: "rpcResult"; rpcId: number; ok: false; error: string }

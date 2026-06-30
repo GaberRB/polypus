@@ -186,9 +186,9 @@ export function Chat({
       sendingRef.current = false;
     };
 
-    if (transport.getEditorSelection) {
+    if (typeof transport.getEditorSelection === "function") {
       void transport.getEditorSelection().then((sel) => {
-        if (sel) {
+        if (sel && typeof sel.file === "string" && typeof sel.text === "string") {
           const prefix = `[Selected in ${sel.file}]\n\`\`\`\n${sel.text}\n\`\`\`\n\n`;
           startRun(prefix + task);
         } else {

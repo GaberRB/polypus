@@ -14,7 +14,7 @@ import {
   removeCustomProvider,
 } from "./host/custom-providers.js";
 import { CustomProviderPanelProvider } from "./host/custom-provider-panel.js";
-import type { HostToWebview, WebviewToHost } from "./protocol.js";
+import type { EditorSelection, HostToWebview, WebviewToHost } from "./protocol.js";
 import type { FileEntry, Mode } from "@gaberrb/polypus-chat-ui";
 
 const SECRET_KEY = "polypus.openrouterApiKey";
@@ -59,7 +59,7 @@ export function deactivate(): void {
 class PolypusChatProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private readonly bridge = new RunBridge();
-  private lastSelection: { file: string; path: string; text: string } | null = null;
+  private lastSelection: EditorSelection | null = null;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     context.subscriptions.push(
@@ -70,9 +70,14 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
           return;
         }
         const doc = e.textEditor.document;
+        const wsRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const absPath = doc.uri.fsPath;
+        const relPath = wsRoot && absPath.startsWith(wsRoot)
+          ? absPath.slice(wsRoot.length).replace(/^[\\/]/, "")
+          : absPath.split(/[\\/]/).pop() ?? absPath;
         this.lastSelection = {
-          file: doc.fileName.split(/[\\/]/).pop() ?? doc.fileName,
-          path: doc.fileName,
+          file: relPath.split(/[\\/]/).pop() ?? relPath,
+          path: relPath,
           text: doc.getText(sel),
         };
       }),
@@ -302,7 +307,7 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
         return;
       }
       if (msg.method === "getEditorSelection") {
-        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: this.lastSelection as never });
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: this.lastSelection });
         return;
       }
     } catch (err) {
