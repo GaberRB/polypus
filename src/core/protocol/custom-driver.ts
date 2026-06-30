@@ -5,11 +5,9 @@
  * have no native tool API and do NOT produce <polypus:tool> XML.  Instead they
  * naturally output markdown code blocks.  This driver:
  *
- *   • Teaches the model a two-format convention in the system prompt:
- *       - ```bash / ```sh  →  run_command
- *       - ```json { "tool": "...", ... }  →  any other tool (write_file, finish, …)
- *
- *   • Parses both formats out of the model response.
+ *   • All file/command operations use ```bash blocks (including heredoc for writes).
+ *   • Only finish/read_file/ask_user/list_dir use ```json { "tool": "..." } blocks.
+ *   • write_file is intentionally hidden — models express it naturally via bash.
  *
  * Zero overlap with EmulatedDriver or NativeDriver — those files are untouched.
  */
@@ -23,8 +21,12 @@ import { getLocale, LOCALE_NAMES, t } from "../i18n/index.js";
 // System prompt
 // ---------------------------------------------------------------------------
 
+// Tools hidden from custom providers — handled via bash instead.
+const BASH_ONLY_TOOLS = new Set(["write_file", "run_command", "run_python_script"]);
+
 function buildToolDocs(tools: ToolSpec[]): string {
   return tools
+    .filter((tl) => !BASH_ONLY_TOOLS.has(tl.name))
     .map((tl) => {
       const props =
         (tl.parameters as { properties?: Record<string, { description?: string }> }).properties ?? {};
@@ -56,53 +58,83 @@ export function buildCustomProviderSystemPrompt(tools: ToolSpec[], ctx: PromptCo
     `Editable paths: ${ctx.allow.join(", ")}`,
     modeLine,
     "",
-    "## HOW TO USE TOOLS",
+    "## OUTPUT FORMATS",
     "",
-    "You have two output formats. Use exactly one per response, then wait for the result.",
+    "You have exactly two formats. Use ONE per response, then wait for the result.",
     "",
-    "### Format 1 — shell command (run_command)",
+    "### Format 1 — bash (for ALL shell commands AND file creation/editing)",
+    "Wrap the command in a bash block:",
     "```bash",
-    "npm run build",
+    "python hello.py",
     "```",
     "",
-    "### Format 2 — any other tool (write_file, read_file, finish, …)",
+    "### Format 2 — JSON (ONLY for finish, read_file, list_dir, ask_user)",
+    "Wrap a JSON object in a json block:",
     "```json",
-    '{ "tool": "write_file", "path": "hello.py", "content": "print(\\"Hello World\\")\\n" }',
+    '{ "tool": "finish", "summary": "what you did" }',
     "```",
     "",
-    "## MANDATORY STEP ORDER",
+    "## CREATING AND EDITING FILES — always use bash heredoc",
     "",
-    "Before running any file, you MUST create it first with write_file.",
+    "NEVER use any function call or special syntax to write files.",
+    "ALWAYS use a bash heredoc. Examples:",
+    "",
+    "Create a Python file:",
+    "```bash",
+    "cat > hello.py << 'PYEOF'",
+    'print("Hello World")',
+    "PYEOF",
+    "```",
+    "",
+    "Create a file with multiple lines:",
+    "```bash",
+    "cat > app.js << 'JSEOF'",
+    "const x = 1;",
+    "console.log(x);",
+    "JSEOF",
+    "```",
+    "",
+    "Append to an existing file:",
+    "```bash",
+    "cat >> existing.txt << 'EOF'",
+    "new line here",
+    "EOF",
+    "```",
+    "",
+    "## STEP ORDER — mandatory sequence",
+    "",
     "Example — task: 'create hello.py and run it':",
     "",
-    "Step 1 — create the file:",
-    "```json",
-    '{ "tool": "write_file", "path": "hello.py", "content": "print(\\"Hello World\\")\\n" }',
+    "Step 1 — create the file with heredoc:",
+    "```bash",
+    "cat > hello.py << 'PYEOF'",
+    'print("Hello World")',
+    "PYEOF",
     "```",
-    "→ wait for result, then step 2:",
+    "→ wait for result, then:",
     "",
     "Step 2 — run it:",
     "```bash",
     "python hello.py",
     "```",
-    "→ wait for result, then step 3:",
+    "→ wait for result, then:",
     "",
-    "Step 3 — done:",
+    "Step 3 — finish:",
     "```json",
     '{ "tool": "finish", "summary": "Created hello.py and ran it successfully." }',
     "```",
     "",
     "## SELF-RECOVERY RULES",
     "",
-    "- If a command fails because a file does not exist → use write_file to create it first.",
-    "- If a command fails because a dependency is missing → run the install command first.",
-    "- If a tool result shows an error → fix the root cause with the appropriate tool, do NOT retry the same failing call.",
-    "- NEVER give up and explain why something failed — fix it and continue.",
-    "- NEVER respond with plain prose. ALWAYS emit a tool call.",
-    "- When the task is fully done, emit finish. NEVER end a turn without a tool call.",
+    "- File does not exist → create it with cat heredoc BEFORE running.",
+    "- Dependency missing → install it first (pip install / npm install).",
+    "- Syntax error in a file → use read_file to inspect, then overwrite with heredoc.",
+    "- On ANY error → fix the root cause, do NOT retry the exact same command.",
+    "- NEVER respond with plain prose. ALWAYS emit a bash or json block.",
+    "- NEVER end a turn without a tool call.",
     t("prompt.language", { language: LOCALE_NAMES[getLocale()] }),
     "",
-    "## AVAILABLE TOOLS",
+    "## AVAILABLE JSON TOOLS (finish, read, list, ask)",
     "",
     toolDocs,
     ctx.projectInstructions ? `\n## PROJECT INSTRUCTIONS\n\n${ctx.projectInstructions}` : "",
@@ -193,24 +225,23 @@ function recoveryHint(toolName: string, errorText: string): string {
 
   if (toolName === "run_command") {
     if (/no such file|not found|cannot find/i.test(lower)) {
-      return "⚠ RECOVERY: The file does not exist yet. Use write_file to create it before running.";
+      return (
+        "⚠ RECOVERY: The file does not exist yet. Create it first using a bash heredoc:\n" +
+        "```bash\ncat > <filename> << 'EOF'\n<content>\nEOF\n```"
+      );
     }
     if (/modulenotfounderror|module not found|cannot find module/i.test(lower)) {
       return "⚠ RECOVERY: A dependency is missing. Run the install command (e.g. pip install <pkg> or npm install) before retrying.";
     }
     if (/permission denied/i.test(lower)) {
-      return "⚠ RECOVERY: Permission denied. Try prefixing the command with the appropriate privilege escalation or check the file path.";
+      return "⚠ RECOVERY: Permission denied. Check the file path or create parent directories with: ```bash\nmkdir -p <dir>\n```";
     }
     if (/syntaxerror|syntax error/i.test(lower)) {
-      return "⚠ RECOVERY: There is a syntax error in the file. Use read_file to inspect it, then write_file to fix it.";
+      return "⚠ RECOVERY: Syntax error in the file. Read it with read_file, then overwrite it using a bash heredoc to fix the issue.";
     }
   }
 
-  if (toolName === "write_file") {
-    return "⚠ RECOVERY: Failed to write the file. Check that the directory path exists; create parent directories with run_command (mkdir -p) if needed.";
-  }
-
-  return "⚠ RECOVERY: The last action failed. Analyse the error above and use the appropriate tool to fix the root cause before continuing.";
+  return "⚠ RECOVERY: The last action failed. Fix the root cause using a bash command or a JSON tool call before continuing.";
 }
 
 // ---------------------------------------------------------------------------
@@ -279,10 +310,11 @@ export class CustomDriver implements ProtocolDriver {
       role: "user",
       content: [
         this.originalTask ? `[ORIGINAL TASK]: ${this.originalTask}` : "",
-        "You did not emit a tool call. Remember: respond ONLY with a code block.",
-        "For shell commands: ```bash\\n<command>\\n```",
-        'For other tools: ```json\\n{ "tool": "<name>", ... }\\n```',
-        "Never respond with plain text. Continue the original task above.",
+        "You did not emit a tool call. Respond ONLY with one of these two formats:",
+        "• Bash (commands AND file creation): ```bash\\n<command or heredoc>\\n```",
+        '• JSON (finish/read_file/list_dir/ask_user only): ```json\\n{ "tool": "<name>", ... }\\n```',
+        "To create a file use: ```bash\\ncat > file.py << 'EOF'\\n<content>\\nEOF\\n```",
+        "Never respond with plain text or function calls. Continue the original task above.",
       ]
         .filter(Boolean)
         .join("\n"),
