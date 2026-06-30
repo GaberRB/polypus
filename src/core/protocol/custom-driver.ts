@@ -220,7 +220,19 @@ function recoveryHint(toolName: string, errorText: string): string {
 export class CustomDriver implements ProtocolDriver {
   readonly kind = "emulated" as const; // loop treats it like emulated (no provider-side tools)
 
-  constructor(private readonly tools: ToolSpec[]) {}
+  /**
+   * The original user task (first user message). Injected into every
+   * toolResultMessage so the model never loses sight of its goal — critical
+   * for stateless external APIs that only see one message per call.
+   */
+  private readonly originalTask: string;
+
+  constructor(
+    private readonly tools: ToolSpec[],
+    originalTask = "",
+  ) {
+    this.originalTask = originalTask;
+  }
 
   systemPrompt(ctx: PromptContext): string {
     return buildCustomProviderSystemPrompt(this.tools, ctx);
@@ -249,10 +261,13 @@ export class CustomDriver implements ProtocolDriver {
     return {
       role: "user",
       content: [
-        `Tool result for ${call.name}:`,
+        // Always remind the model of the original goal. External APIs that only
+        // see the last user message would otherwise lose all context after turn 1.
+        this.originalTask ? `[ORIGINAL TASK]: ${this.originalTask}` : "",
+        `[TOOL RESULT] ${call.name}:`,
         resultText,
         hint,
-        "→ Emit your next tool call now. Do NOT explain — just act.",
+        "→ Emit your next tool call now to continue the original task. Do NOT explain — just act.",
       ]
         .filter(Boolean)
         .join("\n"),
@@ -263,11 +278,14 @@ export class CustomDriver implements ProtocolDriver {
     return {
       role: "user",
       content: [
+        this.originalTask ? `[ORIGINAL TASK]: ${this.originalTask}` : "",
         "You did not emit a tool call. Remember: respond ONLY with a code block.",
         "For shell commands: ```bash\\n<command>\\n```",
         'For other tools: ```json\\n{ "tool": "<name>", ... }\\n```',
-        "Never respond with plain text.",
-      ].join("\n"),
+        "Never respond with plain text. Continue the original task above.",
+      ]
+        .filter(Boolean)
+        .join("\n"),
     };
   }
 }

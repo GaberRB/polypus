@@ -2,7 +2,7 @@
   "name": "polypus-vscode",
   "displayName": "Polypus — agentic AI chat",
   "description": "Chat agêntico no VSCode com a sua chave e modelos grátis/baratos (OpenRouter). Sem assinatura.",
-  "version": "0.5.9",
+  "version": "0.5.10",
   "private": true,
   "publisher": "gaberrb",
   "author": "Gabriel Rios",

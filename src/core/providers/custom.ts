@@ -91,13 +91,32 @@ function applyJsonTemplate(template: string, vars: Record<string, string>): stri
 
 function buildVars(
   prompt: string,
+  history: string,
   params: Record<string, string>,
   token?: string,
 ): Record<string, string> {
-  const vars: Record<string, string> = { prompt };
+  const vars: Record<string, string> = { prompt, history };
   if (token) vars["auth.token"] = token;
   for (const [k, v] of Object.entries(params)) vars[`params.${k}`] = v;
   return vars;
+}
+
+/**
+ * Format conversation history (non-system messages, excluding the last user message)
+ * as a plain-text dialogue. Used as {{history}} in body templates.
+ */
+function formatHistory(messages: ChatRequest["messages"]): string {
+  const nonSystem = messages.filter((m) => m.role !== "system");
+  // Exclude the last user message — that is {{prompt}}
+  const prior = nonSystem.slice(0, -1);
+  if (prior.length === 0) return "";
+  return prior
+    .map((m) => {
+      const role = m.role === "user" ? "User" : "Assistant";
+      const content = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+      return `${role}: ${content}`;
+    })
+    .join("\n\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -137,12 +156,13 @@ export class CustomProvider implements Provider {
       token = resolveSecretValue(this.cfg.auth.apiKey);
     }
 
-    // 2. Last user message as prompt
+    // 2. Last user message as prompt; prior turns as history
     const lastUser = [...req.messages].reverse().find((m) => m.role === "user");
-    const prompt = lastUser?.content ?? "";
+    const prompt = typeof lastUser?.content === "string" ? lastUser.content : "";
+    const history = formatHistory(req.messages);
 
     // 3. Substitute template variables
-    const vars = buildVars(prompt, this.cfg.params, token);
+    const vars = buildVars(prompt, history, this.cfg.params, token);
     const resolvedUrl = applyTemplate(this.cfg.chat.url, vars);
     const resolvedBody = applyJsonTemplate(this.cfg.chat.bodyTemplate, vars);
     const resolvedHeaders: Record<string, string> = { "Content-Type": "application/json" };

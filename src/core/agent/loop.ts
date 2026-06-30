@@ -129,7 +129,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const resolveTool = (name: string): Tool | undefined => extraByName.get(name) ?? getTool(name);
 
   const driver = agent.isCustomProvider
-    ? new CustomDriver(allSpecs)
+    ? new CustomDriver(allSpecs, opts.task)
     : makeDriver(agent.toolMode, allSpecs);
   const ctx = { workspace: opts.workspace, permissions, ask: opts.ask, onSkill: events?.onSkill };
 
