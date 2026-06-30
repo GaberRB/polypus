@@ -38,7 +38,7 @@
         },
         {
           "id": "polypus.customProvider",
-          "name": "Provedores Custom",
+          "name": "Provedores & Chaves",
           "type": "webview"
         }
       ]
@@ -55,6 +55,10 @@
       {
         "command": "polypus.addCustomProvider",
         "title": "Polypus: Adicionar provedor custom"
+      },
+      {
+        "command": "polypus.clearApiKey",
+        "title": "Polypus: Remover chave do OpenRouter"
       }
     ],
     "keybindings": [

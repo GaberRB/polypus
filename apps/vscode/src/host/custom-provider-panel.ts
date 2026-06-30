@@ -7,19 +7,34 @@ import {
   removeCustomProvider,
   testCustomProviderInProcess,
 } from "./custom-providers.js";
+import { listConfiguredAgents } from "./agents.js";
+import { execCli } from "./cli.js";
+
+const SECRET_KEY = "polypus.openrouterApiKey";
+
+interface AgentEntry { name: string; provider: string; model: string; isDefault: boolean }
 
 type PanelToHost =
   | { type: "ready" }
   | { type: "save"; payload: CustomProviderPayload }
   | { type: "remove"; name: string }
+  | { type: "removeAgent"; name: string }
   | { type: "test"; payload: CustomProviderPayload }
+  | { type: "setApiKey" }
+  | { type: "clearApiKey" }
   | { type: "list" };
 
 type HostToPanel =
-  | { type: "init"; providers: CustomProviderInfo[] }
+  | {
+      type: "init";
+      providers: CustomProviderInfo[];
+      agents: AgentEntry[];
+      keySet: boolean;
+      keyPreview: string;
+    }
   | { type: "saveResult"; ok: boolean; message: string }
   | { type: "testResult"; ok: boolean; message: string; reply?: string }
-  | { type: "listResult"; providers: CustomProviderInfo[] }
+  | { type: "listResult"; providers: CustomProviderInfo[]; agents: AgentEntry[]; keySet: boolean; keyPreview: string }
   | { type: "removeResult"; ok: boolean };
 
 export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
@@ -41,12 +56,28 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     void this.view?.webview.postMessage(msg);
   }
 
+  private async fullState(): Promise<Omit<HostToPanel & { type: "init" }, "type">> {
+    const [providers, agents, rawKey] = await Promise.all([
+      listCustomProviders(),
+      listConfiguredAgents(),
+      this.context.secrets.get(SECRET_KEY),
+    ]);
+    const keySet = Boolean(rawKey);
+    const keyPreview = rawKey ? `sk-or-…${rawKey.slice(-4)}` : "";
+    return { providers, agents: agents as AgentEntry[], keySet, keyPreview };
+  }
+
   private async onMessage(msg: PanelToHost): Promise<void> {
     switch (msg.type) {
-      case "ready":
+      case "ready": {
+        const state = await this.fullState();
+        this.post({ type: "init", ...state });
+        return;
+      }
+
       case "list": {
-        const providers = await listCustomProviders();
-        this.post({ type: msg.type === "ready" ? "init" : "listResult", providers });
+        const state = await this.fullState();
+        this.post({ type: "listResult", ...state });
         return;
       }
 
@@ -70,21 +101,44 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
         return;
       }
 
+      case "removeAgent": {
+        try {
+          await execCli(["remove-agent", msg.name]);
+          this.post({ type: "removeResult", ok: true });
+        } catch {
+          this.post({ type: "removeResult", ok: false });
+        }
+        return;
+      }
+
+      case "setApiKey": {
+        const key = await vscode.window.showInputBox({
+          title: "Chave do OpenRouter",
+          prompt: "Cole sua chave (sk-or-…). Crie uma em https://openrouter.ai/keys",
+          password: true,
+          ignoreFocusOut: true,
+        });
+        if (key?.trim()) {
+          await this.context.secrets.store(SECRET_KEY, key.trim());
+          const state = await this.fullState();
+          this.post({ type: "listResult", ...state });
+        }
+        return;
+      }
+
+      case "clearApiKey": {
+        await this.context.secrets.delete(SECRET_KEY);
+        const state = await this.fullState();
+        this.post({ type: "listResult", ...state });
+        return;
+      }
+
       case "test": {
         try {
           const res = await testCustomProviderInProcess(msg.payload);
-          this.post({
-            type: "testResult",
-            ok: res.ok,
-            message: res.message,
-            reply: res.reply,
-          });
+          this.post({ type: "testResult", ok: res.ok, message: res.message, reply: res.reply });
         } catch (err) {
-          this.post({
-            type: "testResult",
-            ok: false,
-            message: `❌ Erro inesperado: ${(err as Error).message}`,
-          });
+          this.post({ type: "testResult", ok: false, message: `❌ Erro inesperado: ${(err as Error).message}` });
         }
         return;
       }
@@ -105,7 +159,7 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="${csp}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Provedores Custom</title>
+  <title>Provedores &amp; Chaves</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:var(--vscode-font-family);font-size:var(--vscode-font-size);color:var(--vscode-foreground);background:var(--vscode-sideBar-background);padding:12px}
@@ -125,7 +179,10 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     .msg.err{border-left:3px solid var(--vscode-testing-iconFailed,#f44336)}
     .auth-desc{font-size:11px;color:var(--vscode-descriptionForeground);margin-top:4px;font-style:italic;line-height:1.4}
     .divider{border:none;border-top:1px solid var(--vscode-panel-border);margin:14px 0}
-    .provider-item{display:flex;justify-content:space-between;align-items:center;padding:6px;background:var(--vscode-editorWidget-background);border-radius:3px;margin-bottom:6px;font-size:12px}
+    .row{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--vscode-editorWidget-background);border-radius:3px;margin-bottom:6px;font-size:12px;gap:6px}
+    .row-info{flex:1;min-width:0}
+    .row-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .row-sub{font-size:10px;color:var(--vscode-descriptionForeground);margin-top:1px}
     .kv-row{display:flex;gap:5px;margin-bottom:5px;align-items:center}
     .kv-row input{flex:1}
     .warning{color:var(--vscode-inputValidation-warningForeground,#c09000);font-size:11px;margin-top:3px}
@@ -134,19 +191,51 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     details summary{cursor:pointer;font-size:11px;color:var(--vscode-descriptionForeground);user-select:none;padding:4px 0}
     details summary:hover{color:var(--vscode-foreground)}
     details[open] summary{margin-bottom:6px}
+    /* key card */
+    .key-card{background:var(--vscode-editorWidget-background);border-radius:4px;padding:10px 12px;margin-bottom:14px}
+    .key-status{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+    .badge.set{background:var(--vscode-testing-iconPassed,#4caf50);color:#fff}
+    .badge.unset{background:var(--vscode-testing-iconFailed,#f44336);color:#fff}
+    .key-preview{font-size:11px;color:var(--vscode-descriptionForeground);font-family:monospace}
+    .btn-row{display:flex;gap:6px;flex-wrap:wrap}
+    .btn-row button{flex:1;margin-top:0;min-width:80px}
+    /* section header */
+    .section-hdr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--vscode-descriptionForeground);margin:16px 0 8px}
+    .empty{font-size:11px;color:var(--vscode-descriptionForeground);font-style:italic;padding:6px 0}
   </style>
 </head>
 <body>
-  <h2>🔌 Provedores Custom</h2>
 
-  <!-- LIST -->
-  <div id="list-section">
-    <div id="providers-list"><em style="font-size:11px">Carregando...</em></div>
-    <button id="btn-new">+ Novo provedor</button>
+  <!-- LIST VIEW -->
+  <div id="list-view">
+
+    <!-- ── 1. Chave OpenRouter ───────────────────────────────────── -->
+    <div class="key-card">
+      <div class="key-status">
+        <strong style="font-size:12px">OpenRouter</strong>
+        <span id="key-badge" class="badge unset">não configurada</span>
+      </div>
+      <div id="key-preview" class="key-preview" style="margin-bottom:8px;display:none"></div>
+      <div class="btn-row">
+        <button class="secondary" id="btn-set-key">🔑 Configurar chave</button>
+        <button class="secondary" id="btn-clear-key" style="display:none;color:var(--vscode-inputValidation-errorForeground,#f44)">✕ Remover</button>
+      </div>
+    </div>
+
+    <!-- ── 2. Agentes configurados ───────────────────────────────── -->
+    <div class="section-hdr">Agentes configurados</div>
+    <div id="agents-list"><em class="empty">Carregando…</em></div>
+
+    <!-- ── 3. Provedores Custom ──────────────────────────────────── -->
+    <div class="section-hdr">Provedores custom</div>
+    <div id="custom-list"><em class="empty">Carregando…</em></div>
+    <button id="btn-new" style="margin-top:6px">+ Novo provedor custom</button>
+
   </div>
 
-  <!-- FORM -->
-  <div id="form-section" style="display:none">
+  <!-- FORM VIEW -->
+  <div id="form-view" style="display:none">
 
     <!-- cURL Import -->
     <details id="curl-import">
@@ -268,7 +357,7 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     <div id="test-result" style="display:none" class="msg"></div>
 
     <button id="btn-save">✅ Salvar provedor</button>
-    <button id="btn-cancel" class="secondary" style="margin-top:4px">Cancelar</button>
+    <button id="btn-cancel" class="secondary" style="margin-top:4px">← Voltar</button>
     <div id="save-result" style="display:none" class="msg"></div>
   </div>
 
@@ -518,35 +607,88 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     });
 
     document.getElementById('btn-new').addEventListener('click', () => {
-      document.getElementById('list-section').style.display = 'none';
-      document.getElementById('form-section').style.display = 'block';
+      document.getElementById('list-view').style.display = 'none';
+      document.getElementById('form-view').style.display = 'block';
       updateAuthFields();
     });
     document.getElementById('btn-cancel').addEventListener('click', () => {
-      document.getElementById('form-section').style.display = 'none';
-      document.getElementById('list-section').style.display = 'block';
+      document.getElementById('form-view').style.display = 'none';
+      document.getElementById('list-view').style.display = 'block';
       document.getElementById('test-result').style.display = 'none';
       document.getElementById('save-result').style.display = 'none';
     });
 
-    // ── List rendering ─────────────────────────────────────────────
-    function renderList(providers) {
-      const el = document.getElementById('providers-list');
+    // ── Key card ───────────────────────────────────────────────────
+    function renderKey(keySet, keyPreview) {
+      const badge = document.getElementById('key-badge');
+      const preview = document.getElementById('key-preview');
+      const btnClear = document.getElementById('btn-clear-key');
+      badge.textContent = keySet ? 'configurada' : 'não configurada';
+      badge.className = 'badge ' + (keySet ? 'set' : 'unset');
+      if (keySet && keyPreview) {
+        preview.textContent = keyPreview;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+      btnClear.style.display = keySet ? 'block' : 'none';
+    }
+    document.getElementById('btn-set-key').addEventListener('click', () => {
+      vscode.postMessage({ type: 'setApiKey' });
+    });
+    document.getElementById('btn-clear-key').addEventListener('click', () => {
+      if (confirm('Remover a chave do OpenRouter? O chat ficará bloqueado se não houver provedores custom.')) {
+        vscode.postMessage({ type: 'clearApiKey' });
+      }
+    });
+
+    // ── Agents list ────────────────────────────────────────────────
+    const BUILTIN_PROVIDERS = ['openai','anthropic','google','mistral','openrouter','custom'];
+    function renderAgents(agents) {
+      const el = document.getElementById('agents-list');
+      const configured = (agents || []).filter(a => a.provider !== 'custom');
+      if (!configured.length) {
+        el.innerHTML = '<div class="empty">Nenhum agente customizado salvo em ~/.polypus/config.json</div>';
+        return;
+      }
+      el.innerHTML = configured.map(a => \`
+        <div class="row">
+          <div class="row-info">
+            <div class="row-title">\${escHtml(a.name)}</div>
+            <div class="row-sub">\${escHtml(a.provider)} · \${escHtml(a.model)}\${a.isDefault ? ' · padrão' : ''}</div>
+          </div>
+          <button data-rm-agent="\${escHtml(a.name)}" class="secondary sm" title="Remover agente">✕</button>
+        </div>
+      \`).join('');
+      el.querySelectorAll('[data-rm-agent]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (confirm('Remover agente "' + btn.dataset.rmAgent + '"?')) {
+            vscode.postMessage({ type: 'removeAgent', name: btn.dataset.rmAgent });
+          }
+        });
+      });
+    }
+
+    // ── Custom providers list ──────────────────────────────────────
+    const safetyLabel = { bypass: 'bypass', 'read-only': 'read-only', review: 'review' };
+    function renderCustom(providers) {
+      const el = document.getElementById('custom-list');
       if (!providers.length) {
-        el.innerHTML = '<em style="font-size:11px">Nenhum provedor configurado.</em>';
+        el.innerHTML = '<div class="empty">Nenhum provedor custom configurado.</div>';
         return;
       }
       el.innerHTML = providers.map(p => \`
-        <div class="provider-item">
-          <span>🔌 <strong>\${escHtml(p.name)}</strong>
-            <span style="color:var(--vscode-descriptionForeground);margin-left:6px">\${escHtml(p.authType)}</span>
-          </span>
-          <button data-remove="\${escHtml(p.name)}" class="secondary sm">✕</button>
+        <div class="row">
+          <div class="row-info">
+            <div class="row-title">🔌 \${escHtml(p.name)}</div>
+            <div class="row-sub">\${escHtml(p.authType)} · modo \${escHtml(p.safetyMode)}</div>
+          </div>
+          <button data-remove="\${escHtml(p.name)}" class="secondary sm" title="Remover">✕</button>
         </div>
       \`).join('');
       el.querySelectorAll('[data-remove]').forEach(btn => {
         btn.addEventListener('click', () => {
-          if (confirm('Remover ' + btn.dataset.remove + '?')) {
+          if (confirm('Remover provedor "' + btn.dataset.remove + '"?')) {
             vscode.postMessage({ type: 'remove', name: btn.dataset.remove });
           }
         });
@@ -556,7 +698,11 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     // ── Message handler ────────────────────────────────────────────
     window.addEventListener('message', e => {
       const msg = e.data;
-      if (msg.type === 'init' || msg.type === 'listResult') renderList(msg.providers);
+      if (msg.type === 'init' || msg.type === 'listResult') {
+        renderKey(msg.keySet, msg.keyPreview);
+        renderAgents(msg.agents);
+        renderCustom(msg.providers);
+      }
       if (msg.type === 'testResult') {
         const r = document.getElementById('test-result');
         r.className = 'msg ' + (msg.ok ? 'ok' : 'err');
@@ -567,7 +713,11 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
         r.style.display = 'block';
         r.className = 'msg ' + (msg.ok ? 'ok' : 'err');
         r.textContent = msg.message;
-        if (msg.ok) vscode.postMessage({ type: 'list' });
+        if (msg.ok) {
+          vscode.postMessage({ type: 'list' });
+          document.getElementById('form-view').style.display = 'none';
+          document.getElementById('list-view').style.display = 'block';
+        }
       }
       if (msg.type === 'removeResult' && msg.ok) vscode.postMessage({ type: 'list' });
     });

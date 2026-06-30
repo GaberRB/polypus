@@ -36,6 +36,16 @@ export function activate(context: vscode.ExtensionContext): void {
       void vscode.commands.executeCommand("polypus.chat.focus");
     }),
     vscode.commands.registerCommand("polypus.setApiKey", () => chatProvider.promptApiKey()),
+    vscode.commands.registerCommand("polypus.clearApiKey", async () => {
+      const confirm = await vscode.window.showWarningMessage(
+        "Remover a chave do OpenRouter? O chat ficará bloqueado se não houver provedores custom configurados.",
+        { modal: true },
+        "Remover",
+      );
+      if (confirm === "Remover") {
+        await chatProvider.clearApiKey();
+      }
+    }),
     vscode.commands.registerCommand("polypus.addCustomProvider", () => {
       void vscode.commands.executeCommand("polypus.customProvider.focus");
     }),
@@ -63,6 +73,12 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
 
     view.onDidDispose(() => this.bridge.stop());
     webview.onDidReceiveMessage((msg: WebviewToHost) => void this.onMessage(msg));
+  }
+
+  /** Remove the stored OpenRouter key. */
+  async clearApiKey(): Promise<void> {
+    await this.context.secrets.delete(SECRET_KEY);
+    await this.postInit();
   }
 
   /** Prompt for the OpenRouter key and persist it to SecretStorage. */
@@ -155,6 +171,11 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
 
       case "setApiKey":
         await this.promptApiKey();
+        return;
+
+      case "clearApiKey":
+        await this.context.secrets.delete(SECRET_KEY);
+        await this.postInit();
         return;
 
       case "rpc":

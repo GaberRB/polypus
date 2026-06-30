@@ -48,6 +48,12 @@ export interface CustomProviderInfo {
   safetyMode: string;
 }
 
+export interface OpenRouterKeyStatus {
+  set: boolean;
+  /** Masked preview, e.g. "sk-or-…abc" */
+  preview?: string;
+}
+
 /** Messages the webview sends to the host. */
 export type WebviewToHost =
   | { type: "ready" }
@@ -66,7 +72,8 @@ export type WebviewToHost =
   | { type: "rpc"; rpcId: number; method: "addCustomProvider"; payload: CustomProviderPayload }
   | { type: "rpc"; rpcId: number; method: "removeCustomProvider"; name: string }
   | { type: "rpc"; rpcId: number; method: "testCustomProvider"; payload: CustomProviderPayload }
-  | { type: "setApiKey" };
+  | { type: "setApiKey" }
+  | { type: "clearApiKey" };
 
 /** Messages the host sends to the webview. */
 export type HostToWebview =
