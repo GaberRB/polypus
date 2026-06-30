@@ -101,9 +101,14 @@ export async function testCustomProviderInProcess(p: CustomProviderPayload): Pro
     for (const [k, v] of Object.entries(p.params ?? {})) vars[`params.${k}`] = v;
 
     const applyTpl = (s: string) => s.replace(/\{\{([^}]+)\}\}/g, (_, k: string) => vars[k.trim()] ?? `{{${k}}}`);
+    const applyJsonTpl = (s: string) => s.replace(/\{\{([^}]+)\}\}/g, (_, k: string) => {
+      const val = vars[k.trim()];
+      if (val === undefined) return `{{${k}}}`;
+      return JSON.stringify(val).slice(1, -1);
+    });
 
     const resolvedUrl = applyTpl(p.chat.url);
-    const resolvedBody = applyTpl(p.chat.bodyTemplate);
+    const resolvedBody = applyJsonTpl(p.chat.bodyTemplate);
     const resolvedHeaders: Record<string, string> = { "Content-Type": "application/json" };
     for (const [k, v] of Object.entries(p.chat.headers ?? {})) resolvedHeaders[k] = applyTpl(v);
     if (token && p.auth.type === "api-key" && !resolvedHeaders[p.auth.headerName]) {

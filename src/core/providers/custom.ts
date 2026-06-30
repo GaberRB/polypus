@@ -75,6 +75,20 @@ function applyTemplate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{([^}]+)\}\}/g, (_, key: string) => vars[key.trim()] ?? `{{${key}}}`);
 }
 
+/**
+ * Same as applyTemplate but JSON-escapes each substituted value so the result
+ * is safe to embed inside a JSON string literal. Use for bodyTemplate only.
+ * e.g. prompt = `say "hi"` → `say \"hi\"` inside the JSON body.
+ */
+function applyJsonTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{([^}]+)\}\}/g, (_, key: string) => {
+    const val = vars[key.trim()];
+    if (val === undefined) return `{{${key}}}`;
+    // JSON.stringify escapes quotes, backslashes, control chars; strip the outer quotes.
+    return JSON.stringify(val).slice(1, -1);
+  });
+}
+
 function buildVars(
   prompt: string,
   params: Record<string, string>,
@@ -130,7 +144,7 @@ export class CustomProvider implements Provider {
     // 3. Substitute template variables
     const vars = buildVars(prompt, this.cfg.params, token);
     const resolvedUrl = applyTemplate(this.cfg.chat.url, vars);
-    const resolvedBody = applyTemplate(this.cfg.chat.bodyTemplate, vars);
+    const resolvedBody = applyJsonTemplate(this.cfg.chat.bodyTemplate, vars);
     const resolvedHeaders: Record<string, string> = { "Content-Type": "application/json" };
     for (const [k, v] of Object.entries(this.cfg.chat.headers)) {
       resolvedHeaders[k] = applyTemplate(v, vars);
