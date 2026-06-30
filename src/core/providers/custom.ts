@@ -1,5 +1,5 @@
 import type { CustomProviderConfig } from "../config/schema.js";
-import { query } from "../protocol/jsonpath.js";
+import { query, normalizeJsonPath } from "../protocol/jsonpath.js";
 import type { ChatRequest, ChatResponse, Provider } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -51,14 +51,14 @@ class OAuth2Client {
     }
     const body = (await res.json()) as unknown;
 
-    const token = query(body, this.opts.tokenPath);
+    const token = query(body, normalizeJsonPath(this.opts.tokenPath));
     if (typeof token !== "string" || !token) {
       throw new Error(`Token not found at path "${this.opts.tokenPath}" in auth response`);
     }
 
     let expiresAt = Infinity;
     if (this.opts.expiresPath) {
-      const exp = query(body, this.opts.expiresPath);
+      const exp = query(body, normalizeJsonPath(this.opts.expiresPath));
       if (typeof exp === "number" && exp > 0) expiresAt = now + exp * 1000;
     }
 
@@ -197,7 +197,7 @@ export class CustomProvider implements Provider {
     const data = (await res.json()) as unknown;
 
     // 5. Extract response text
-    const content = query(data, this.cfg.responsePath);
+    const content = query(data, normalizeJsonPath(this.cfg.responsePath));
     if (typeof content !== "string") {
       throw new Error(`Response not found at path "${this.cfg.responsePath}"`);
     }

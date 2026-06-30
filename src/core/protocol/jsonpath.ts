@@ -11,8 +11,8 @@ export function normalizeJsonPath(path: string): string {
 }
 
 export function query(obj: unknown, path: string): unknown {
-  const normalised = normalizeJsonPath(path);
-  if (!normalised.startsWith("$")) throw new Error(`JSONPath must start with $: ${path}`);
+  if (!path.startsWith("$")) throw new Error(`JSONPath must start with $: ${path}`);
+  const normalised = path;
 
   const segments = tokenise(normalised.slice(1));
   return evaluate(obj, segments);
