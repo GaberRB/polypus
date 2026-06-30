@@ -82,7 +82,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_110 módulos em `src/`._
+_118 módulos em `src/`._
 
 ### `src`
 - `lib.ts` — Public library surface for embedders of Polypus (e.g. the Cowork desktop app).
@@ -107,8 +107,10 @@ _110 módulos em `src/`._
 - `sessions.ts`
 - `setup.ts`
 - `stream-ask.ts`
+- `stream-confirm.ts`
 - `swarm.ts`
 - `usage.ts`
+- `web-server.ts` — `polypus web-server` — WebSocket server that lets the Chrome extension
 
 ### `src/core`
 - `version.ts`
@@ -167,14 +169,19 @@ _110 módulos em `src/`._
 - `policy.ts` — Safety policy shared by the permission engine: a deny-list of obviously
 
 ### `src/core/protocol`
+- `curl-parser.ts` — Parse a cURL command string into its components.
+- `custom-driver.ts` — CustomDriver — protocol driver exclusively for user-defined custom providers.
 - `driver.ts`
 - `emulated.ts`
+- `jsonpath.ts` — Minimal JSONPath evaluator — no external dependencies.
 - `native.ts`
 - `parser.ts`
 - `system-prompt.ts`
 
 ### `src/core/providers`
 - `anthropic.ts`
+- `custom-test.ts`
+- `custom.ts`
 - `defaults.ts`
 - `health.ts`
 - `ollama.ts` — Discovery helpers for a local Ollama instance.
@@ -219,6 +226,7 @@ _110 módulos em `src/`._
 - `update-plan.ts`
 - `web-fetch.ts`
 - `web-search.ts`
+- `web.ts` — Ferramentas web (navegador) — registradas no core do Polypus.
 - `write-file.ts`
 
 ### `src/core/util`

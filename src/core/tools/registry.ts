@@ -19,6 +19,7 @@ import { updatePlanTool } from "./update-plan.js";
 import { webFetchTool } from "./web-fetch.js";
 import { webSearchTool } from "./web-search.js";
 import { writeFileTool } from "./write-file.js";
+import { WEB_TOOLS } from "./web.js";
 
 /** All executable tools, keyed by name. `finish` is intercepted by the loop, not run here. */
 export const TOOLS: Record<string, Tool> = {
@@ -41,6 +42,7 @@ export const TOOLS: Record<string, Tool> = {
   [webSearchTool.spec.name]: webSearchTool,
   [webFetchTool.spec.name]: webFetchTool,
   [downloadTool.spec.name]: downloadTool,
+  ...Object.fromEntries(WEB_TOOLS.map((t) => [t.spec.name, t])),
 };
 
 /** Tool specs advertised to the model, including the `finish` sentinel. */

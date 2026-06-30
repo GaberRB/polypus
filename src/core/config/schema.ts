@@ -9,6 +9,72 @@ export const ProviderKind = z.enum([
 ]);
 export type ProviderKind = z.infer<typeof ProviderKind>;
 
+// ---------------------------------------------------------------------------
+// Custom Provider
+// ---------------------------------------------------------------------------
+
+export const CustomAuthType = z.enum(["none", "api-key", "oauth2-client-credentials"]);
+export type CustomAuthType = z.infer<typeof CustomAuthType>;
+
+export const CustomAuthConfig = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("none") }),
+  z.object({
+    type: z.literal("api-key"),
+    /** Header to inject the key into (e.g. "Authorization"). */
+    headerName: z.string().default("Authorization"),
+    /** Key value or env reference like "${MY_API_KEY}". */
+    apiKey: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("oauth2-client-credentials"),
+    tokenUrl: z.string().url(),
+    clientId: z.string().min(1),
+    /** Value or env reference like "${CLIENT_SECRET}". */
+    clientSecret: z.string().min(1),
+    /** OAuth2 grant type sent in the token request body. */
+    grantType: z.string().default("client_credentials"),
+    /** Extra headers to include in the token request. */
+    tokenHeaders: z.record(z.string()).default({}),
+    /** Extra body params to include in the token request (merged with grant_type/client_id/secret). */
+    tokenParams: z.record(z.string()).default({}),
+    /** JSONPath to extract token from auth response. */
+    tokenPath: z.string().default("$.access_token"),
+    /** JSONPath to extract expiry seconds from auth response. */
+    expiresPath: z.string().optional(),
+  }),
+]);
+export type CustomAuthConfig = z.infer<typeof CustomAuthConfig>;
+
+/**
+ * Generic API contract for a custom provider.
+ * Body is a JSON string template; headers and URL may contain:
+ *   {{prompt}}          — last user message
+ *   {{auth.token}}      — resolved Bearer token (oauth2/api-key)
+ *   {{params.<key>}}    — user-supplied param values
+ */
+export const CustomProviderConfig = z.object({
+  name: z.string().min(1),
+  auth: CustomAuthConfig,
+  chat: z.object({
+    /** May contain {{params.<key>}} placeholders. */
+    url: z.string().min(1),
+    method: z.string().default("POST"),
+    /** Header values may contain {{auth.token}} / {{params.<key>}}. */
+    headers: z.record(z.string()).default({}),
+    /** JSON string template; must include {{prompt}}. */
+    bodyTemplate: z.string().min(1),
+  }),
+  /** JSONPath to extract reply text from the chat response. */
+  responsePath: z.string().min(1),
+  /** JSONPath to extract a session/context ID from the response (optional). */
+  sessionPath: z.string().optional(),
+  /** Static values for {{params.<key>}} placeholders in URL / headers / body. */
+  params: z.record(z.string()).default({}),
+  /** Safety mode for this provider. */
+  safetyMode: z.enum(["bypass", "read-only", "review"]).default("review"),
+});
+export type CustomProviderConfig = z.infer<typeof CustomProviderConfig>;
+
 /**
  * How the harness should drive tool-calling for an agent.
  * - `auto`: probe the provider/model and decide (native if available, else emulated).
@@ -170,6 +236,7 @@ export const PolypusConfig = z.object({
   locale: Locale.default("pt-BR"),
   defaultAgent: z.string().optional(),
   agents: z.array(AgentConfig).default([]),
+  customProviders: z.array(CustomProviderConfig).default([]),
   permissions: Permissions.default({}),
   /** Embeddings backend for the repository index (optional until `polypus index` is used). */
   embeddings: EmbeddingsConfig.optional(),

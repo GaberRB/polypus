@@ -8,6 +8,12 @@ import { randomBytes } from "node:crypto";
 import { RunBridge } from "./host/runBridge.js";
 import { execCli, execCliJson } from "./host/cli.js";
 import { listConfiguredAgents } from "./host/agents.js";
+import {
+  listCustomProviders,
+  addCustomProvider,
+  removeCustomProvider,
+} from "./host/custom-providers.js";
+import { CustomProviderPanelProvider } from "./host/custom-provider-panel.js";
 import type { HostToWebview, WebviewToHost } from "./protocol.js";
 import type { FileEntry, Mode } from "@gaberrb/polypus-chat-ui";
 
@@ -16,15 +22,33 @@ const SECRET_KEY = "polypus.openrouterApiKey";
 const KEY_ENV = "OPENROUTER_API_KEY";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const provider = new PolypusChatProvider(context);
+  const chatProvider = new PolypusChatProvider(context);
+  const customProviderPanel = new CustomProviderPanelProvider(context);
+
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider("polypus.chat", provider, {
+    vscode.window.registerWebviewViewProvider("polypus.chat", chatProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+    vscode.window.registerWebviewViewProvider("polypus.customProvider", customProviderPanel, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.commands.registerCommand("polypus.focusChat", () => {
       void vscode.commands.executeCommand("polypus.chat.focus");
     }),
-    vscode.commands.registerCommand("polypus.setApiKey", () => provider.promptApiKey()),
+    vscode.commands.registerCommand("polypus.setApiKey", () => chatProvider.promptApiKey()),
+    vscode.commands.registerCommand("polypus.clearApiKey", async () => {
+      const confirm = await vscode.window.showWarningMessage(
+        "Remover a chave do OpenRouter? O chat ficará bloqueado se não houver provedores custom configurados.",
+        { modal: true },
+        "Remover",
+      );
+      if (confirm === "Remover") {
+        await chatProvider.clearApiKey();
+      }
+    }),
+    vscode.commands.registerCommand("polypus.addCustomProvider", () => {
+      void vscode.commands.executeCommand("polypus.customProvider.focus");
+    }),
   );
 }
 
@@ -51,6 +75,12 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
     webview.onDidReceiveMessage((msg: WebviewToHost) => void this.onMessage(msg));
   }
 
+  /** Remove the stored OpenRouter key. */
+  async clearApiKey(): Promise<void> {
+    await this.context.secrets.delete(SECRET_KEY);
+    await this.postInit();
+  }
+
   /** Prompt for the OpenRouter key and persist it to SecretStorage. */
   async promptApiKey(): Promise<void> {
     const key = await vscode.window.showInputBox({
@@ -69,7 +99,11 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
   }
 
   private async postInit(): Promise<void> {
-    const hasKey = Boolean(await this.context.secrets.get(SECRET_KEY));
+    const hasOpenRouterKey = Boolean(await this.context.secrets.get(SECRET_KEY));
+    // Unblock the composer when there's at least one custom provider configured —
+    // those don't need an OpenRouter key.
+    const customProviders = await listCustomProviders();
+    const hasKey = hasOpenRouterKey || customProviders.length > 0;
     const cfg = vscode.workspace.getConfiguration("polypus");
     this.post({
       type: "init",
@@ -92,8 +126,20 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
           this.post({ type: "event", event: { type: "end" } });
           return;
         }
+        const selectedAgent = msg.controls.agent ?? "";
+        const [customProviders, allAgents] = await Promise.all([
+          listCustomProviders(),
+          listConfiguredAgents(),
+        ]);
+        // An agent is "custom" when explicitly selected OR when there are no
+        // regular (OpenRouter) agents at all — any run will use a custom provider.
+        const hasRegularAgents = allAgents.some((a) => a.provider !== "custom");
+        const isCustomAgent =
+          customProviders.some((p) => p.name === selectedAgent || `🔌 ${p.name}` === selectedAgent) ||
+          (!hasRegularAgents && customProviders.length > 0);
+
         const key = await this.context.secrets.get(SECRET_KEY);
-        if (!key) {
+        if (!key && !isCustomAgent) {
           await this.promptApiKey();
           const retry = await this.context.secrets.get(SECRET_KEY);
           if (!retry) {
@@ -102,13 +148,18 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
             return;
           }
         }
+
+        // Only inject the OpenRouter key when it's actually needed.
+        const env: Record<string, string> = {};
+        if (key) env[KEY_ENV] = key;
+
         this.bridge.start(
           {
             task: msg.task,
             controls: msg.controls,
             cwd,
             resumeSessionId: msg.resumeSessionId,
-            env: { [KEY_ENV]: (await this.context.secrets.get(SECRET_KEY)) ?? "" },
+            env,
           },
           (event) => this.post({ type: "event", event }),
         );
@@ -123,8 +174,17 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
         this.bridge.respond(msg.id, msg.selected);
         return;
 
+      case "respondConfirm":
+        this.bridge.confirmRespond(msg.id, msg.ok);
+        return;
+
       case "setApiKey":
         await this.promptApiKey();
+        return;
+
+      case "clearApiKey":
+        await this.context.secrets.delete(SECRET_KEY);
+        await this.postInit();
         return;
 
       case "rpc":
@@ -195,6 +255,33 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
       if (msg.method === "removeAgent") {
         await execCli(["remove-agent", msg.name]);
         this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listConfiguredAgents() });
+        return;
+      }
+      if (msg.method === "listCustomProviders") {
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listCustomProviders() });
+        return;
+      }
+      if (msg.method === "addCustomProvider") {
+        await addCustomProvider(msg.payload);
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listCustomProviders() });
+        return;
+      }
+      if (msg.method === "removeCustomProvider") {
+        await removeCustomProvider(msg.name);
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: await listCustomProviders() });
+        return;
+      }
+      if (msg.method === "testCustomProvider") {
+        const res = (await execCliJson(
+          ["test-custom-provider", "--json", "--payload", JSON.stringify(msg.payload)],
+          undefined,
+        )) as { ok?: boolean; message?: string; reply?: string } | null;
+        this.post({
+          type: "rpcResult",
+          rpcId: msg.rpcId,
+          ok: true,
+          data: res?.message ?? (res?.ok ? "✅ OK" : "❌ Falha"),
+        });
         return;
       }
     } catch (err) {

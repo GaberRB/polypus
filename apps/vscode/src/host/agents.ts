@@ -16,6 +16,7 @@ function configPath(): string {
 
 interface RawConfig {
   agents?: Array<{ name?: string; provider?: string; model?: string }>;
+  customProviders?: Array<{ name?: string; auth?: { type?: string } }>;
   defaultAgent?: string;
 }
 
@@ -26,7 +27,7 @@ export async function listConfiguredAgents(): Promise<AgentInfo[]> {
   } catch {
     return []; // no config yet, or unreadable — empty switcher
   }
-  return (raw.agents ?? [])
+  const agents: AgentInfo[] = (raw.agents ?? [])
     .filter((a): a is { name: string; provider: string; model: string } =>
       Boolean(a.name && a.provider && a.model),
     )
@@ -36,4 +37,15 @@ export async function listConfiguredAgents(): Promise<AgentInfo[]> {
       model: a.model,
       isDefault: a.name === raw.defaultAgent,
     }));
+
+  const customAgents: AgentInfo[] = (raw.customProviders ?? [])
+    .filter((p): p is { name: string; auth: { type: string } } => Boolean(p.name))
+    .map((p) => ({
+      name: `🔌 ${p.name}`,
+      provider: "custom",
+      model: p.name,
+      isDefault: false,
+    }));
+
+  return [...agents, ...customAgents];
 }

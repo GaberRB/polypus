@@ -10,9 +10,9 @@ import {
   type ResolvedExecution,
   type RetrievalConfig,
 } from "../../core/config/schema.js";
-import { loadConfig, resolveAgent } from "../../core/config/store.js";
+import { loadConfig, resolveAgent, findCustomProvider } from "../../core/config/store.js";
 import { gatherContext } from "../../core/context/auto-context.js";
-import { createProvider } from "../../core/providers/registry.js";
+import { createProvider, createCustomProvider } from "../../core/providers/registry.js";
 import { PermissionEngine, type ConfirmRequest, type ConfirmResult } from "../../core/permissions/modes.js";
 import { hunkLabel, type Hunk } from "../../core/permissions/diff.js";
 import { runAgent, type AgentEvents, type RunResult } from "../../core/agent/loop.js";
@@ -39,6 +39,7 @@ import { loadSkills, makeUseSkillTool } from "../../core/skills/index.js";
 import type { AskRequest } from "../../core/tools/types.js";
 import { createJsonCollector, createNdjsonStreamer } from "./json-output.js";
 import { createStreamAsk } from "./stream-ask.js";
+import { createStreamConfirm } from "./stream-confirm.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
 import { runSwarmSession } from "./swarm.js";
@@ -46,6 +47,32 @@ import { printWelcome } from "../../ui/banner.js";
 import { Spinner } from "../../ui/spinner.js";
 import { t } from "../../core/i18n/index.js";
 import { listenForCancel } from "../../ui/cancel.js";
+
+/**
+ * Resolve a named agent from regular agents OR custom providers.
+ * Accepts names with or without the "🔌 " prefix added by the VSCode switcher.
+ * When name is empty and there are no regular agents, falls back to the first
+ * custom provider so custom-only setups work without an explicit --agent flag.
+ */
+function resolveAnyAgent(
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  name?: string,
+): ReturnType<typeof createProvider> {
+  const cleanName = name?.replace(/^🔌\s*/u, "") ?? name;
+
+  // Explicit custom provider lookup.
+  if (cleanName) {
+    const cp = findCustomProvider(config, cleanName);
+    if (cp) return createCustomProvider(cp);
+  }
+
+  // No name given (or empty) and no regular agents → use first custom provider.
+  if (!cleanName && config.agents.length === 0 && config.customProviders?.length) {
+    return createCustomProvider(config.customProviders[0]!);
+  }
+
+  return createProvider(resolveAgent(config, cleanName || undefined));
+}
 
 export interface RunOptions {
   agent?: string;
@@ -106,7 +133,11 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     if (!seeded && !opts.json) console.log(pc.dim(t("sessions.noneToContinue")));
   }
 
-  const agentConfig = resolveAgent(config, opts.agent ?? seeded?.agentName);
+  // Strip the "🔌 " prefix the VSCode switcher adds to custom provider names.
+  const rawAgentName = opts.agent ?? seeded?.agentName;
+  const cleanAgentName = rawAgentName?.replace(/^🔌\s*/u, "") ?? rawAgentName;
+  const initialResolved = resolveAnyAgent(config, cleanAgentName);
+  const agentConfig = initialResolved.config;
   // `--model` overrides the resolved agent's model (browse-and-run any OpenRouter model).
   if (opts.model) agentConfig.model = opts.model;
 
@@ -132,8 +163,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
 
   // Resolve the active agent freshly each run so /agent, /add and /remove work.
   const runTask = async (taskText: string): Promise<void> => {
-    const active = resolveAgent(config, session.agentName);
-    const resolved = createProvider(active);
+    const resolved = resolveAnyAgent(config, session.agentName);
     await executeTask(taskText, resolved, workspace, session, false, {
       embeddings: config.embeddings,
       retrieval: config.retrieval,
@@ -143,7 +173,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   if (opts.json && !task) throw new Error(t("run.jsonNeedsTask"));
 
   if (task) {
-    const resolved = createProvider(agentConfig);
+    const resolved = resolveAnyAgent(config, agentConfig.name);
     if (!opts.json) {
       console.log(
         pc.dim(
@@ -174,7 +204,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   }
 
   // Interactive: full welcome screen with the animated banner.
-  const resolved = createProvider(agentConfig);
+  const resolved = resolveAnyAgent(config, agentConfig.name);
   await printWelcome({
     agentName: resolved.config.name,
     provider: resolved.config.provider,
@@ -266,10 +296,16 @@ async function executeTask(
   // Interactive ask_user over the stream: emit a choice-card prompt and await
   // the host's selection on stdin (the desktop bridge writes the reply line).
   const streamAsk = streamer ? createStreamAsk(emitLine) : undefined;
+  // Permission confirms over the stream: emit a confirm event and await
+  // the host's approve/deny response on stdin (same channel as ask_user).
+  const streamConfirm = streamer ? createStreamConfirm(emitLine) : undefined;
   let askInput: readline.Interface | undefined;
-  if (streamAsk) {
+  if (streamAsk || streamConfirm) {
     askInput = readline.createInterface({ input: process.stdin });
-    askInput.on("line", (line) => streamAsk.handleLine(line));
+    askInput.on("line", (line) => {
+      streamAsk?.handleLine(line);
+      streamConfirm?.handleLine(line);
+    });
   }
 
   // Emit session ID immediately so the caller can wire --resume for follow-ups.
@@ -298,16 +334,17 @@ async function executeTask(
     policy: { workspace, allow: session.allow, deny: session.deny },
     allowedCommands: session.allowedCommands,
     network: session.network,
-    // Headless runs have no TTY for confirmations — use --mode bypass instead.
-    confirm: json
-      ? async () => false
-      : async (req) => {
-          spinner.stop();
-          cancel.pause(); // hand stdin to the clack prompt
-          const ok = await confirmAction(req);
-          cancel.resume();
-          return ok;
-        },
+    confirm: streamConfirm
+      ? streamConfirm.confirm
+      : json
+        ? async () => false
+        : async (req) => {
+            spinner.stop();
+            cancel.pause(); // hand stdin to the clack prompt
+            const ok = await confirmAction(req);
+            cancel.resume();
+            return ok;
+          },
   });
 
   // Load user-declared custom tools and hooks from .poly/ (if any), plus any
@@ -385,6 +422,7 @@ async function executeTask(
     spinner.stop();
     cancel.dispose();
     streamAsk?.dispose(); // resolve any pending choice card so we don't hang
+    streamConfirm?.dispose(); // resolve any pending permission confirm so we don't hang
     askInput?.close();
     await mcp.close(); // shut down any spawned MCP servers
   }

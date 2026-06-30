@@ -79,6 +79,11 @@ export class RunBridge {
     this.child?.stdin?.write(JSON.stringify({ type: "ask_response", id, selected }) + "\n");
   }
 
+  /** Answer a pending permission `confirm` event by writing the result to stdin. */
+  confirmRespond(id: number, ok: boolean): void {
+    this.child?.stdin?.write(JSON.stringify({ type: "confirm_response", id, ok }) + "\n");
+  }
+
   /** Kill the active run, if any. */
   stop(): void {
     if (this.child) {

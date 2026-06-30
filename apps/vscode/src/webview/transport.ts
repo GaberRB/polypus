@@ -20,11 +20,22 @@ interface VsCodeApi {
 
 declare function acquireVsCodeApi(): VsCodeApi;
 
+const CONFIRM_APPROVE = "✅ Aprovar";
+const CONFIRM_DENY = "❌ Negar";
+
+function confirmKindLabel(kind: string): string {
+  if (kind === "write") return "✎ Escrever arquivo";
+  if (kind === "command") return "⊡ Executar comando";
+  return "⬡ Requisição de rede";
+}
+
 export class VsCodeTransport implements ChatTransport {
   private readonly vscode = acquireVsCodeApi();
   private onEvent: ((ev: StreamEvent) => void) | null = null;
   private rpcSeq = 0;
   private readonly pending = new Map<number, (msg: Extract<HostToWebview, { type: "rpcResult" }>) => void>();
+  /** Tracks ask_user ids that are actually permission confirm requests. */
+  private readonly pendingConfirms = new Set<number>();
 
   constructor() {
     window.addEventListener("message", (e: MessageEvent<HostToWebview>) => {
@@ -60,7 +71,26 @@ export class VsCodeTransport implements ChatTransport {
     onEvent: (ev: StreamEvent) => void,
     opts?: { resumeSessionId?: string },
   ): () => void {
-    this.onEvent = onEvent;
+    this.pendingConfirms.clear();
+    this.onEvent = (ev: StreamEvent) => {
+      // Convert permission confirm events into ask_user cards so the existing
+      // ChoiceCard UI renders them inline without any chat-ui changes.
+      if (ev.type === "confirm") {
+        const id = ev.id as number;
+        const kind = ev.kind as string;
+        const summary = ev.summary as string;
+        this.pendingConfirms.add(id);
+        onEvent({
+          type: "ask_user",
+          id,
+          question: `${confirmKindLabel(kind)}: ${summary}`,
+          options: [CONFIRM_APPROVE, CONFIRM_DENY],
+          multi: false,
+        });
+        return;
+      }
+      onEvent(ev);
+    };
     this.vscode.postMessage({ type: "run", task, controls, resumeSessionId: opts?.resumeSessionId });
     return () => {
       this.onEvent = null;
@@ -68,7 +98,14 @@ export class VsCodeTransport implements ChatTransport {
   }
 
   respondAsk(id: number, selected: string[] | null): void {
-    this.vscode.postMessage({ type: "respondAsk", id, selected });
+    if (this.pendingConfirms.has(id)) {
+      // This is a permission confirm masquerading as ask_user — route accordingly.
+      this.pendingConfirms.delete(id);
+      const ok = selected?.[0] === CONFIRM_APPROVE;
+      this.vscode.postMessage({ type: "respondConfirm", id, ok });
+    } else {
+      this.vscode.postMessage({ type: "respondAsk", id, selected });
+    }
   }
 
   stopRun(): void {

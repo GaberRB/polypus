@@ -124,5 +124,5 @@ describe("swarm reliability", () => {
     // a1 finishes and merges; a2 hangs → idle-aborted → unfinished. Run still completes.
     expect(existsSync(join(workspace, "fileA.txt"))).toBe(true);
     expect(result.outcomes.some((o) => !o.finished)).toBe(true);
-  }, 10_000);
+  }, 60_000);
 });

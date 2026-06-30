@@ -1,6 +1,7 @@
-import type { AgentConfig } from "../config/schema.js";
+import type { AgentConfig, CustomProviderConfig } from "../config/schema.js";
 import { resolveSecret } from "../config/store.js";
 import { AnthropicProvider } from "./anthropic.js";
+import { CustomProvider } from "./custom.js";
 import { DEFAULT_BASE_URL } from "./defaults.js";
 import { OpenAICompatibleProvider } from "./openai-compatible.js";
 import type { Provider } from "./types.js";
@@ -12,6 +13,8 @@ export interface ResolvedAgent {
   config: AgentConfig;
   provider: Provider;
   toolMode: ResolvedToolMode;
+  /** True when this agent was created from a user-defined custom provider config. */
+  isCustomProvider?: boolean;
 }
 
 /**
@@ -51,4 +54,19 @@ export function createProvider(agent: AgentConfig): ResolvedAgent {
   }
 
   return { config: agent, provider, toolMode: resolveToolMode(agent) };
+}
+
+/** Create a provider from a custom provider config (always emulated tool mode). */
+export function createCustomProvider(cfg: CustomProviderConfig): ResolvedAgent {
+  return {
+    config: {
+      name: cfg.name,
+      provider: "openai-compatible", // placeholder kind — not used by CustomProvider
+      model: cfg.name,
+      toolMode: "emulated",
+    },
+    provider: new CustomProvider(cfg),
+    toolMode: "emulated",
+    isCustomProvider: true,
+  };
 }

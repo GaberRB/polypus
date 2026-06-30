@@ -29,6 +29,9 @@ export {
   findAgent,
   resolveSecret,
   upsertAgent,
+  upsertCustomProvider,
+  removeCustomProvider,
+  findCustomProvider,
   type UpsertAgentInput,
 } from "./core/config/store.js";
 
@@ -54,13 +57,23 @@ export {
   DEFAULT_BASE_URL,
   REQUIRES_API_KEY,
   SUGGESTED_KEY_ENV,
+  CUSTOM_AUTH_LABELS,
+  CUSTOM_AUTH_DESCRIPTION,
 } from "./core/providers/defaults.js";
+
+export { CustomProvider } from "./core/providers/custom.js";
+export { testCustomProvider, type CustomProviderTestResult } from "./core/providers/custom-test.js";
+export { query as jsonPathQuery } from "./core/protocol/jsonpath.js";
+export { parseCurl, type CurlResult } from "./core/protocol/curl-parser.js";
 
 export type {
   AgentConfig,
   PolypusConfig,
   ProviderKind,
   PermissionMode,
+  CustomProviderConfig,
+  CustomAuthType,
+  CustomAuthConfig,
 } from "./core/config/schema.js";
 
 export { McpClient, type McpToolDef } from "./core/mcp/client.js";

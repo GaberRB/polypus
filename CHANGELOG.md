@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Custom Provider** — integre qualquer API de IA no Polypus sem alterar código:
+  - Schema zod `CustomProviderConfig`: auth `none` / `api-key` / `oauth2-client-credentials`, contrato de request/response com template `{{prompt}}`, `{{params.x}}`, `{{auth.token}}`, JSONPath de resposta, safety mode por provedor.
+  - `CustomProvider` (`src/core/providers/custom.ts`): `OAuth2Client` com token cache em memória e auto-refresh 30s antes da expiração; substituição de placeholders em URL, headers e body.
+  - JSONPath inline (`src/core/protocol/jsonpath.ts`): `$.a.b`, `arr[0]`, `arr[*].name` — zero dependências externas.
+  - `testCustomProvider`: smoke test end-to-end (auth → chat "Oi" → JSONPath extrai resposta).
+  - `upsertCustomProvider` / `removeCustomProvider` / `findCustomProvider` exportados em `lib.ts`.
+  - **VSCode — painel lateral "Provedores Custom"**: formulário webview com seleção de auth type acompanhada de descrição, campos dinâmicos por tipo, aviso de credencial inline (`${ENV_VAR}` recomendado), detecção automática de `{{params.x}}` e geração de campos de valor, teste de conectividade integrado, safety mode (Bypass / Read-Only / Review).
+  - Custom providers aparecem no switcher de modelo com ícone 🔌.
+  - i18n bilíngue (pt-BR + en) para todas as novas strings. (issue [#191](https://github.com/GaberRB/polypus/issues/191))
+
+- `polypus web-server` — WebSocket server (port 9876) that spawns `polypus run --json --stream` as a child process and forwards NDJSON events line-by-line to WebSocket clients (`ws`). Supports `run`, `stop`, `respond_ask` and `respond_confirm` messages, enabling the Chrome/VSCode extension bridge. (Task 06)
+- Chrome extension scaffold (`apps/chrome/`) — Manifest V3, tsconfig, esbuild build pipeline, icons, shared types, i18n, permissions. (Task 01)
+- Popup UI (`apps/chrome/src/popup/`) — React app with task input, status indicator, locale toggle, connection status feedback. (Task 02)
+- Side Panel UI (`apps/chrome/src/sidepanel/`) — React chat app with streaming assistant text, timeline of web actions (navigate/click/type/extract/scroll/screenshot), confirm cards for review mode, usage bar, permission bar. (Task 03)
+- Service Worker (`apps/chrome/src/background/`) — WebSocket client with exponential backoff reconnect, NDJSON event routing to popup/side-panel, session state management, badge updates. (Task 04)
+- Content Script (`apps/chrome/src/content/`) — Injected web actions: navigate, extract, scroll, getHtml, click, type, execute, wait. Responds to `chrome.runtime.onMessage` from background. (Task 05)
+- Screenshot optimizer (`apps/chrome/src/content/screenshot.ts`) — JPEG compression (80%, max 1280px), interactive element extraction (links, buttons, inputs with CSS selectors), vision model detection. (Task 07)
+- Plan mode + permissions (`apps/chrome/src/shared/permissions.ts`) — PermissionBar UI with mode selector (plan/review/bypass), domain allow/block list with `isUrlAllowed` and `isActionAllowed` enforcement. (Task 08)
+- Chrome extension landing page (`docs/chrome.html`) — bilingual landing page with architecture diagram, use cases, installation steps, permission modes, linked from `docs/index.html` and `docs/vscode.html` nav. i18n strings in `docs/app.js`. (Task 09)
+- Web tools in core (`src/core/tools/web.ts`) — 9 bridge tools (`web_navigate`, `web_extract`, `web_scroll`, `web_screenshot`, `web_get_html`, `web_wait`, `web_click`, `web_type`, `web_execute`) registered in `registry.ts`. Headless fallback for `web_navigate` (fetch-based). (Task 10)
+
 ## [0.6.6] - 2026-06-27
 
 ### Changed

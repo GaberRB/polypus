@@ -2,7 +2,7 @@
   "name": "polypus-vscode",
   "displayName": "Polypus — agentic AI chat",
   "description": "Chat agêntico no VSCode com a sua chave e modelos grátis/baratos (OpenRouter). Sem assinatura.",
-  "version": "0.3.0",
+  "version": "0.5.12",
   "private": true,
   "publisher": "gaberrb",
   "author": "Gabriel Rios",
@@ -35,6 +35,11 @@
           "id": "polypus.chat",
           "name": "Chat",
           "type": "webview"
+        },
+        {
+          "id": "polypus.customProvider",
+          "name": "Provedores & Chaves",
+          "type": "webview"
         }
       ]
     },
@@ -46,6 +51,14 @@
       {
         "command": "polypus.setApiKey",
         "title": "Polypus: Configurar chave do OpenRouter"
+      },
+      {
+        "command": "polypus.addCustomProvider",
+        "title": "Polypus: Adicionar provedor custom"
+      },
+      {
+        "command": "polypus.clearApiKey",
+        "title": "Polypus: Remover chave do OpenRouter"
       }
     ],
     "keybindings": [

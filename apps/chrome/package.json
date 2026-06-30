@@ -1,0 +1,31 @@
+{
+  "name": "@gaberrb/polypus-chrome",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Polypus Web Agent — Chrome extension for browser-based AI agent actions",
+  "author": "Gabriel Rios",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.mjs --watch",
+    "build": "node esbuild.mjs",
+    "package": "npm run build && node -e \"const{cpSync,existsSync,mkdirSync}=require('fs');const{join}=require('path');const d=join(__dirname,'dist');if(!existsSync(d))mkdirSync(d);cpSync(join(__dirname,'manifest.json'),join(d,'manifest.json'),{recursive:true});const i=join(d,'icons');if(!existsSync(i))mkdirSync(i);require('fs').readdirSync(join(__dirname,'icons')).forEach(f=>cpSync(join(__dirname,'icons',f),join(i,f)));console.log('✓ copied manifest + icons') \"",
+    "package-zip": "npm run package && node zip.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "echo 'no linter yet'"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.280",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.9"
+  }
+}
