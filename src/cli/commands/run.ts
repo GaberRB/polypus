@@ -163,7 +163,6 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   // Resolve the active agent freshly each run so /agent, /add and /remove work.
   const runTask = async (taskText: string): Promise<void> => {
     const resolved = resolveAnyAgent(config, session.agentName);
-    // isCustomProvider flows into promptContext inside executeTask via the resolved param.
     await executeTask(taskText, resolved, workspace, session, false, {
       embeddings: config.embeddings,
       retrieval: config.retrieval,
@@ -392,7 +391,6 @@ async function executeTask(
         allow: session.allow,
         planFirst: session.exec.planFirst,
         skills: skills.map((s) => ({ name: s.name, description: s.description })),
-        isCustomProvider: resolved.isCustomProvider,
       },
       history: session.history,
       maxSteps: session.maxSteps,

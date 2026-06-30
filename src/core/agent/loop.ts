@@ -1,4 +1,5 @@
 import { makeDriver } from "../protocol/emulated.js";
+import { CustomDriver } from "../protocol/custom-driver.js";
 import type { PromptContext } from "../protocol/system-prompt.js";
 import type { PermissionEngine } from "../permissions/modes.js";
 import type { ResolvedAgent } from "../providers/registry.js";
@@ -127,7 +128,9 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const allSpecs = [...baseSpecs.slice(0, -1), ...extra.map((tl) => tl.spec), finishSpec];
   const resolveTool = (name: string): Tool | undefined => extraByName.get(name) ?? getTool(name);
 
-  const driver = makeDriver(agent.toolMode, allSpecs);
+  const driver = agent.isCustomProvider
+    ? new CustomDriver(allSpecs)
+    : makeDriver(agent.toolMode, allSpecs);
   const ctx = { workspace: opts.workspace, permissions, ask: opts.ask, onSkill: events?.onSkill };
 
   const seeding = !(opts.history && opts.history.length > 0);

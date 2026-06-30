@@ -18,13 +18,6 @@ export interface PromptContext {
   planFirst?: boolean;
   /** Skills index (name + description) advertised to the model; loaded via use_skill. */
   skills?: Array<{ name: string; description: string }>;
-  /**
-   * True when the underlying provider is a user-defined custom provider.
-   * Enables a stronger "execute tools immediately — no prose explanations" block
-   * in the emulated system prompt, since these models are general chat LLMs that
-   * tend to explain what they would do instead of doing it.
-   */
-  isCustomProvider?: boolean;
 }
 
 /** Render the skills index for the prompt, or "" when there are none. */
@@ -108,25 +101,6 @@ function describeParams(tool: ToolSpec): string {
   return lines.length > 0 ? lines.join("\n") : "      (no arguments)";
 }
 
-/**
- * Extra enforcement block injected for custom providers.
- * These are general-purpose chat LLMs that tend to reply with prose
- * ("I would do X by running Y…") instead of actually emitting tool calls.
- */
-function customProviderEnforcement(): string {
-  return [
-    "",
-    "⚠️  CRITICAL — YOU MUST ACT, NOT EXPLAIN:",
-    "- You are NOT a chatbot. You are an autonomous agent with tools. Every response MUST be one or more tool calls.",
-    "- NEVER write prose like 'I will do X' or 'To accomplish this, you should…' — just DO it with a tool call.",
-    "- NEVER describe what code to write — use the write_file tool to write it directly.",
-    "- NEVER say you 'cannot' do something that a tool can do.",
-    "- If the user asks a question that requires looking at files, use read_file first, then answer inside finish.",
-    "- Your ONLY valid outputs are <polypus:tool ...> XML blocks. Anything else is a failure.",
-    "- When done, ALWAYS call finish with a summary. Never end a turn without a tool call.",
-  ].join("\n");
-}
-
 export function buildEmulatedSystemPrompt(tools: ToolSpec[], ctx: PromptContext): string {
   const toolDocs = tools
     .map(
@@ -145,7 +119,6 @@ export function buildEmulatedSystemPrompt(tools: ToolSpec[], ctx: PromptContext)
     "- You may include one or more tool blocks per turn. After you receive the results, continue.",
     "- When the entire task is complete, emit a finish call:",
     '    <polypus:tool name="finish"><arg name="summary">what you did</arg></polypus:tool>',
-    ctx.isCustomProvider ? customProviderEnforcement() : "",
     "",
     "Available tools:",
     "",
