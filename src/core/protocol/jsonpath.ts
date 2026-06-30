@@ -5,10 +5,16 @@
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 
-export function query(obj: unknown, path: string): unknown {
-  if (!path.startsWith("$")) throw new Error(`JSONPath must start with $: ${path}`);
+/** Normalise a JSONPath expression: if it doesn't start with "$", prepend "$.". */
+export function normalizeJsonPath(path: string): string {
+  return path.startsWith("$") ? path : `$.${path}`;
+}
 
-  const segments = tokenise(path.slice(1));
+export function query(obj: unknown, path: string): unknown {
+  const normalised = normalizeJsonPath(path);
+  if (!normalised.startsWith("$")) throw new Error(`JSONPath must start with $: ${path}`);
+
+  const segments = tokenise(normalised.slice(1));
   return evaluate(obj, segments);
 }
 

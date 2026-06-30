@@ -331,8 +331,9 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     <label style="margin-top:8px">Template do body (JSON com {{prompt}})</label>
     <textarea id="body-template">{\n  "user_prompt": "{{prompt}}"\n}</textarea>
 
-    <label>JSONPath da resposta (ex: $.message)</label>
+    <label>JSONPath da resposta (ex: $.message ou $.choices[0].message.content)</label>
     <input id="response-path" placeholder="$.message" />
+    <div id="response-path-hint" class="warning" style="display:none">💡 Prefixo <code>$.</code> ausente — será adicionado automaticamente (ex: <em>message</em> → <em>$.message</em>)</div>
 
     <label>JSONPath do session ID (opcional)</label>
     <input id="session-path" placeholder="$.message_id" />
@@ -435,6 +436,13 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     }
     document.getElementById('chat-url').addEventListener('input', refreshParamSection);
     document.getElementById('body-template').addEventListener('input', refreshParamSection);
+
+    // ── JSONPath hint ──────────────────────────────────────────────
+    document.getElementById('response-path').addEventListener('input', function() {
+      const val = this.value.trim();
+      const hint = document.getElementById('response-path-hint');
+      hint.style.display = (val && !val.startsWith('$')) ? 'block' : 'none';
+    });
 
     // ── cURL import ────────────────────────────────────────────────
     function parseCurlClient(raw) {
