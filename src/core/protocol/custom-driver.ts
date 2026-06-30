@@ -58,30 +58,48 @@ export function buildCustomProviderSystemPrompt(tools: ToolSpec[], ctx: PromptCo
     "",
     "## HOW TO USE TOOLS",
     "",
-    "You have two output formats. Use exactly one of them per response.",
+    "You have two output formats. Use exactly one per response, then wait for the result.",
     "",
-    "### 1. Shell command (run_command)",
-    "Wrap the command in a bash/sh code block:",
+    "### Format 1 — shell command (run_command)",
     "```bash",
     "npm run build",
     "```",
     "",
-    "### 2. Any other tool (write_file, read_file, finish, ask_user, …)",
-    "Wrap a JSON object in a json code block:",
+    "### Format 2 — any other tool (write_file, read_file, finish, …)",
     "```json",
     '{ "tool": "write_file", "path": "hello.py", "content": "print(\\"Hello World\\")\\n" }',
     "```",
     "",
-    "## RULES — READ CAREFULLY",
+    "## MANDATORY STEP ORDER",
     "",
-    "- ALWAYS respond with a tool call. NEVER respond with plain prose or explanations.",
-    "- Do NOT explain what you are going to do — just do it with a tool call.",
-    "- You may emit ONE tool block per response. Wait for the result before the next step.",
-    "- When the task is fully done, call finish:",
-    '  ```json',
-    '  { "tool": "finish", "summary": "what you did" }',
-    '  ```',
-    "- NEVER end a turn without a tool call.",
+    "Before running any file, you MUST create it first with write_file.",
+    "Example — task: 'create hello.py and run it':",
+    "",
+    "Step 1 — create the file:",
+    "```json",
+    '{ "tool": "write_file", "path": "hello.py", "content": "print(\\"Hello World\\")\\n" }',
+    "```",
+    "→ wait for result, then step 2:",
+    "",
+    "Step 2 — run it:",
+    "```bash",
+    "python hello.py",
+    "```",
+    "→ wait for result, then step 3:",
+    "",
+    "Step 3 — done:",
+    "```json",
+    '{ "tool": "finish", "summary": "Created hello.py and ran it successfully." }',
+    "```",
+    "",
+    "## SELF-RECOVERY RULES",
+    "",
+    "- If a command fails because a file does not exist → use write_file to create it first.",
+    "- If a command fails because a dependency is missing → run the install command first.",
+    "- If a tool result shows an error → fix the root cause with the appropriate tool, do NOT retry the same failing call.",
+    "- NEVER give up and explain why something failed — fix it and continue.",
+    "- NEVER respond with plain prose. ALWAYS emit a tool call.",
+    "- When the task is fully done, emit finish. NEVER end a turn without a tool call.",
     t("prompt.language", { language: LOCALE_NAMES[getLocale()] }),
     "",
     "## AVAILABLE TOOLS",
@@ -167,6 +185,35 @@ export function parseCustomToolCalls(
 }
 
 // ---------------------------------------------------------------------------
+// Recovery hints — injected into tool result messages on failure
+// ---------------------------------------------------------------------------
+
+function recoveryHint(toolName: string, errorText: string): string {
+  const lower = errorText.toLowerCase();
+
+  if (toolName === "run_command") {
+    if (/no such file|not found|cannot find/i.test(lower)) {
+      return "⚠ RECOVERY: The file does not exist yet. Use write_file to create it before running.";
+    }
+    if (/modulenotfounderror|module not found|cannot find module/i.test(lower)) {
+      return "⚠ RECOVERY: A dependency is missing. Run the install command (e.g. pip install <pkg> or npm install) before retrying.";
+    }
+    if (/permission denied/i.test(lower)) {
+      return "⚠ RECOVERY: Permission denied. Try prefixing the command with the appropriate privilege escalation or check the file path.";
+    }
+    if (/syntaxerror|syntax error/i.test(lower)) {
+      return "⚠ RECOVERY: There is a syntax error in the file. Use read_file to inspect it, then write_file to fix it.";
+    }
+  }
+
+  if (toolName === "write_file") {
+    return "⚠ RECOVERY: Failed to write the file. Check that the directory path exists; create parent directories with run_command (mkdir -p) if needed.";
+  }
+
+  return "⚠ RECOVERY: The last action failed. Analyse the error above and use the appropriate tool to fix the root cause before continuing.";
+}
+
+// ---------------------------------------------------------------------------
 // Driver
 // ---------------------------------------------------------------------------
 
@@ -192,9 +239,23 @@ export class CustomDriver implements ProtocolDriver {
   }
 
   toolResultMessage(call: ToolCall, resultText: string): Message {
+    const isError =
+      /error|not found|no such file|command not found|failed|cannot|permission denied/i.test(
+        resultText,
+      );
+
+    const hint = isError ? recoveryHint(call.name, resultText) : "";
+
     return {
       role: "user",
-      content: `Tool result for ${call.name}:\n${resultText}`,
+      content: [
+        `Tool result for ${call.name}:`,
+        resultText,
+        hint,
+        "→ Emit your next tool call now. Do NOT explain — just act.",
+      ]
+        .filter(Boolean)
+        .join("\n"),
     };
   }
 
