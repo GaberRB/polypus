@@ -39,6 +39,7 @@ import { loadSkills, makeUseSkillTool } from "../../core/skills/index.js";
 import type { AskRequest } from "../../core/tools/types.js";
 import { createJsonCollector, createNdjsonStreamer } from "./json-output.js";
 import { createStreamAsk } from "./stream-ask.js";
+import { createStreamConfirm } from "./stream-confirm.js";
 import type { Message } from "../../core/providers/types.js";
 import { startRepl, type ReplContext } from "../../ui/repl.js";
 import { runSwarmSession } from "./swarm.js";
@@ -295,10 +296,16 @@ async function executeTask(
   // Interactive ask_user over the stream: emit a choice-card prompt and await
   // the host's selection on stdin (the desktop bridge writes the reply line).
   const streamAsk = streamer ? createStreamAsk(emitLine) : undefined;
+  // Permission confirms over the stream: emit a confirm event and await
+  // the host's approve/deny response on stdin (same channel as ask_user).
+  const streamConfirm = streamer ? createStreamConfirm(emitLine) : undefined;
   let askInput: readline.Interface | undefined;
-  if (streamAsk) {
+  if (streamAsk || streamConfirm) {
     askInput = readline.createInterface({ input: process.stdin });
-    askInput.on("line", (line) => streamAsk.handleLine(line));
+    askInput.on("line", (line) => {
+      streamAsk?.handleLine(line);
+      streamConfirm?.handleLine(line);
+    });
   }
 
   // Emit session ID immediately so the caller can wire --resume for follow-ups.
@@ -327,16 +334,17 @@ async function executeTask(
     policy: { workspace, allow: session.allow, deny: session.deny },
     allowedCommands: session.allowedCommands,
     network: session.network,
-    // Headless runs have no TTY for confirmations — use --mode bypass instead.
-    confirm: json
-      ? async () => false
-      : async (req) => {
-          spinner.stop();
-          cancel.pause(); // hand stdin to the clack prompt
-          const ok = await confirmAction(req);
-          cancel.resume();
-          return ok;
-        },
+    confirm: streamConfirm
+      ? streamConfirm.confirm
+      : json
+        ? async () => false
+        : async (req) => {
+            spinner.stop();
+            cancel.pause(); // hand stdin to the clack prompt
+            const ok = await confirmAction(req);
+            cancel.resume();
+            return ok;
+          },
   });
 
   // Load user-declared custom tools and hooks from .poly/ (if any), plus any
@@ -414,6 +422,7 @@ async function executeTask(
     spinner.stop();
     cancel.dispose();
     streamAsk?.dispose(); // resolve any pending choice card so we don't hang
+    streamConfirm?.dispose(); // resolve any pending permission confirm so we don't hang
     askInput?.close();
     await mcp.close(); // shut down any spawned MCP servers
   }

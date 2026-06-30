@@ -161,7 +161,37 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
             resumeSessionId: msg.resumeSessionId,
             env,
           },
-          (event) => this.post({ type: "event", event }),
+          (event) => {
+            // Intercept permission confirm events — show a VSCode dialog instead
+            // of forwarding to the webview (the webview has no confirm UI).
+            if (event.type === "confirm") {
+              const id = event.id as number;
+              const kind = event.kind as string;
+              const summary = event.summary as string;
+              const preview = event.preview as string | undefined;
+
+              const label =
+                kind === "write" ? "✎ Escrever arquivo"
+                : kind === "command" ? "⊡ Executar comando"
+                : "⬡ Requisição de rede";
+
+              const detail = preview ? `\n\n${preview}` : "";
+              vscode.window
+                .showInformationMessage(
+                  `${label}: ${summary}${detail}`,
+                  { modal: true },
+                  "Aprovar",
+                  "Negar",
+                )
+                .then((choice) => {
+                  this.bridge.confirmRespond(id, choice === "Aprovar");
+                }, () => {
+                  this.bridge.confirmRespond(id, false);
+                });
+              return;
+            }
+            this.post({ type: "event", event });
+          },
         );
         return;
       }
