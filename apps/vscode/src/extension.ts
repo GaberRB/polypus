@@ -126,12 +126,17 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
           this.post({ type: "event", event: { type: "end" } });
           return;
         }
-        // Check if the selected agent is a custom provider (no OpenRouter key needed).
         const selectedAgent = msg.controls.agent ?? "";
-        const customProviders = await listCustomProviders();
-        const isCustomAgent = customProviders.some(
-          (p) => p.name === selectedAgent || `🔌 ${p.name}` === selectedAgent,
-        );
+        const [customProviders, allAgents] = await Promise.all([
+          listCustomProviders(),
+          listConfiguredAgents(),
+        ]);
+        // An agent is "custom" when explicitly selected OR when there are no
+        // regular (OpenRouter) agents at all — any run will use a custom provider.
+        const hasRegularAgents = allAgents.some((a) => a.provider !== "custom");
+        const isCustomAgent =
+          customProviders.some((p) => p.name === selectedAgent || `🔌 ${p.name}` === selectedAgent) ||
+          (!hasRegularAgents && customProviders.length > 0);
 
         const key = await this.context.secrets.get(SECRET_KEY);
         if (!key && !isCustomAgent) {
