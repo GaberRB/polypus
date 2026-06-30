@@ -13,6 +13,8 @@ export interface ResolvedAgent {
   config: AgentConfig;
   provider: Provider;
   toolMode: ResolvedToolMode;
+  /** True when this agent was created from a user-defined custom provider config. */
+  isCustomProvider?: boolean;
 }
 
 /**
@@ -65,5 +67,6 @@ export function createCustomProvider(cfg: CustomProviderConfig): ResolvedAgent {
     },
     provider: new CustomProvider(cfg),
     toolMode: "emulated",
+    isCustomProvider: true,
   };
 }
