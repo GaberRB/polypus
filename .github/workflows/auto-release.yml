@@ -5,6 +5,9 @@ name: auto-release
 # on the *version* changing, not on the branch name. The created GitHub Release
 # triggers release.yml, which publishes to npm.
 #
+# Also builds the VSCode extension (.vsix) and attaches it to the release so
+# users can download it directly from the Releases page.
+#
 # IMPORTANT: creating the Release must use a PAT (POLYPUS_PR_TOKEN), because a
 # Release created with the default GITHUB_TOKEN does NOT trigger other workflows
 # (release.yml would never run). Without the PAT, the tag/release is still made
@@ -31,6 +34,7 @@ jobs:
           node-version: 20
 
       - name: Create the GitHub Release when this version has none yet
+        id: create_release
         env:
           # A PAT is required so the created Release triggers release.yml → npm publish.
           GH_TOKEN: ${{ secrets.POLYPUS_PR_TOKEN || github.token }}
@@ -40,6 +44,8 @@ jobs:
           # the version (or it's a re-run) — nothing to publish.
           if gh release view "$VERSION" >/dev/null 2>&1; then
             echo "Release $VERSION already exists — nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           # Pull this version's notes out of the CHANGELOG, if present.
@@ -49,3 +55,21 @@ jobs:
           echo "Created Release $VERSION — release.yml will publish to npm."
           # Note: a Release created with the default GITHUB_TOKEN does not trigger
           # release.yml. Set the POLYPUS_PR_TOKEN PAT (used above) so npm publish runs.
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build and attach VSCode extension (.vsix)
+        if: steps.create_release.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.POLYPUS_PR_TOKEN || github.token }}
+        run: |
+          VERSION="${{ steps.create_release.outputs.version }}"
+          npm ci
+          # Sync vscode extension version to root package version before packaging.
+          cd apps/vscode
+          npm pkg set version="${VERSION#v}"
+          npm run package
+          VSIX=$(ls polypus-vscode-*.vsix | head -1)
+          echo "Built $VSIX"
+          gh release upload "$VERSION" "$VSIX" --clobber
+          echo "Attached $VSIX to release $VERSION"
