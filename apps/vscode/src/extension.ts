@@ -83,7 +83,11 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
   }
 
   private async postInit(): Promise<void> {
-    const hasKey = Boolean(await this.context.secrets.get(SECRET_KEY));
+    const hasOpenRouterKey = Boolean(await this.context.secrets.get(SECRET_KEY));
+    // Unblock the composer when there's at least one custom provider configured —
+    // those don't need an OpenRouter key.
+    const customProviders = await listCustomProviders();
+    const hasKey = hasOpenRouterKey || customProviders.length > 0;
     const cfg = vscode.workspace.getConfiguration("polypus");
     this.post({
       type: "init",
@@ -106,8 +110,15 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
           this.post({ type: "event", event: { type: "end" } });
           return;
         }
+        // Check if the selected agent is a custom provider (no OpenRouter key needed).
+        const selectedAgent = msg.controls.agent ?? "";
+        const customProviders = await listCustomProviders();
+        const isCustomAgent = customProviders.some(
+          (p) => p.name === selectedAgent || `🔌 ${p.name}` === selectedAgent,
+        );
+
         const key = await this.context.secrets.get(SECRET_KEY);
-        if (!key) {
+        if (!key && !isCustomAgent) {
           await this.promptApiKey();
           const retry = await this.context.secrets.get(SECRET_KEY);
           if (!retry) {
@@ -116,13 +127,18 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
             return;
           }
         }
+
+        // Only inject the OpenRouter key when it's actually needed.
+        const env: Record<string, string> = {};
+        if (key) env[KEY_ENV] = key;
+
         this.bridge.start(
           {
             task: msg.task,
             controls: msg.controls,
             cwd,
             resumeSessionId: msg.resumeSessionId,
-            env: { [KEY_ENV]: (await this.context.secrets.get(SECRET_KEY)) ?? "" },
+            env,
           },
           (event) => this.post({ type: "event", event }),
         );
