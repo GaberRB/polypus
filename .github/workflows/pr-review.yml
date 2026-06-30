@@ -19,7 +19,7 @@ jobs:
     env:
       PR: ${{ github.event.pull_request.number }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 20
