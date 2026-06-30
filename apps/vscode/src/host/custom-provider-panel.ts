@@ -598,9 +598,17 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
 
     document.getElementById('btn-save').addEventListener('click', () => {
       const payload = buildPayload();
-      if (!payload.name) { alert('Informe o nome do provedor.'); return; }
+      const saveMsg = document.getElementById('save-result');
+      if (!payload.name) {
+        saveMsg.style.display = 'block';
+        saveMsg.className = 'msg err';
+        saveMsg.textContent = '❌ Informe o nome do provedor.';
+        return;
+      }
       if (!payload.chat.bodyTemplate.includes('{{prompt}}')) {
-        alert('O body template deve conter {{prompt}}.');
+        saveMsg.style.display = 'block';
+        saveMsg.className = 'msg err';
+        saveMsg.textContent = '❌ O body template deve conter {{prompt}}.';
         return;
       }
       vscode.postMessage({ type: 'save', payload });
@@ -636,14 +644,42 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
     document.getElementById('btn-set-key').addEventListener('click', () => {
       vscode.postMessage({ type: 'setApiKey' });
     });
-    document.getElementById('btn-clear-key').addEventListener('click', () => {
-      if (confirm('Remover a chave do OpenRouter? O chat ficará bloqueado se não houver provedores custom.')) {
+    const btnClearKey = document.getElementById('btn-clear-key');
+    btnClearKey.addEventListener('click', () => {
+      if (btnClearKey.dataset.confirming) {
         vscode.postMessage({ type: 'clearApiKey' });
+        delete btnClearKey.dataset.confirming;
+        btnClearKey.textContent = '✕ Remover';
+        btnClearKey.style.color = '';
+      } else {
+        btnClearKey.dataset.confirming = '1';
+        btnClearKey.textContent = '¿Confirmar remoção?';
+        btnClearKey.style.color = 'var(--vscode-inputValidation-errorForeground,#f44)';
       }
     });
 
+    // ── Inline confirmation (VSCode webviews block window.confirm) ───
+    let pendingDelete = null; // { type: 'remove'|'removeAgent', name }
+    function requestDelete(type, name, btn) {
+      // If another confirm is pending, cancel it first
+      if (pendingDelete) cancelPendingDelete();
+      pendingDelete = { type, name };
+      btn.textContent = '¿Confirmar?';
+      btn.style.color = 'var(--vscode-inputValidation-errorForeground,#f44)';
+      btn.addEventListener('click', confirmDelete, { once: true });
+      btn.removeEventListener('click', btn._deleteHandler);
+    }
+    function confirmDelete(e) {
+      if (!pendingDelete) return;
+      const { type, name } = pendingDelete;
+      pendingDelete = null;
+      vscode.postMessage({ type, name });
+    }
+    function cancelPendingDelete() {
+      pendingDelete = null;
+    }
+
     // ── Agents list ────────────────────────────────────────────────
-    const BUILTIN_PROVIDERS = ['openai','anthropic','google','mistral','openrouter','custom'];
     function renderAgents(agents) {
       const el = document.getElementById('agents-list');
       const configured = (agents || []).filter(a => a.provider !== 'custom');
@@ -661,16 +697,11 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
         </div>
       \`).join('');
       el.querySelectorAll('[data-rm-agent]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (confirm('Remover agente "' + btn.dataset.rmAgent + '"?')) {
-            vscode.postMessage({ type: 'removeAgent', name: btn.dataset.rmAgent });
-          }
-        });
+        btn.addEventListener('click', function(){ requestDelete('removeAgent', btn.getAttribute('data-rm-agent'), btn); });
       });
     }
 
     // ── Custom providers list ──────────────────────────────────────
-    const safetyLabel = { bypass: 'bypass', 'read-only': 'read-only', review: 'review' };
     function renderCustom(providers) {
       const el = document.getElementById('custom-list');
       if (!providers.length) {
@@ -683,15 +714,11 @@ export class CustomProviderPanelProvider implements vscode.WebviewViewProvider {
             <div class="row-title">🔌 \${escHtml(p.name)}</div>
             <div class="row-sub">\${escHtml(p.authType)} · modo \${escHtml(p.safetyMode)}</div>
           </div>
-          <button data-remove="\${escHtml(p.name)}" class="secondary sm" title="Remover">✕</button>
+          <button data-remove-cp="\${escHtml(p.name)}" class="secondary sm" title="Remover">✕</button>
         </div>
       \`).join('');
-      el.querySelectorAll('[data-remove]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (confirm('Remover provedor "' + btn.dataset.remove + '"?')) {
-            vscode.postMessage({ type: 'remove', name: btn.dataset.remove });
-          }
-        });
+      el.querySelectorAll('[data-remove-cp]').forEach(btn => {
+        btn.addEventListener('click', function(){ requestDelete('remove', btn.getAttribute('data-remove-cp'), btn); });
       });
     }
 

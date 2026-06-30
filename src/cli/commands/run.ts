@@ -10,9 +10,9 @@ import {
   type ResolvedExecution,
   type RetrievalConfig,
 } from "../../core/config/schema.js";
-import { loadConfig, resolveAgent } from "../../core/config/store.js";
+import { loadConfig, resolveAgent, findCustomProvider } from "../../core/config/store.js";
 import { gatherContext } from "../../core/context/auto-context.js";
-import { createProvider } from "../../core/providers/registry.js";
+import { createProvider, createCustomProvider } from "../../core/providers/registry.js";
 import { PermissionEngine, type ConfirmRequest, type ConfirmResult } from "../../core/permissions/modes.js";
 import { hunkLabel, type Hunk } from "../../core/permissions/diff.js";
 import { runAgent, type AgentEvents, type RunResult } from "../../core/agent/loop.js";
@@ -46,6 +46,20 @@ import { printWelcome } from "../../ui/banner.js";
 import { Spinner } from "../../ui/spinner.js";
 import { t } from "../../core/i18n/index.js";
 import { listenForCancel } from "../../ui/cancel.js";
+
+/**
+ * Resolve a named agent from regular agents OR custom providers.
+ * Accepts names with or without the "🔌 " prefix added by the VSCode switcher.
+ */
+function resolveAnyAgent(
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  name?: string,
+): ReturnType<typeof createProvider> {
+  const cleanName = name?.replace(/^🔌\s*/u, "") ?? name;
+  const cp = cleanName ? findCustomProvider(config, cleanName) : undefined;
+  if (cp) return createCustomProvider(cp);
+  return createProvider(resolveAgent(config, name));
+}
 
 export interface RunOptions {
   agent?: string;
@@ -106,7 +120,11 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     if (!seeded && !opts.json) console.log(pc.dim(t("sessions.noneToContinue")));
   }
 
-  const agentConfig = resolveAgent(config, opts.agent ?? seeded?.agentName);
+  // Strip the "🔌 " prefix the VSCode switcher adds to custom provider names.
+  const rawAgentName = opts.agent ?? seeded?.agentName;
+  const cleanAgentName = rawAgentName?.replace(/^🔌\s*/u, "") ?? rawAgentName;
+  const initialResolved = resolveAnyAgent(config, cleanAgentName);
+  const agentConfig = initialResolved.config;
   // `--model` overrides the resolved agent's model (browse-and-run any OpenRouter model).
   if (opts.model) agentConfig.model = opts.model;
 
@@ -132,8 +150,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
 
   // Resolve the active agent freshly each run so /agent, /add and /remove work.
   const runTask = async (taskText: string): Promise<void> => {
-    const active = resolveAgent(config, session.agentName);
-    const resolved = createProvider(active);
+    const resolved = resolveAnyAgent(config, session.agentName);
     await executeTask(taskText, resolved, workspace, session, false, {
       embeddings: config.embeddings,
       retrieval: config.retrieval,
@@ -143,7 +160,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   if (opts.json && !task) throw new Error(t("run.jsonNeedsTask"));
 
   if (task) {
-    const resolved = createProvider(agentConfig);
+    const resolved = resolveAnyAgent(config, agentConfig.name);
     if (!opts.json) {
       console.log(
         pc.dim(
@@ -174,7 +191,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   }
 
   // Interactive: full welcome screen with the animated banner.
-  const resolved = createProvider(agentConfig);
+  const resolved = resolveAnyAgent(config, agentConfig.name);
   await printWelcome({
     agentName: resolved.config.name,
     provider: resolved.config.provider,
