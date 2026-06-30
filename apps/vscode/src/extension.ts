@@ -14,7 +14,7 @@ import {
   removeCustomProvider,
 } from "./host/custom-providers.js";
 import { CustomProviderPanelProvider } from "./host/custom-provider-panel.js";
-import type { HostToWebview, WebviewToHost } from "./protocol.js";
+import type { EditorSelection, HostToWebview, WebviewToHost } from "./protocol.js";
 import type { FileEntry, Mode } from "@gaberrb/polypus-chat-ui";
 
 const SECRET_KEY = "polypus.openrouterApiKey";
@@ -59,8 +59,30 @@ export function deactivate(): void {
 class PolypusChatProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private readonly bridge = new RunBridge();
+  private lastSelection: EditorSelection | null = null;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly context: vscode.ExtensionContext) {
+    context.subscriptions.push(
+      vscode.window.onDidChangeTextEditorSelection((e) => {
+        const sel = e.selections[0];
+        if (!sel || sel.isEmpty) {
+          this.lastSelection = null;
+          return;
+        }
+        const doc = e.textEditor.document;
+        const wsRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const absPath = doc.uri.fsPath;
+        const relPath = wsRoot && absPath.startsWith(wsRoot)
+          ? absPath.slice(wsRoot.length).replace(/^[\\/]/, "")
+          : absPath.split(/[\\/]/).pop() ?? absPath;
+        this.lastSelection = {
+          file: relPath.split(/[\\/]/).pop() ?? relPath,
+          path: relPath,
+          text: doc.getText(sel),
+        };
+      }),
+    );
+  }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
@@ -282,6 +304,10 @@ class PolypusChatProvider implements vscode.WebviewViewProvider {
           ok: true,
           data: res?.message ?? (res?.ok ? "✅ OK" : "❌ Falha"),
         });
+        return;
+      }
+      if (msg.method === "getEditorSelection") {
+        this.post({ type: "rpcResult", rpcId: msg.rpcId, ok: true, data: this.lastSelection });
         return;
       }
     } catch (err) {

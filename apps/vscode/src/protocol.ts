@@ -73,8 +73,15 @@ export type WebviewToHost =
   | { type: "rpc"; rpcId: number; method: "addCustomProvider"; payload: CustomProviderPayload }
   | { type: "rpc"; rpcId: number; method: "removeCustomProvider"; name: string }
   | { type: "rpc"; rpcId: number; method: "testCustomProvider"; payload: CustomProviderPayload }
+  | { type: "rpc"; rpcId: number; method: "getEditorSelection" }
   | { type: "setApiKey" }
   | { type: "clearApiKey" };
+
+export interface EditorSelection {
+  file: string;
+  path: string;
+  text: string;
+}
 
 /** Messages the host sends to the webview. */
 export type HostToWebview =
@@ -90,6 +97,7 @@ export type HostToWebview =
         | AgentInfo[]
         | OpenRouterModelInfo[]
         | CustomProviderInfo[]
+        | EditorSelection
         | string;
     }
   | { type: "rpcResult"; rpcId: number; ok: false; error: string }

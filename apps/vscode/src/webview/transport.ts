@@ -12,7 +12,7 @@ import type {
   AgentInfo,
   OpenRouterModelInfo,
 } from "@gaberrb/polypus-chat-ui";
-import type { HostToWebview, WebviewToHost } from "../protocol.js";
+import type { EditorSelection, HostToWebview, WebviewToHost } from "../protocol.js";
 
 interface VsCodeApi {
   postMessage(msg: WebviewToHost): void;
@@ -153,5 +153,12 @@ export class VsCodeTransport implements ChatTransport {
 
   removeAgent(name: string): Promise<AgentInfo[]> {
     return this.rpc<AgentInfo[]>((rpcId) => ({ type: "rpc", rpcId, method: "removeAgent", name }));
+  }
+
+  /** Returns the active text selection in the editor, or null when there is none. */
+  getEditorSelection(): Promise<EditorSelection | null> {
+    return this.rpc<EditorSelection | null>(
+      (rpcId) => ({ type: "rpc", rpcId, method: "getEditorSelection" }),
+    );
   }
 }
