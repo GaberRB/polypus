@@ -9,7 +9,14 @@ import type { Tool, ToolResult } from "../tools/types.js";
 import { buildCorrection, makeLLMEscalator, truncationGuidance } from "./correction.js";
 import { loadProjectInstructions } from "./project-context.js";
 import { compactHistory, estimateTokens } from "./compaction.js";
-import { runAfterHook, screenCommandHook, type HooksConfig } from "./hooks.js";
+import {
+  runPreToolUseHooks,
+  runPostToolUseHooks,
+  runStopHooks,
+  type HooksConfig,
+  type HookEvent,
+  type HookRunResult,
+} from "./hooks.js";
 import { buildVerifyFeedback, detectChecks, runChecks, type CheckResult } from "./verify.js";
 
 export interface Usage {
@@ -37,6 +44,8 @@ export interface AgentEvents {
   onVerify?(results: CheckResult[]): void;
   /** Fired when the agent activates a skill via the use_skill tool. */
   onSkill?(name: string, scope: "project" | "global"): void;
+  /** Fired when a hook runs (PreToolUse / PostToolUse / Stop). */
+  onHook?(event: HookEvent, toolName: string | null, result: HookRunResult): void;
 }
 
 /** Closed-loop verification config: run project checks before accepting `finish`. */
@@ -287,25 +296,31 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
           }
         }
 
+        // Stop hooks: run after verification passes, before handing control back.
+        const stopResults = await runStopHooks(opts.hooks, opts.workspace);
+        for (const r of stopResults) events?.onHook?.("Stop", null, r);
+
         return { finished: true, reason: "finished", summary, steps: step, messages, usage, verified };
       }
 
       const tool = resolveTool(call.name);
-      // Pre-tool hook: the user's beforeCommand deny-list can block a command.
-      const hookScreen =
-        call.name === "run_command"
-          ? screenCommandHook(opts.hooks, String(call.arguments.command ?? ""))
-          : { blocked: false as const };
+
+      // PreToolUse hooks: run before tool execution; any blocked result aborts.
+      const preResults = await runPreToolUseHooks(opts.hooks, call, opts.workspace);
+      for (const r of preResults) events?.onHook?.("PreToolUse", call.name, r);
+      const preBlocked = preResults.find((r) => r.blocked);
 
       let result: ToolResult;
-      if (hookScreen.blocked) {
-        result = { ok: false, output: `Command blocked by hook: ${hookScreen.reason}` };
+      if (preBlocked) {
+        result = { ok: false, output: `Tool blocked by PreToolUse hook: ${preBlocked.output}` };
       } else if (tool) {
         result = await tool.run(call.arguments, ctx);
-        // Post-tool hook: e.g. format a file after a successful write/edit.
+        // PostToolUse hooks: run after a successful tool call, inject output into result.
         if (result.ok) {
-          const note = await runAfterHook(opts.hooks, call, opts.workspace);
-          if (note) result = { ...result, output: `${result.output}\n${note}` };
+          const postResults = await runPostToolUseHooks(opts.hooks, call, opts.workspace);
+          for (const r of postResults) events?.onHook?.("PostToolUse", call.name, r);
+          const notes = postResults.map((r) => r.output).filter(Boolean).join("\n");
+          if (notes) result = { ...result, output: `${result.output}\n\n--- hook output ---\n${notes}` };
         }
       } else {
         result = { ok: false, output: `Unknown tool "${call.name}". Available: ${allSpecs.map((t) => t.name).join(", ")}` };

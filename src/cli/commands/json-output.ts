@@ -1,7 +1,7 @@
 import type { AgentEvents, RunResult } from "../../core/agent/loop.js";
 
 export interface JsonEvent {
-  type: "step" | "assistant" | "tool_call" | "tool_result" | "correction" | "reprompt" | "compaction";
+  type: "step" | "assistant" | "tool_call" | "tool_result" | "hook_event" | "correction" | "reprompt" | "compaction";
   [key: string]: unknown;
 }
 
@@ -64,6 +64,17 @@ export function createJsonCollector(): JsonCollector {
     onCompaction(before, after) {
       log.push({ type: "compaction", before, after });
     },
+    onHook(event, toolName, result) {
+      log.push({
+        type: "hook_event",
+        event,
+        toolName,
+        command: result.command,
+        durationMs: result.durationMs,
+        blocked: result.blocked,
+        output: result.output.slice(0, OUTPUT_PREVIEW),
+      });
+    },
     onUsage() {
       /* usage is summarised in the final result, not per-event */
     },
@@ -96,6 +107,7 @@ export interface StreamEvent {
     | "assistant"
     | "tool_call"
     | "tool_result"
+    | "hook_event"
     | "ask_user"
     | "correction"
     | "reprompt"
@@ -158,6 +170,17 @@ export function createNdjsonStreamer(emit: (event: StreamEvent) => void): {
     },
     onUsage(usage) {
       emit({ type: "usage", ...usage });
+    },
+    onHook(event, toolName, result) {
+      emit({
+        type: "hook_event",
+        event,
+        toolName,
+        command: result.command,
+        durationMs: result.durationMs,
+        blocked: result.blocked,
+        output: result.output.slice(0, OUTPUT_PREVIEW),
+      });
     },
   };
 

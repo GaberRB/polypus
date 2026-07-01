@@ -3,11 +3,20 @@ import { useSettings } from "./settings";
 import { PolypusMascot } from "./PolypusMascot";
 import type { Mode, ModelPrice, StreamEvent } from "../../shared/ipc";
 
+interface HookItem {
+  event: "PreToolUse" | "PostToolUse" | "Stop";
+  command: string;
+  durationMs?: number;
+  output?: string;
+  blocked?: boolean;
+}
+
 interface ToolItem {
   name: string;
   arg?: string;
   ok?: boolean;
   output?: string;
+  hooks?: HookItem[];
 }
 
 interface RunSummary {
@@ -99,6 +108,26 @@ export function Cowork({
           for (let i = next.length - 1; i >= 0; i--) {
             if (next[i]!.ok === undefined) {
               next[i] = { ...next[i]!, ok: Boolean(ev.ok), output: String(ev.output ?? "") };
+              break;
+            }
+          }
+          return next;
+        });
+        break;
+      case "hook_event":
+        setTools((prev) => {
+          const next = [...prev];
+          for (let i = next.length - 1; i >= 0; i--) {
+            const item = next[i]!;
+            if (item.ok !== undefined || ev.event === "Stop") {
+              const hookItem: HookItem = {
+                event: ev.event as HookItem["event"],
+                command: String(ev.command ?? ""),
+                durationMs: typeof ev.durationMs === "number" ? ev.durationMs : undefined,
+                output: String(ev.output ?? ""),
+                blocked: Boolean(ev.blocked),
+              };
+              next[i] = { ...item, hooks: [...(item.hooks ?? []), hookItem] };
               break;
             }
           }
@@ -240,6 +269,18 @@ export function Cowork({
                 {tool.output && (
                   <div className="tool-out muted">{tool.output.split("\n")[0]}</div>
                 )}
+                {tool.hooks && tool.hooks.map((hook, hi) => (
+                  <div key={hi} className={`hook-row hook-row--${hook.blocked ? "error" : "ok"}`}>
+                    <span className="hook-badge">{hook.event}</span>
+                    <span className="muted hook-cmd">{hook.command.split(" ")[0]}</span>
+                    {hook.durationMs !== undefined && (
+                      <span className="muted hook-time">{(hook.durationMs / 1000).toFixed(1)}s</span>
+                    )}
+                    {hook.output && (
+                      <div className="hook-out muted">{hook.output.split("\n")[0]}</div>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>

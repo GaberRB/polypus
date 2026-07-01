@@ -94,6 +94,7 @@ export interface StreamEvent {
     | "assistant"
     | "tool_call"
     | "tool_result"
+    | "hook_event"
     | "correction"
     | "reprompt"
     | "compaction"
@@ -101,6 +102,12 @@ export interface StreamEvent {
     | "result"
     | "end"
     | "error";
+  /** Present on type: "hook_event" */
+  event?: "PreToolUse" | "PostToolUse" | "Stop";
+  toolName?: string | null;
+  command?: string;
+  durationMs?: number;
+  blocked?: boolean;
   /** Present on type: "session_start" — use as resumeSessionId for follow-ups. */
   sessionId?: string;
   /** Populated on `type: "usage"` — cumulative tokens for this run. */
