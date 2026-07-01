@@ -156,6 +156,7 @@ const en: Catalog = {
   "verify.failed": "{n} check(s) failed — handing the output back to the agent (attempt {attempt})",
   "verify.someFailed": "{n} check(s) failed — the agent will try to fix them",
   "verify.giveUp": "{n} check(s) still failing after the retry budget — stopping",
+  "diagnostics.found": "diagnostics found problems in the edited files — the agent will fix them",
   "budget.session": "session spend: {spent} / budget {budget}",
   "budget.hit": "■ stopped: estimated cost reached the budget of {budget}",
 
@@ -583,6 +584,7 @@ const ptBR: Catalog = {
   "verify.failed": "{n} checagem(ns) falharam — devolvendo a saída ao agente (tentativa {attempt})",
   "verify.someFailed": "{n} checagem(ns) falharam — o agente vai tentar corrigir",
   "verify.giveUp": "{n} checagem(ns) ainda falhando após o limite de tentativas — parando",
+  "diagnostics.found": "diagnósticos acharam problemas nos arquivos editados — o agente vai corrigir",
   "budget.session": "gasto da sessão: {spent} / orçamento {budget}",
   "budget.hit": "■ interrompido: o custo estimado atingiu o orçamento de {budget}",
 

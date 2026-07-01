@@ -156,6 +156,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     costUsd: 0,
     exec: execFromOpts(config.execution, opts),
     cache: config.caching !== "off",
+    diagnostics: config.diagnostics !== "off",
   };
 
   if (seeded && !opts.json) {
@@ -250,6 +251,8 @@ export interface SessionState {
   exec: ResolvedExecution;
   /** Provider prompt caching enabled (from config.caching). */
   cache: boolean;
+  /** Post-edit diagnostics enabled (from config.diagnostics). */
+  diagnostics: boolean;
 }
 
 async function executeTask(
@@ -411,6 +414,7 @@ async function executeTask(
       // Closed-loop verification runs inside the loop at finish time, so it also
       // covers REPL/swarm — not just this command. Disabled in plan mode (no edits).
       verify: { enabled: session.exec.verify && session.mode !== "plan", maxFixes: session.exec.maxVerifyFixes },
+      diagnostics: { enabled: session.diagnostics && session.mode !== "plan" },
       ask,
       signal: controller.signal,
       events,
@@ -600,6 +604,10 @@ function renderEvents(spinner: Spinner): AgentEvents {
       } else {
         console.log(pc.yellow("  ✗ " + t("verify.someFailed", { n: failed.length })));
       }
+    },
+    onDiagnostics() {
+      spinner.stop();
+      console.log(pc.yellow("  ⚠ " + t("diagnostics.found")));
     },
     onSkill(name, scope) {
       spinner.stop();
