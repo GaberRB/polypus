@@ -39,7 +39,11 @@ export class OpenAICompatibleProvider implements Provider {
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
-    const messages = req.messages.map(toOpenAIMessage);
+    // For Anthropic-family models routed through OpenRouter, caching only kicks
+    // in when we mark cache_control breakpoints (OpenAI/Gemini/DeepSeek cache
+    // automatically — nothing to inject, just read usage below).
+    const cacheEnabled = req.params?.cache !== false;
+    const messages = applyOpenRouterCache(req.messages.map(toOpenAIMessage), this.model, cacheEnabled);
     const tools = req.tools?.map((t) => ({
       type: "function" as const,
       function: {
@@ -99,10 +103,39 @@ export class OpenAICompatibleProvider implements Provider {
         ? {
             promptTokens: completion.usage.prompt_tokens,
             completionTokens: completion.usage.completion_tokens,
+            cacheReadTokens: completion.usage.prompt_tokens_details?.cached_tokens,
           }
         : undefined,
     };
   }
+}
+
+/**
+ * Inject Anthropic-style cache_control breakpoints for Claude models served via
+ * OpenRouter. No-op for other models (which cache automatically) or when
+ * disabled. Marks the last system message and the last message overall — the two
+ * stable prefixes worth caching in a tool loop. Exported for unit tests.
+ */
+export function applyOpenRouterCache(
+  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  model: string,
+  enabled: boolean,
+): OpenAI.Chat.ChatCompletionMessageParam[] {
+  if (!enabled || !/anthropic|claude/i.test(model)) return messages;
+  const mark = (m: OpenAI.Chat.ChatCompletionMessageParam): OpenAI.Chat.ChatCompletionMessageParam => {
+    if (typeof m.content !== "string" || m.content.length === 0) return m;
+    return {
+      ...m,
+      content: [{ type: "text", text: m.content, cache_control: { type: "ephemeral" } }],
+    } as unknown as OpenAI.Chat.ChatCompletionMessageParam;
+  };
+  const out = [...messages];
+  let lastSystem = -1;
+  for (let i = 0; i < out.length; i++) if (out[i]!.role === "system") lastSystem = i;
+  if (lastSystem >= 0) out[lastSystem] = mark(out[lastSystem]!);
+  const lastIdx = out.length - 1;
+  if (lastIdx >= 0 && lastIdx !== lastSystem) out[lastIdx] = mark(out[lastIdx]!);
+  return out;
 }
 
 /** Minimal shape of an OpenAI streaming chunk (only the fields we read). */
@@ -120,14 +153,18 @@ export interface StreamChunk {
     };
     finish_reason?: string | null;
   }>;
-  usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    prompt_tokens_details?: { cached_tokens?: number } | null;
+  } | null;
 }
 
 export interface AggregatedStream {
   content: string;
   toolCalls: Array<{ id: string; name: string; arguments: string }>;
   finishReason: string;
-  usage?: { promptTokens?: number; completionTokens?: number };
+  usage?: { promptTokens?: number; completionTokens?: number; cacheReadTokens?: number };
 }
 
 /**
@@ -164,6 +201,7 @@ export async function aggregateStream(
       usage = {
         promptTokens: chunk.usage.prompt_tokens,
         completionTokens: chunk.usage.completion_tokens,
+        cacheReadTokens: chunk.usage.prompt_tokens_details?.cached_tokens,
       };
     }
   }

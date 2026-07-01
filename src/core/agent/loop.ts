@@ -22,6 +22,10 @@ import { buildVerifyFeedback, detectChecks, runChecks, type CheckResult } from "
 export interface Usage {
   promptTokens: number;
   completionTokens: number;
+  /** Cumulative input tokens served from cache (billed at a discount). */
+  cacheReadTokens?: number;
+  /** Cumulative input tokens written to cache (billed at a premium on Anthropic). */
+  cacheCreationTokens?: number;
 }
 
 export interface AgentEvents {
@@ -218,6 +222,10 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     }
     usage.promptTokens += response.usage?.promptTokens ?? 0;
     usage.completionTokens += response.usage?.completionTokens ?? 0;
+    if (response.usage?.cacheReadTokens)
+      usage.cacheReadTokens = (usage.cacheReadTokens ?? 0) + response.usage.cacheReadTokens;
+    if (response.usage?.cacheCreationTokens)
+      usage.cacheCreationTokens = (usage.cacheCreationTokens ?? 0) + response.usage.cacheCreationTokens;
     lastPromptTokens = response.usage?.promptTokens ?? estimateTokens(messages);
     events?.onUsage?.(usage);
     const { toolCalls, text } = driver.parse(response);

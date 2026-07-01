@@ -155,6 +155,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     budget: opts.budget ? Number(opts.budget) : undefined,
     costUsd: 0,
     exec: execFromOpts(config.execution, opts),
+    cache: config.caching !== "off",
   };
 
   if (seeded && !opts.json) {
@@ -247,6 +248,8 @@ export interface SessionState {
   costUsd: number;
   /** Effective execution settings (verify/plan-first/auto-context); REPL toggles mutate this. */
   exec: ResolvedExecution;
+  /** Provider prompt caching enabled (from config.caching). */
+  cache: boolean;
 }
 
 async function executeTask(
@@ -392,7 +395,7 @@ async function executeTask(
       workspace,
       agent: resolved,
       permissions,
-      params: think ? { reasoning: true } : undefined,
+      params: { cache: session.cache, ...(think ? { reasoning: true } : {}) },
       promptContext: {
         workspace,
         mode: session.mode,
@@ -450,6 +453,8 @@ async function executeTask(
     promptTokens: result.usage.promptTokens,
     completionTokens: result.usage.completionTokens,
     costUsd: runCost,
+    ...(result.usage.cacheReadTokens ? { cacheReadTokens: result.usage.cacheReadTokens } : {}),
+    ...(result.usage.cacheCreationTokens ? { cacheCreationTokens: result.usage.cacheCreationTokens } : {}),
   }, { workspace });
 
   if (streamer) {

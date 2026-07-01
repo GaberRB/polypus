@@ -32,6 +32,12 @@ export interface ChatParams {
   maxTokens?: number;
   /** Ask the model to expose its reasoning/chain-of-thought (opt-in, `--think`). */
   reasoning?: boolean;
+  /**
+   * Enable provider prompt caching (cache_control breakpoints on tools/system/
+   * history). Undefined is treated as enabled; set `false` to disable. Providers
+   * without caching support ignore it.
+   */
+  cache?: boolean;
 }
 
 export interface ChatRequest {
@@ -56,8 +62,13 @@ export interface ChatRequest {
 }
 
 export interface Usage {
+  /** Total input tokens for this call, including any cached portion. */
   promptTokens?: number;
   completionTokens?: number;
+  /** Portion of promptTokens served from cache (billed ~0.1x on Anthropic). */
+  cacheReadTokens?: number;
+  /** Portion of promptTokens written to cache this call (billed ~1.25x on Anthropic). */
+  cacheCreationTokens?: number;
 }
 
 export interface ChatResponse {

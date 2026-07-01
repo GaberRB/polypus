@@ -31,12 +31,26 @@ export async function resolveModelPricing(agent: AgentConfig): Promise<ModelPric
   }
 }
 
-/** Estimate the USD cost of a token usage given per-1M pricing. */
+/** Anthropic cache billing multipliers vs the base input price. Cache reads are
+ * ~10% of input; writes carry a ~25% premium. Used as an approximation for other
+ * providers' automatic caching too (their real discount varies). */
+const CACHE_READ_MULT = 0.1;
+const CACHE_WRITE_MULT = 1.25;
+
+/**
+ * Estimate the USD cost of a token usage given per-1M pricing. `promptTokens` is
+ * the total input (incl. cached); the cached read/write portions are re-priced at
+ * the cache multipliers, and the remainder at the full input price.
+ */
 export function estimateCost(usage: Usage, pricing: ModelPricing): number {
-  return (
-    (usage.promptTokens / 1_000_000) * pricing.promptPrice +
-    (usage.completionTokens / 1_000_000) * pricing.completionPrice
-  );
+  const cacheRead = usage.cacheReadTokens ?? 0;
+  const cacheWrite = usage.cacheCreationTokens ?? 0;
+  const fullRate = Math.max(0, usage.promptTokens - cacheRead - cacheWrite);
+  const inputCost =
+    (fullRate / 1_000_000) * pricing.promptPrice +
+    (cacheWrite / 1_000_000) * pricing.promptPrice * CACHE_WRITE_MULT +
+    (cacheRead / 1_000_000) * pricing.promptPrice * CACHE_READ_MULT;
+  return inputCost + (usage.completionTokens / 1_000_000) * pricing.completionPrice;
 }
 
 /** Format a USD amount compactly, with extra precision for sub-cent costs. */
@@ -64,6 +78,10 @@ export interface UsageEntry {
   promptTokens: number;
   completionTokens: number;
   costUsd: number;
+  /** Input tokens served from cache this run (optional; absent on old logs). */
+  cacheReadTokens?: number;
+  /** Input tokens written to cache this run (optional; absent on old logs). */
+  cacheCreationTokens?: number;
 }
 
 async function appendEntry(dir: string, file: string, line: string): Promise<void> {

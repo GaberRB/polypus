@@ -14,6 +14,12 @@ export interface AnthropicOptions {
   timeoutMs?: number;
 }
 
+/** Anthropic's cache breakpoint marker. Everything up to a marked element is
+ * cached as a reusable prefix (min 1024 tokens, or 2048 on Haiku; below that the
+ * marker is silently ignored). Up to 4 markers per request. */
+const EPHEMERAL = { type: "ephemeral" as const };
+type CacheControl = typeof EPHEMERAL;
+
 interface AnthropicBlock {
   type: string;
   text?: string;
@@ -22,6 +28,14 @@ interface AnthropicBlock {
   input?: Record<string, unknown>;
   tool_use_id?: string;
   content?: unknown;
+  cache_control?: CacheControl;
+}
+
+interface AnthropicToolDef {
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown>;
+  cache_control?: CacheControl;
 }
 
 /** Minimal native provider for the Anthropic Messages API (no SDK dependency). */
@@ -48,21 +62,35 @@ export class AnthropicProvider implements Provider {
 
     const messages = groupMessages(req.messages.filter((m) => m.role !== "system"));
 
+    // Prompt caching: mark stable prefixes so repeated loop iterations re-read
+    // them at ~0.1x instead of reprocessing the whole prompt. Undefined = on.
+    const cacheEnabled = req.params?.cache !== false;
+
+    const tools: AnthropicToolDef[] | undefined = req.tools?.map((t) => ({
+      name: t.name,
+      description: t.description,
+      input_schema: t.parameters,
+    }));
+    if (cacheEnabled && tools && tools.length > 0) {
+      // Breakpoint after the last tool → caches the whole tool block.
+      tools[tools.length - 1]!.cache_control = EPHEMERAL;
+    }
+    if (cacheEnabled) markLastBlock(messages); // advancing history breakpoint
+
+    // System as a cacheable text block (array form) when caching is on.
+    const systemField = system
+      ? cacheEnabled
+        ? [{ type: "text", text: system, cache_control: EPHEMERAL }]
+        : system
+      : undefined;
+
     const body = {
       model: this.model,
       max_tokens: req.params?.maxTokens ?? 8192,
       temperature: req.params?.temperature,
-      ...(system ? { system } : {}),
+      ...(systemField ? { system: systemField } : {}),
       messages,
-      ...(req.tools && req.tools.length > 0
-        ? {
-            tools: req.tools.map((t) => ({
-              name: t.name,
-              description: t.description,
-              input_schema: t.parameters,
-            })),
-          }
-        : {}),
+      ...(tools && tools.length > 0 ? { tools } : {}),
     };
 
     const controller = new AbortController();
@@ -96,7 +124,12 @@ export class AnthropicProvider implements Provider {
     const data = (await res.json()) as {
       content: AnthropicBlock[];
       stop_reason?: string;
-      usage?: { input_tokens?: number; output_tokens?: number };
+      usage?: {
+        input_tokens?: number;
+        output_tokens?: number;
+        cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
+      };
     };
 
     const text = data.content
@@ -111,18 +144,37 @@ export class AnthropicProvider implements Provider {
         arguments: b.input ?? {},
       }));
 
+    const u = data.usage;
     return {
       content: text,
       toolCalls,
       finishReason: data.stop_reason ?? "stop",
-      usage: data.usage
+      usage: u
         ? {
-            promptTokens: data.usage.input_tokens,
-            completionTokens: data.usage.output_tokens,
+            // Anthropic's input_tokens EXCLUDES cached tokens; add them back so
+            // promptTokens reflects the true context size (cost applies the
+            // cache discount separately in usage.ts).
+            promptTokens:
+              (u.input_tokens ?? 0) +
+              (u.cache_read_input_tokens ?? 0) +
+              (u.cache_creation_input_tokens ?? 0),
+            completionTokens: u.output_tokens,
+            cacheReadTokens: u.cache_read_input_tokens,
+            cacheCreationTokens: u.cache_creation_input_tokens,
           }
         : undefined,
     };
   }
+}
+
+/** Attach a cache breakpoint to the final content block of the final message,
+ * so the whole conversation so far becomes a cached prefix next iteration. */
+function markLastBlock(
+  messages: Array<{ role: "user" | "assistant"; content: AnthropicBlock[] }>,
+): void {
+  const lastMsg = messages[messages.length - 1];
+  const lastBlock = lastMsg?.content[lastMsg.content.length - 1];
+  if (lastBlock) lastBlock.cache_control = EPHEMERAL;
 }
 
 /**
