@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus 🐙 — Documentação (como usar)</title>
+  <meta name="description" content="Documentação oficial do Polypus: instalação, setup, uso do CLI e REPL, e os recursos de qualidade — prompt caching, diagnósticos pós-edit, checkpoints/rewind e TUI. Referência de configuração e comandos." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+  <style>
+    .doc-hero { background: linear-gradient(135deg, rgba(124,92,255,.14), rgba(0,0,0,0)); border: 1px solid var(--line); border-radius: 16px; padding: 26px 28px; margin: 8px 0 30px; }
+    .doc-hero .tagline { font-size: 1.05rem; opacity: .92; margin: 0 0 10px; }
+    .doc-hero .en-summary { margin: 0; }
+
+    .toc { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px; margin: 0 0 36px; }
+    .toc h2 { margin: 0 0 10px; font-size: 1rem; color: var(--v1); text-transform: uppercase; letter-spacing: .06em; }
+    .toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+    .toc li { margin-bottom: 6px; }
+    @media (max-width: 640px) { .toc ol { columns: 1; } }
+
+    .doc-section { margin: 0 0 44px; }
+    .doc-section > h2 { font-size: 1.6rem; margin: 0 0 6px; scroll-margin-top: 80px; }
+    .doc-section .lead { color: var(--muted); margin: 0 0 16px; line-height: 1.6; }
+
+    .ver-badge { display: inline-block; font-family: var(--mono); font-size: .72rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; margin-left: 10px; vertical-align: middle; background: rgba(78,201,168,.15); color: #4ec9a8; border: 1px solid rgba(78,201,168,.3); }
+
+    .feat-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; margin: 0 0 20px; }
+    .feat-card h3 { margin: 0 0 6px; font-size: 1.15rem; }
+    .feat-card .why { color: var(--muted); font-size: .93rem; line-height: 1.6; margin: 0 0 14px; }
+    .feat-card .how-h { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--v1); margin: 0 0 6px; font-weight: 700; }
+
+    .ref-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 0 0 10px; }
+    .ref-table th { text-align: left; color: var(--v1); font-weight: 700; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+    .ref-table td { padding: 8px 12px; border-bottom: 1px solid rgba(56,44,99,.5); vertical-align: top; }
+    .ref-table td:first-child { font-family: var(--mono); color: var(--v0); white-space: nowrap; }
+    .ref-table td code { font-family: var(--mono); color: var(--v0); }
+
+    .note-box { border-left: 3px solid #8b7bff; background: rgba(124,92,255,.08); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 18px 0; }
+    .note-box.warn { border-left-color: #f0a35e; background: rgba(240,163,94,.08); }
+    .note-box p { margin: 0; font-size: .93rem; }
+
+    .doc-section p { line-height: 1.65; }
+    .doc-section code { font-family: var(--mono); color: var(--v0); background: rgba(124,92,255,.08); padding: 1px 6px; border-radius: 5px; font-size: .88em; }
+    .codeblock code { background: none; padding: 0; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="index.html#top">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Como funciona</a>
+      <a href="docs.html" aria-current="page">Documentação</a>
+      <a href="hooks.html">Hooks</a>
+      <a href="vscode.html">Extensão VSCode</a>
+      <a href="index.html#quickstart">Começar</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-ext" href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="deep">
+      <a class="back-link" href="index.html">← voltar</a>
+      <h1 class="deep-title">📖 Documentação</h1>
+
+      <div class="doc-hero">
+        <p class="tagline">
+          Guia oficial de uso do <strong>Polypus</strong> — o harness de codificação agêntico que
+          faz <strong>qualquer API de IA</strong> gerar e aplicar código. Aqui você instala, configura
+          e aprende os recursos de qualidade que fazem <strong>modelo barato render como ferramenta cara</strong>:
+          prompt caching, diagnósticos pós-edit, checkpoints e TUI.
+        </p>
+        <p class="en-summary">
+          🇬🇧 <strong>Official usage docs:</strong> install, configure and learn the quality features
+          (prompt caching, post-edit diagnostics, checkpoints/rewind, polished TUI) that make cheap models
+          perform like expensive tools.
+        </p>
+      </div>
+
+      <div class="toc">
+        <h2>Nesta página</h2>
+        <ol>
+          <li><a href="#instalacao">Instalação</a></li>
+          <li><a href="#setup">Setup &amp; agentes</a></li>
+          <li><a href="#uso">Uso básico (CLI &amp; REPL)</a></li>
+          <li><a href="#modos">Modos de permissão</a></li>
+          <li><a href="#perfis">Perfis quality / fast</a></li>
+          <li><a href="#caching">Prompt caching</a></li>
+          <li><a href="#diagnosticos">Diagnósticos pós-edit</a></li>
+          <li><a href="#checkpoints">Checkpoints &amp; rewind</a></li>
+          <li><a href="#tui">TUI (terminal)</a></li>
+          <li><a href="#config">Referência de configuração</a></li>
+          <li><a href="#comandos">Comandos</a></li>
+        </ol>
+      </div>
+
+      <!-- INSTALAÇÃO -->
+      <div class="doc-section" id="instalacao">
+        <h2>Instalação</h2>
+        <p class="lead">Requer Node.js 20+. Instale global via npm:</p>
+        <div class="codeblock"><code>npm install -g @gaberrb/polypus
+polypus --version</code></div>
+        <p style="color:var(--muted)">Também dá para rodar sem instalar, com <code>npx @gaberrb/polypus &lt;comando&gt;</code>.</p>
+      </div>
+
+      <!-- SETUP -->
+      <div class="doc-section" id="setup">
+        <h2>Setup &amp; agentes</h2>
+        <p class="lead">
+          Um <strong>agente</strong> é um par provedor + modelo. Rode o assistente interativo, que
+          configura chave, modelo e permissões, ou adicione um agente direto:
+        </p>
+        <div class="codeblock"><code># assistente guiado (recomendado na primeira vez)
+polypus setup
+
+# ou registre um agente manualmente
+polypus add-agent claude \
+  --provider anthropic \
+  --model claude-sonnet-5 \
+  --api-key "${ANTHROPIC_API_KEY}" \
+  --set-default</code></div>
+        <p style="color:var(--muted)">
+          Provedores: <code>openrouter</code>, <code>anthropic</code>, <code>ollama</code> (local) e qualquer
+          endpoint <code>openai-compatible</code>. Prefira referências de ambiente
+          (<code>${VAR}</code>) a segredos inline — as chaves ficam em <code>~/.polypus/.env</code>.
+          Explore modelos do OpenRouter com <code>polypus models</code>.
+        </p>
+      </div>
+
+      <!-- USO -->
+      <div class="doc-section" id="uso">
+        <h2>Uso básico</h2>
+        <p class="lead">Passe a tarefa direto (one-shot) ou abra uma sessão interativa (REPL):</p>
+        <div class="codeblock"><code># one-shot: executa e para
+polypus run "adicione validação de e-mail no cadastro e um teste"
+
+# sessão interativa (REPL) — sem tarefa
+polypus run
+
+# headless (para UIs/scripts): objeto JSON único, ou NDJSON ao vivo
+polypus run "corrige o bug do parser" --json --mode bypass
+polypus run "..." --json --stream</code></div>
+        <p style="color:var(--muted)">
+          No REPL, comandos começam com <code>/</code> (ex.: <code>/agent</code>, <code>/mode</code>,
+          <code>/agents</code>). Retome sessões com <code>polypus run --continue</code> ou
+          <code>--resume &lt;id&gt;</code>. Divida uma tarefa grande entre vários agentes em paralelo com
+          <code>polypus swarm</code>.
+        </p>
+      </div>
+
+      <!-- MODOS -->
+      <div class="doc-section" id="modos">
+        <h2>Modos de permissão</h2>
+        <p class="lead">Controlam o que o agente pode fazer sem pedir confirmação. Ajuste com <code>--mode</code> ou <code>/mode</code>:</p>
+        <table class="ref-table">
+          <thead><tr><th>Modo</th><th>Comportamento</th></tr></thead>
+          <tbody>
+            <tr><td>plan</td><td>Só leitura e planejamento — nenhuma edição é aplicada.</td></tr>
+            <tr><td>review</td><td>Pede confirmação antes de cada escrita, mostrando o <strong>diff colorido</strong> (aprovar tudo, rejeitar ou escolher hunks).</td></tr>
+            <tr><td>bypass</td><td>Aplica tudo sem perguntar. Combine com <a href="#checkpoints">checkpoints</a> para desfazer com segurança.</td></tr>
+          </tbody>
+        </table>
+        <p style="color:var(--muted)">Uma allow/deny-list de caminhos (globs) limita quais arquivos o agente pode ler/escrever, mesmo em <code>bypass</code>.</p>
+      </div>
+
+      <!-- PERFIS -->
+      <div class="doc-section" id="perfis">
+        <h2>Perfis quality / fast</h2>
+        <p class="lead">
+          O perfil agrupa as alavancas de engenharia que fazem o modelo entregar mais. Padrão: <code>quality</code>.
+        </p>
+        <table class="ref-table">
+          <thead><tr><th>Perfil</th><th>verify</th><th>plan-first</th><th>auto-context</th></tr></thead>
+          <tbody>
+            <tr><td>quality <span style="color:var(--muted)">(padrão)</span></td><td>on</td><td>on</td><td>on</td></tr>
+            <tr><td>fast</td><td>off</td><td>off</td><td>off</td></tr>
+          </tbody>
+        </table>
+        <div class="codeblock"><code>polypus run "..." --quality   # o mais capaz (padrão)
+polypus run "..." --fast      # o mais barato/rápido
+polypus run "..." --no-verify # sobrescreve um campo do perfil</code></div>
+      </div>
+
+      <!-- CACHING -->
+      <div class="doc-section" id="caching">
+        <h2>Prompt caching <span class="ver-badge">v0.6.8+</span></h2>
+        <p class="lead">
+          O harness marca pontos estáveis do prompt (tools, system e histórico) para <strong>reaproveitar
+          o prefixo entre iterações do loop</strong> a ~0.1x do preço de input, em vez de reprocessar tudo
+          a cada passo. É a alavanca de menor esforço/maior retorno da tese custo×qualidade.
+        </p>
+        <div class="feat-card">
+          <p class="why">
+            Cobre o provedor <strong>Anthropic nativo</strong> e modelos <strong>Claude via OpenRouter</strong>
+            (injeção de <code>cache_control</code>). OpenAI/Gemini/DeepSeek cacheiam automaticamente — o Polypus
+            só lê os tokens cacheados do usage. O custo passa a re-precificar cache (leitura 0.1x, escrita 1.25x),
+            e <code>usage.jsonl</code> registra <code>cacheReadTokens</code>/<code>cacheCreationTokens</code>.
+          </p>
+          <p class="how-h">Como usar</p>
+          <p style="margin:0;color:var(--muted)">Ligado por padrão — nada a fazer. Para desligar (ex.: comparar custo):</p>
+          <div class="codeblock" style="margin-top:10px"><code>// ~/.polypus/config.json
+{ "caching": "auto" }   // padrão · use "off" para desativar</code></div>
+        </div>
+      </div>
+
+      <!-- DIAGNÓSTICOS -->
+      <div class="doc-section" id="diagnosticos">
+        <h2>Diagnósticos pós-edit <span class="ver-badge">v0.6.9+</span></h2>
+        <p class="lead">
+          Depois de <strong>cada edição</strong>, o Polypus roda checagens rápidas e escopadas nos arquivos
+          tocados e <strong>realimenta os erros ao modelo</strong> — que corrige antes de seguir, em vez de só
+          descobrir no <code>--verify</code> final. O compilador vira revisor gratuito dentro do loop.
+        </p>
+        <div class="feat-card">
+          <p class="why">
+            TypeScript via <code>tsc --noEmit --incremental</code> (com build-info por workspace para acelerar
+            execuções repetidas); Python via <code>ruff</code> quando configurado. Best-effort: cada checagem
+            tem timeout (padrão 10s) e <strong>nunca trava o loop</strong>. Filtra a saída para os arquivos da
+            sessão, evitando ruído de erros pré-existentes.
+          </p>
+          <p class="how-h">Como usar</p>
+          <p style="margin:0;color:var(--muted)">Automático quando um toolchain é detectado. Configuração:</p>
+          <div class="codeblock" style="margin-top:10px"><code>// ~/.polypus/config.json
+{ "diagnostics": "auto" }   // padrão · "on" força · "off" desativa</code></div>
+        </div>
+      </div>
+
+      <!-- CHECKPOINTS -->
+      <div class="doc-section" id="checkpoints">
+        <h2>Checkpoints &amp; rewind <span class="ver-badge">v0.6.10+</span></h2>
+        <p class="lead">
+          Antes de cada edição, o Polypus tira um <strong>snapshot do estado anterior</strong> do arquivo
+          (content-addressed, deduplicado por hash) em <code>~/.polypus/checkpoints/&lt;sessão&gt;</code>. Assim você
+          desfaz mudanças do agente <strong>mesmo sem git</strong> ou com a árvore suja — a rede de segurança
+          que deixa rodar em <code>bypass</code> sem medo.
+        </p>
+        <div class="feat-card">
+          <p class="why">
+            Cobre <code>write_file</code>, <code>edit_file</code>, <code>apply_patch</code>, <code>move_file</code>
+            e <code>delete_file</code> — deletes e moves são reversíveis. GC automático remove snapshots com mais
+            de 7 dias. Independente de git; não toca no seu index/stash.
+          </p>
+          <p class="how-h">Como usar</p>
+          <div class="codeblock" style="margin-top:10px"><code># liste os checkpoints de uma sessão
+polypus checkpoints &lt;id-da-sessão&gt;
+
+# volte o workspace ao estado antes do checkpoint N
+polypus checkpoints &lt;id&gt; --restore 3
+
+# restaure só um arquivo, ou escolha a raiz do workspace
+polypus checkpoints &lt;id&gt; --restore 3 --file src/foo.ts
+polypus checkpoints &lt;id&gt; --restore 3 --dir /caminho/do/projeto</code></div>
+          <p style="margin:10px 0 0;color:var(--muted)">Descubra o <code>&lt;id&gt;</code> com <code>polypus sessions</code>. Desative com <code>{ "checkpoints": "off" }</code>.</p>
+        </div>
+        <div class="note-box warn"><p>⚠ O rewind restaura <strong>estado de arquivos</strong>, não efeitos de <code>run_command</code> (ex.: <code>npm install</code>, migrations). Mesma limitação de ferramentas equivalentes.</p></div>
+      </div>
+
+      <!-- TUI -->
+      <div class="doc-section" id="tui">
+        <h2>TUI — experiência no terminal <span class="ver-badge">v0.6.11+</span></h2>
+        <p class="lead">O CLI foi polido para acompanhar o agente com clareza:</p>
+        <ul style="color:var(--muted);line-height:1.7">
+          <li><strong>Markdown na resposta final</strong> — títulos, negrito/itálico, <code>código</code>, blocos com moldura e listas renderizados no terminal.</li>
+          <li><strong>Timeline de tool calls</strong> com status e <strong>duração</strong> (<code>✓ edit_file … (0.4s)</code>).</li>
+          <li><strong>Diff colorido</strong> nas confirmações de <code>review</code>, com truncamento de hunks longos (<code>… +N linhas</code>).</li>
+        </ul>
+        <div class="note-box"><p>Respeita <code>NO_COLOR</code> e saída em pipe (<code>--json</code>): sem ANSI quando não há terminal interativo.</p></div>
+      </div>
+
+      <!-- CONFIG -->
+      <div class="doc-section" id="config">
+        <h2>Referência de configuração</h2>
+        <p class="lead">A config fica em <code>~/.polypus/config.json</code> (segredos em <code>~/.polypus/.env</code>). Campos principais:</p>
+        <table class="ref-table">
+          <thead><tr><th>Campo</th><th>Valores</th><th>O que faz</th></tr></thead>
+          <tbody>
+            <tr><td>caching</td><td><code>auto</code> · <code>off</code></td><td>Prompt caching (breakpoints de <code>cache_control</code>).</td></tr>
+            <tr><td>diagnostics</td><td><code>auto</code> · <code>on</code> · <code>off</code></td><td>Checagens de tipo/lint pós-edit realimentadas ao modelo.</td></tr>
+            <tr><td>checkpoints</td><td><code>auto</code> · <code>off</code></td><td>Snapshot pré-edição para <code>polypus checkpoints --restore</code>.</td></tr>
+            <tr><td>execution.profile</td><td><code>quality</code> · <code>fast</code></td><td>Agrupa verify / plan-first / auto-context.</td></tr>
+            <tr><td>permissions.mode</td><td><code>plan</code> · <code>review</code> · <code>bypass</code></td><td>Nível de confirmação para escritas.</td></tr>
+            <tr><td>locale</td><td><code>pt-BR</code> · <code>en</code></td><td>Idioma da interface.</td></tr>
+            <tr><td>defaultAgent</td><td>nome</td><td>Agente usado quando <code>--agent</code> é omitido.</td></tr>
+          </tbody>
+        </table>
+        <p style="color:var(--muted)">Flags de CLI sempre têm precedência sobre a config; a config tem precedência sobre o preset do perfil.</p>
+      </div>
+
+      <!-- COMANDOS -->
+      <div class="doc-section" id="comandos">
+        <h2>Comandos</h2>
+        <table class="ref-table">
+          <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+          <tbody>
+            <tr><td>polypus setup</td><td>Assistente interativo (agentes, chaves, permissões).</td></tr>
+            <tr><td>polypus run [tarefa]</td><td>Executa uma tarefa; sem tarefa, abre o REPL.</td></tr>
+            <tr><td>polypus swarm &lt;tarefa&gt;</td><td>Divide a tarefa entre vários agentes em worktrees paralelas.</td></tr>
+            <tr><td>polypus models</td><td>Explora modelos do OpenRouter (preço, contexto, tools).</td></tr>
+            <tr><td>polypus usage</td><td>Analytics de tokens/custo por modelo e por dia.</td></tr>
+            <tr><td>polypus estimate &lt;tarefa&gt;</td><td>Estima esforço/custo sem fazer mudanças.</td></tr>
+            <tr><td>polypus sessions</td><td>Lista sessões salvas que podem ser retomadas.</td></tr>
+            <tr><td>polypus checkpoints &lt;id&gt;</td><td>Lista/restaura checkpoints de arquivo de uma sessão.</td></tr>
+            <tr><td>polypus index / retrieve</td><td>Índice semântico do repositório (RAG) e busca.</td></tr>
+            <tr><td>polypus prd &lt;issue&gt;</td><td>Gera um PRD a partir de uma issue (modelo grátis do OpenRouter).</td></tr>
+            <tr><td>polypus review &lt;pr&gt;</td><td>Revisa o diff de um PR (modelo grátis do OpenRouter).</td></tr>
+          </tbody>
+        </table>
+        <p style="color:var(--muted)">Rode <code>polypus &lt;comando&gt; --help</code> para todas as flags.</p>
+
+        <div class="note-box"><p>Veja também: <a href="hooks.html">Hooks</a> (scripts no ciclo do agente), <a href="cicd.html">CI/CD</a> (agente autônomo em issues), <a href="vscode.html">Extensão VSCode</a> e <a href="chrome.html">Extensão Chrome</a>.</p></div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-octo">🐙</div>
+    <p class="footer-by">Feito com 💜 por <a href="https://github.com/GaberRB" target="_blank" rel="noopener">GaberRB</a></p>
+    <p class="footer-links"><a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a> · <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a></p>
+    <p class="footer-lic">MIT License</p>
+  </footer>
+</body>
+</html>
