@@ -1,9 +1,14 @@
 import type { AgentEvents, RunResult } from "../../core/agent/loop.js";
 
-export interface JsonEvent {
-  type: "step" | "assistant" | "tool_call" | "tool_result" | "correction" | "reprompt" | "compaction";
-  [key: string]: unknown;
-}
+export type JsonEvent =
+  | { type: "step"; step: number }
+  | { type: "assistant"; text: string }
+  | { type: "tool_call"; name: string; arguments: Record<string, unknown> }
+  | { type: "tool_result"; name: string; ok: boolean; output: string }
+  | { type: "hook_event"; event: string; toolName: string | null; command: string; durationMs: number; blocked: boolean; output: string }
+  | { type: "correction"; name: string }
+  | { type: "reprompt"; attempt: number }
+  | { type: "compaction"; before: number; after: number };
 
 export interface JsonCollector {
   /** AgentEvents that record a structured log instead of rendering to a TTY. */
@@ -64,6 +69,17 @@ export function createJsonCollector(): JsonCollector {
     onCompaction(before, after) {
       log.push({ type: "compaction", before, after });
     },
+    onHook(event, toolName, result) {
+      log.push({
+        type: "hook_event",
+        event,
+        toolName,
+        command: result.command,
+        durationMs: result.durationMs,
+        blocked: result.blocked,
+        output: result.output.slice(0, OUTPUT_PREVIEW),
+      });
+    },
     onUsage() {
       /* usage is summarised in the final result, not per-event */
     },
@@ -88,22 +104,20 @@ export function createJsonCollector(): JsonCollector {
 }
 
 /** A single streamed event (`polypus run --json --stream` emits one per line). */
-export interface StreamEvent {
-  type:
-    | "step"
-    | "assistant_delta"
-    | "thinking_delta"
-    | "assistant"
-    | "tool_call"
-    | "tool_result"
-    | "ask_user"
-    | "correction"
-    | "reprompt"
-    | "compaction"
-    | "usage"
-    | "result";
-  [key: string]: unknown;
-}
+export type StreamEvent =
+  | { type: "step"; step: number }
+  | { type: "assistant_delta"; text: string }
+  | { type: "thinking_delta"; text: string }
+  | { type: "assistant"; text: string }
+  | { type: "tool_call"; name: string; arguments: Record<string, unknown> }
+  | { type: "tool_result"; name: string; ok: boolean; output: string }
+  | { type: "hook_event"; event: string; toolName: string | null; command: string; durationMs: number; blocked: boolean; output: string }
+  | { type: "ask_user"; [key: string]: unknown }
+  | { type: "correction"; name: string }
+  | { type: "reprompt"; attempt: number }
+  | { type: "compaction"; before: number; after: number }
+  | { type: "usage"; promptTokens: number; completionTokens: number }
+  | { type: "result"; result: Record<string, unknown> };
 
 /**
  * Stream agent events as NDJSON (one JSON object per line) as they happen, for
@@ -158,6 +172,17 @@ export function createNdjsonStreamer(emit: (event: StreamEvent) => void): {
     },
     onUsage(usage) {
       emit({ type: "usage", ...usage });
+    },
+    onHook(event, toolName, result) {
+      emit({
+        type: "hook_event",
+        event,
+        toolName,
+        command: result.command,
+        durationMs: result.durationMs,
+        blocked: result.blocked,
+        output: result.output.slice(0, OUTPUT_PREVIEW),
+      });
     },
   };
 

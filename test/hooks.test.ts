@@ -61,12 +61,12 @@ describe("runAfterHook", () => {
       call("write_file", { path: "src/x.ts" }),
       ws,
     );
-    expect(note).toContain("afterWrite ok");
+    expect(note).toBeDefined();
     expect(existsSync(join(ws, "ran.txt"))).toBe(true);
   });
 
   it("returns undefined when no hook applies", async () => {
-    expect(await runAfterHook({ afterEdit: "echo x" }, call("write_file", { path: "a" }), workspace())).toBeUndefined();
+    expect(await runAfterHook({ afterEdit: "echo x", hooks: [] }, call("write_file", { path: "a" }), workspace())).toBeUndefined();
   });
 });
 

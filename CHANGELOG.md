@@ -5,6 +5,20 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.7] — 2026-06-30
+
+### Added
+
+- **Hook system — paridade OpenCode** — `PreToolUse`, `PostToolUse` e `Stop` com stdout injetado no contexto do modelo. Loop automático de lint/typecheck/testes: o agente vê os erros e corrige sozinho, sem intervenção humana. Matcher por tool name (`on: ["write_file"]` ou `"*"`), substituições `{path}` / `{tool}` / `{workspace}`, truncamento configurável (`maxOutputChars`, padrão 1 000). Guard anti-loop integrado.
+- **UX de eventos no CLI** — timeline em tempo real com `↪ PostToolUse(write_file) ✓ (1.2s)` e output do hook indentado. `--compact` / tecla `h` colapsa para linha única com contagem.
+- **UX de eventos no VSCode / Cowork** — `hook_event` no stream NDJSON; painel colapsável com badge de evento, comando, tempo e status (✓/✗/spinner).
+- **`docs/hooks.md`** — documentação completa: `PreToolUse`, `PostToolUse`, `Stop`; campos, substituições, exemplos Node/Python/Git, migração do formato antigo, seção de segurança.
+- **Página `docs/hooks.html`** no site do projeto com diagrama de fluxo, exemplos por linguagem (tabs), visualização da timeline CLI e referência de campos. (issue [#197](https://github.com/GaberRB/polypus/issues/197))
+
+### Deprecated
+
+- Campos `afterWrite`, `afterEdit`, `afterTool` e `beforeCommand` em `hooks.json` — continuam funcionando com aviso no stderr; migre para o campo `hooks` com `event`.
+
 ## [Unreleased]
 
 ### Added

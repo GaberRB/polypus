@@ -600,6 +600,18 @@ function renderEvents(spinner: Spinner): AgentEvents {
       spinner.stop();
       console.log(pc.magenta("  🎯 " + t("skills.activated", { name, scope })));
     },
+    onHook(event, toolName, result) {
+      spinner.stop();
+      const secs = (result.durationMs / 1000).toFixed(1);
+      const prefix = pc.dim(`    ↪ ${event}${toolName ? `(${toolName})` : ""}`);
+      const timing = pc.dim(` (${secs}s)`);
+      const status = result.blocked ? pc.red(" ✗") : pc.green(" ✓");
+      console.log(`${prefix}${status}${timing}`);
+      if (result.output) {
+        const first = result.output.split("\n")[0] ?? "";
+        console.log(pc.dim(`      ${first.slice(0, 120)}`));
+      }
+    },
   };
 }
 
