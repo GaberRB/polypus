@@ -21,6 +21,26 @@ describe("estimateCost", () => {
   });
 });
 
+describe("estimateCost with cache", () => {
+  it("re-prices cached reads at 0.1x and writes at 1.25x", () => {
+    // 1M total input = 200k full-rate + 600k cache read + 200k cache write.
+    const cost = estimateCost(
+      { promptTokens: 1_000_000, completionTokens: 0, cacheReadTokens: 600_000, cacheCreationTokens: 200_000 },
+      { promptPrice: 10, completionPrice: 20 },
+    );
+    // 0.2*10 + 0.2*10*1.25 + 0.6*10*0.1 = 2 + 2.5 + 0.6 = 5.1
+    expect(cost).toBeCloseTo(5.1, 6);
+  });
+
+  it("is unchanged from the old formula when no cache fields are present", () => {
+    const cost = estimateCost(
+      { promptTokens: 1_000_000, completionTokens: 500_000 },
+      { promptPrice: 3, completionPrice: 6 },
+    );
+    expect(cost).toBeCloseTo(6, 6); // 1M*$3 + 0.5M*$6
+  });
+});
+
 describe("fmtUsd", () => {
   it("uses extra precision for sub-cent amounts", () => {
     expect(fmtUsd(0)).toBe("US$0.00");

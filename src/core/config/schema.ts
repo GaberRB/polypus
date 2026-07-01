@@ -243,6 +243,13 @@ export const PolypusConfig = z.object({
   retrieval: RetrievalConfig.default({}),
   /** Quality-vs-speed execution defaults (verification, plan-first, auto-context). */
   execution: ExecutionConfig.default({}),
+  /**
+   * Provider prompt caching. `auto` (default) marks cache_control breakpoints so
+   * repeated loop iterations re-read the stable prompt prefix at a large discount
+   * (Anthropic native and Claude-via-OpenRouter); `off` disables it (e.g. to
+   * compare cost or debug).
+   */
+  caching: z.enum(["auto", "off"]).default("auto"),
 });
 export type PolypusConfig = z.infer<typeof PolypusConfig>;
 
