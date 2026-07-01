@@ -250,6 +250,12 @@ export const PolypusConfig = z.object({
    * compare cost or debug).
    */
   caching: z.enum(["auto", "off"]).default("auto"),
+  /**
+   * Post-edit diagnostics. `auto` (default) runs fast type/lint checks (tsc,
+   * ruff) after each edit when a toolchain is detected and feeds errors back to
+   * the model; `on` forces it; `off` disables it.
+   */
+  diagnostics: z.enum(["auto", "on", "off"]).default("auto"),
 });
 export type PolypusConfig = z.infer<typeof PolypusConfig>;
 

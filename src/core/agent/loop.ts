@@ -18,6 +18,12 @@ import {
   type HookRunResult,
 } from "./hooks.js";
 import { buildVerifyFeedback, detectChecks, runChecks, type CheckResult } from "./verify.js";
+import {
+  buildDiagnosticsFeedback,
+  detectDiagnostics,
+  runDiagnostics,
+  type DiagnosticProbe,
+} from "./diagnostics.js";
 
 export interface Usage {
   promptTokens: number;
@@ -46,10 +52,31 @@ export interface AgentEvents {
   onCompaction?(before: number, after: number): void;
   /** Fired after project checks run at `finish` time (closed-loop verification). */
   onVerify?(results: CheckResult[]): void;
+  /** Fired when post-edit diagnostics report problems in the just-changed files. */
+  onDiagnostics?(output: string): void;
   /** Fired when the agent activates a skill via the use_skill tool. */
   onSkill?(name: string, scope: "project" | "global"): void;
   /** Fired when a hook runs (PreToolUse / PostToolUse / Stop). */
   onHook?(event: HookEvent, toolName: string | null, result: HookRunResult): void;
+}
+
+/** Post-edit diagnostics config: surface type/lint errors right after each edit. */
+export interface DiagnosticsOptions {
+  /** Master switch. When false, no diagnostics run. */
+  enabled: boolean;
+  /** Per-probe wall-clock budget in ms (default 10000). */
+  timeoutMs?: number;
+}
+
+/** Tools that change files on disk — their targets get diagnosed. */
+const WRITE_TOOLS = new Set(["write_file", "edit_file", "apply_patch", "move_file"]);
+
+/** Extract the source path a write-family tool wrote to (destination for moves). */
+function writtenPath(call: ToolCall): string | undefined {
+  if (!WRITE_TOOLS.has(call.name)) return undefined;
+  const a = call.arguments;
+  const p = call.name === "move_file" ? a.to : a.path;
+  return typeof p === "string" && p.length > 0 ? p : undefined;
 }
 
 /** Closed-loop verification config: run project checks before accepting `finish`. */
@@ -83,6 +110,8 @@ export interface RunOptions {
   hooks?: HooksConfig;
   /** Closed-loop verification: run project checks before accepting `finish`. */
   verify?: VerifyOptions;
+  /** Post-edit diagnostics: after each edit, feed type/lint errors back to the model. */
+  diagnostics?: DiagnosticsOptions;
   /** Interactive choice prompt for the ask_user tool (undefined in headless mode). */
   ask?(req: import("../tools/types.js").AskRequest): Promise<string[] | null>;
   /** Abort the run (e.g. user pressed ESC). */
@@ -170,6 +199,11 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   const usage: Usage = { promptTokens: 0, completionTokens: 0 };
   const compactThreshold = opts.compactThresholdTokens ?? 0;
   let lastPromptTokens = 0;
+
+  // Post-edit diagnostics state (probes detected lazily on the first edit).
+  const diagnostics = opts.diagnostics;
+  let diagProbes: DiagnosticProbe[] | undefined;
+  let diagProbesReady = false;
 
   // Closed-loop verification state.
   const verify = opts.verify;
@@ -264,6 +298,10 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     }
     consecutiveNoTool = 0;
 
+    // Source files written this step — diagnosed together once the step's tool
+    // calls are done (debounced so a batch of edits triggers a single check).
+    const touchedThisStep = new Set<string>();
+
     for (const call of toolCalls) {
       if (opts.signal?.aborted) return { finished: false, reason: "cancelled", steps: step, messages, usage };
       events?.onToolCall?.(call);
@@ -338,6 +376,11 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
       events?.onToolResult?.(call, result);
 
+      if (result.ok && diagnostics?.enabled) {
+        const wp = writtenPath(call);
+        if (wp) touchedThisStep.add(wp);
+      }
+
       const sig = `${call.name}:${JSON.stringify(call.arguments)}`;
       let resultText = result.output;
       // Auto-correction: on failure, enrich the raw error with its likely cause
@@ -375,6 +418,27 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         lastFailSig = sig;
         if (failStreak >= maxToolRetries) {
           return { finished: false, reason: "stalled", steps: step, messages, usage };
+        }
+      }
+    }
+
+    // Post-edit diagnostics: after the step's edits, run fast type/lint checks
+    // scoped to the touched files and feed any problems back so the model fixes
+    // them on the next turn. Best-effort — detection/timeouts never break the loop.
+    if (diagnostics?.enabled && touchedThisStep.size > 0) {
+      if (!diagProbesReady) {
+        diagProbes = await detectDiagnostics(opts.workspace);
+        diagProbesReady = true;
+      }
+      if (diagProbes && diagProbes.length > 0) {
+        const problems = await runDiagnostics(opts.workspace, [...touchedThisStep], {
+          probes: diagProbes,
+          timeoutMs: diagnostics.timeoutMs,
+        });
+        if (problems) {
+          events?.onDiagnostics?.(problems);
+          messages.push({ role: "user", content: buildDiagnosticsFeedback(problems) });
+          continue; // let the model react to the diagnostics before anything else
         }
       }
     }

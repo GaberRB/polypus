@@ -5,6 +5,21 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.9] — 2026-07-01
+
+### Added
+
+- **Diagnósticos pós-edit no loop** — depois de cada edição (`write_file`,
+  `edit_file`, `apply_patch`, `move_file`), o harness roda checagens rápidas e
+  escopadas (TypeScript via `tsc --noEmit --incremental`; Python via `ruff`) nos
+  arquivos tocados e realimenta os erros ao modelo, que corrige antes de seguir —
+  em vez de só descobrir no `--verify` final. É a maior alavanca da tese
+  custo×qualidade: transforma o compilador em revisor gratuito dentro do loop.
+  Best-effort (timeout por checagem, padrão 10s; nunca trava o loop), com
+  build-info incremental por workspace para acelerar execuções repetidas.
+  Configurável via `diagnostics: "auto" | "on" | "off"`. (issue
+  [#199](https://github.com/GaberRB/polypus/issues/199))
+
 ## [0.6.8] — 2026-07-01
 
 ### Added
@@ -605,7 +620,8 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.8...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.9...HEAD
+[0.6.9]: https://github.com/GaberRB/polypus/compare/v0.6.8...v0.6.9
 [0.6.8]: https://github.com/GaberRB/polypus/compare/v0.6.7...v0.6.8
 [0.6.7]: https://github.com/GaberRB/polypus/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/GaberRB/polypus/compare/v0.6.5...v0.6.6
