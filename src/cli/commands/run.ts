@@ -45,6 +45,7 @@ import { startRepl, type ReplContext } from "../../ui/repl.js";
 import { runSwarmSession } from "./swarm.js";
 import { printWelcome } from "../../ui/banner.js";
 import { Spinner } from "../../ui/spinner.js";
+import { renderMarkdown } from "../../ui/markdown.js";
 import { t } from "../../core/i18n/index.js";
 import { listenForCancel } from "../../ui/cancel.js";
 
@@ -533,15 +534,21 @@ async function confirmAction(req: ConfirmRequest): Promise<ConfirmResult> {
   return answer === true;
 }
 
+/** Max lines shown per hunk before truncating (keeps big rewrites readable). */
+const MAX_HUNK_LINES = 40;
+
 /** Print a colored unified diff for the hunks of a pending write. */
 function renderDiff(hunks: Hunk[]): void {
   for (const h of hunks) {
     console.log(pc.cyan(`@@ -${h.oldStart + 1},${h.oldCount} +${h.newStart + 1},${h.newCount} @@`));
-    for (const l of h.lines) {
+    const shown = h.lines.slice(0, MAX_HUNK_LINES);
+    for (const l of shown) {
       if (l.type === "+") console.log(pc.green(`+${l.text}`));
       else if (l.type === "-") console.log(pc.red(`-${l.text}`));
       else console.log(pc.dim(` ${l.text}`));
     }
+    const hidden = h.lines.length - shown.length;
+    if (hidden > 0) console.log(pc.dim(`  … +${hidden} ${t("diff.moreLines")}`));
   }
 }
 
@@ -549,6 +556,8 @@ function renderEvents(spinner: Spinner): AgentEvents {
   // Tracks whether the current step already streamed text live, so onAssistantText
   // doesn't reprint it — it just closes the line.
   let streamed = false;
+  // Wall-clock start of the in-flight tool call, for the ✓/✗ timing suffix.
+  let toolStart = 0;
   return {
     onStep() {
       streamed = false;
@@ -569,18 +578,20 @@ function renderEvents(spinner: Spinner): AgentEvents {
         process.stdout.write("\n"); // close the streamed line; already printed
         return;
       }
-      if (text.trim()) console.log(pc.cyan(text.trim()));
+      if (text.trim()) console.log(renderMarkdown(text.trim()));
     },
     onToolCall(call) {
       spinner.stop();
       const arg = call.name === "run_command" ? call.arguments.command : call.arguments.path;
       console.log(pc.dim(`  → ${call.name}${arg ? ` ${String(arg)}` : ""}`));
+      toolStart = Date.now();
       spinner.start(t("ui.running", { tool: call.name }));
     },
     onToolResult(_call, result) {
       spinner.stop();
       const head = result.output.split("\n")[0] ?? "";
-      console.log((result.ok ? pc.green("    ✓ ") : pc.red("    ✗ ")) + pc.dim(head.slice(0, 120)));
+      const secs = toolStart ? pc.dim(` (${((Date.now() - toolStart) / 1000).toFixed(1)}s)`) : "";
+      console.log((result.ok ? pc.green("    ✓ ") : pc.red("    ✗ ")) + pc.dim(head.slice(0, 120)) + secs);
       // The agent gets the raw error for auto-correction, but a missing prerequisite
       // is really the user's to fix — surface an actionable hint in the terminal.
       if (!result.ok) {
