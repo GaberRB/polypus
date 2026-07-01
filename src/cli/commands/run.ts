@@ -127,7 +127,15 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
   let seeded: SessionRecord | undefined;
   if (opts.resume) {
     seeded = await loadSession(opts.resume);
-    if (!seeded) throw new Error(t("sessions.notFound", { id: opts.resume }));
+    // When called from an IDE extension the session file may no longer exist
+    // (reinstall, different machine, cleaned cache). Start fresh rather than crash.
+    if (!seeded) {
+      if (opts.json) {
+        process.stderr.write(t("sessions.notFound", { id: opts.resume }) + "\n");
+      } else {
+        console.log(pc.dim(t("sessions.noneToContinue")));
+      }
+    }
   } else if (opts.continue) {
     seeded = await latestSession();
     if (!seeded && !opts.json) console.log(pc.dim(t("sessions.noneToContinue")));
