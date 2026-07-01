@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus 🐙 — Hooks (PreToolUse, PostToolUse, Stop)</title>
+  <meta name="description" content="Hook system do Polypus: execute scripts em pontos-chave do ciclo do agente. Loop automático de lint, typecheck e testes — o modelo vê os erros e corrige sozinho." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+  <style>
+    .hooks-hero { background: linear-gradient(135deg, rgba(124,92,255,.14), rgba(0,0,0,0)); border: 1px solid var(--line); border-radius: 16px; padding: 26px 28px; margin: 8px 0 34px; }
+    .hooks-hero .tagline { font-size: 1.05rem; opacity: .9; margin: 0; }
+    .event-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 0 0 36px; }
+    .event-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 20px; }
+    .event-card:hover { border-color: var(--v3); }
+    .event-badge { display: inline-block; font-family: var(--mono); font-size: .8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-bottom: 12px; }
+    .badge-pre  { background: rgba(240,163,94,.15); color: #f0a35e; border: 1px solid rgba(240,163,94,.3); }
+    .badge-post { background: rgba(78,201,168,.15); color: #4ec9a8; border: 1px solid rgba(78,201,168,.3); }
+    .badge-stop { background: rgba(171,142,250,.15); color: var(--v1);  border: 1px solid rgba(171,142,250,.3); }
+    .event-card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    .event-card p  { margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.55; }
+    .use-list { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: .88rem; }
+    .use-list li { margin-bottom: 3px; }
+
+    .ref-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 0 0 32px; }
+    .ref-table th { text-align: left; color: var(--v1); font-weight: 700; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+    .ref-table td { padding: 8px 12px; border-bottom: 1px solid rgba(56,44,99,.5); vertical-align: top; }
+    .ref-table td:first-child { font-family: var(--mono); color: var(--v0); white-space: nowrap; }
+    .ref-table td:nth-child(2) { color: var(--muted); white-space: nowrap; }
+    .ref-table td:nth-child(3) { color: var(--muted); font-family: var(--mono); font-size: .82rem; }
+
+    .note-box { border-left: 3px solid #8b7bff; background: rgba(124,92,255,.08); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 18px 0; }
+    .note-box.warn { border-left-color: #f0a35e; background: rgba(240,163,94,.08); }
+    .note-box p { margin: 0; font-size: .93rem; }
+
+    .flow-hook { display: flex; flex-direction: column; align-items: center; gap: 0; max-width: 560px; margin: 0 auto 36px; }
+    .flow-row { display: flex; align-items: center; width: 100%; gap: 10px; }
+    .flow-box { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: .92rem; font-weight: 600; }
+    .flow-box.tool  { border-color: var(--v3); }
+    .flow-hook .arrow-v { width: 3px; height: 22px; background: var(--line); border-radius: 3px; margin: 0 auto; position: relative; overflow: hidden; }
+    .flow-hook .arrow-v::after { content: ""; position: absolute; inset: 0; height: 40%; background: linear-gradient(180deg, transparent, var(--v2), transparent); animation: flowv 1.6s linear infinite; }
+    @keyframes flowv { from { top: -40%; } to { top: 100%; } }
+    .hook-pill { background: rgba(171,142,250,.12); border: 1px solid rgba(171,142,250,.3); border-radius: 8px; padding: 6px 12px; font-size: .82rem; font-family: var(--mono); color: var(--v1); white-space: nowrap; }
+    .hook-inject { font-size: .78rem; color: var(--muted); margin-left: 8px; }
+
+    .tabs-hook { display: flex; gap: 8px; margin-bottom: 14px; }
+    .tab-hook { background: var(--panel); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 6px 16px; cursor: pointer; font-weight: 700; font-size: .88rem; }
+    .tab-hook.active { background: linear-gradient(90deg, var(--v4), var(--v3)); color: #fff; border: 0; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .subst-table { width: 100%; border-collapse: collapse; font-size: .88rem; margin: 14px 0 0; }
+    .subst-table th { color: var(--muted); font-weight: 600; text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+    .subst-table td { padding: 6px 10px; border-bottom: 1px solid rgba(56,44,99,.4); }
+    .subst-table td:first-child { font-family: var(--mono); color: var(--v0); }
+    .subst-table td:nth-child(2) { color: var(--muted); }
+    .subst-table td:nth-child(3) { color: var(--muted); font-size: .82rem; }
+
+    .vis-row { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; font-family: var(--mono); font-size: .88rem; }
+    .vis-tool { color: var(--v1); }
+    .vis-hook { color: #4ec9a8; padding-left: 16px; }
+    .vis-hook.err { color: #f87171; }
+    .vis-time { color: rgba(168,159,206,.5); font-size: .78rem; margin-left: auto; }
+    .vis-out  { padding: 1px 0 3px 32px; font-size: .8rem; color: rgba(168,159,206,.6); }
+    .vis-panel { background: #0e0a1c; border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; max-width: 600px; margin: 0 auto 10px; }
+    .vis-prompt { color: rgba(168,159,206,.4); font-family: var(--mono); font-size: .85rem; margin-bottom: 6px; }
+
+    .en-summary { font-size: .9rem; opacity: .8; border: 1px dashed var(--line); border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="index.html#top">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Como funciona</a>
+      <a href="agent.html">Agente autônomo</a>
+      <a href="cicd.html">CI/CD</a>
+      <a href="hooks.html" aria-current="page">Hooks</a>
+      <a href="index.html#quickstart">Começar</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-ext" href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="deep">
+      <a class="back-link" href="index.html">← voltar</a>
+      <h1 class="deep-title">🪝 Hooks</h1>
+
+      <div class="hooks-hero">
+        <p class="tagline">
+          Execute <strong>scripts shell em pontos-chave do ciclo do agente</strong> —
+          antes de uma tool rodar (<code>PreToolUse</code>), depois de uma tool ter sucesso
+          (<code>PostToolUse</code>), ou ao terminar (<code>Stop</code>). O <strong>output é
+          injetado de volta no contexto do modelo</strong>: ele vê os erros de lint, typecheck
+          ou testes e corrige sozinho, sem intervenção humana.
+        </p>
+        <p class="en-summary">
+          🇬🇧 <strong>In short:</strong> hooks let you run shell scripts at key points in the agent loop.
+          Output is fed back to the model so it can self-correct lint errors, type errors, and failing tests —
+          no human in the loop required.
+        </p>
+      </div>
+
+      <!-- Fluxo visual -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin-bottom:20px">Como funciona</h2>
+
+      <div class="flow-hook">
+        <div class="flow-row">
+          <div class="flow-box">Modelo decide chamar uma tool</div>
+        </div>
+        <div class="arrow-v"></div>
+        <div class="flow-row" style="justify-content:center;gap:14px">
+          <div class="hook-pill">PreToolUse</div>
+          <span class="hook-inject">→ bloqueia se exit ≠ 0</span>
+        </div>
+        <div class="arrow-v"></div>
+        <div class="flow-row">
+          <div class="flow-box tool">Tool executa (write_file, run_command…)</div>
+        </div>
+        <div class="arrow-v"></div>
+        <div class="flow-row" style="justify-content:center;gap:14px">
+          <div class="hook-pill">PostToolUse</div>
+          <span class="hook-inject">→ stdout injetado no contexto</span>
+        </div>
+        <div class="arrow-v"></div>
+        <div class="flow-row">
+          <div class="flow-box">Modelo lê output → corrige no próximo turno</div>
+        </div>
+        <div class="arrow-v"></div>
+        <div class="flow-row" style="justify-content:center;gap:14px">
+          <div class="hook-pill">Stop</div>
+          <span class="hook-inject">→ ao chamar finish</span>
+        </div>
+      </div>
+
+      <!-- Três eventos -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin-bottom:20px">Eventos</h2>
+      <div class="event-grid">
+        <div class="event-card">
+          <span class="event-badge badge-pre">PreToolUse</span>
+          <h3>Antes da tool executar</h3>
+          <p>Se o script retornar exit code ≠ 0, a tool é <strong>bloqueada</strong> e o output vira mensagem de erro para o modelo.</p>
+          <ul class="use-list">
+            <li>Bloquear comandos perigosos (<code>rm -rf</code>)</li>
+            <li>Validar argumentos antes de escrever</li>
+            <li>Garantir ambiente pronto</li>
+          </ul>
+        </div>
+        <div class="event-card">
+          <span class="event-badge badge-post">PostToolUse</span>
+          <h3>Após tool bem-sucedida</h3>
+          <p>stdout+stderr do script são <strong>injetados no contexto</strong> — o modelo vê e pode corrigir no próximo turno.</p>
+          <ul class="use-list">
+            <li>Lint / typecheck automático</li>
+            <li>Formatar código (prettier, black)</li>
+            <li>Rodar testes afetados</li>
+          </ul>
+        </div>
+        <div class="event-card">
+          <span class="event-badge badge-stop">Stop</span>
+          <h3>Ao chamar finish</h3>
+          <p>Roda depois da verificação passar, antes de retornar o resultado. Sem contexto de tool — use <code>{workspace}</code>.</p>
+          <ul class="use-list">
+            <li>Commit automático das mudanças</li>
+            <li>Notificar via Slack / webhook</li>
+            <li>Gerar changelog / release notes</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Configuração -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin-bottom:16px">Configuração</h2>
+      <p style="color:var(--muted);margin-bottom:14px">Crie <code>.poly/hooks.json</code> na raiz do projeto (ou <code>~/.polypus/hooks.json</code> para configuração global):</p>
+
+      <div class="tabs-hook" id="exampTabs">
+        <button class="tab-hook active" data-pane="node">Node / TypeScript</button>
+        <button class="tab-hook" data-pane="python">Python</button>
+        <button class="tab-hook" data-pane="git">Git commit</button>
+      </div>
+
+      <div id="pane-node" class="tab-pane active">
+        <div class="codeblock"><code>{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "on": ["write_file", "edit_file"],
+      "command": "npx tsc --noEmit 2>&1 | head -30",
+      "maxOutputChars": 2000,
+      "timeout": 30000
+    },
+    {
+      "event": "PostToolUse",
+      "on": ["write_file", "edit_file"],
+      "command": "npx eslint {path} --fix 2>&1",
+      "maxOutputChars": 1000
+    }
+  ]
+}</code></div>
+      </div>
+
+      <div id="pane-python" class="tab-pane">
+        <div class="codeblock"><code>{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "on": ["write_file", "edit_file"],
+      "command": "ruff check {path} --fix 2>&1",
+      "maxOutputChars": 1000
+    },
+    {
+      "event": "PostToolUse",
+      "on": ["write_file"],
+      "command": "python -m pytest tests/ -x -q 2>&1 | tail -20",
+      "maxOutputChars": 2000,
+      "timeout": 60000
+    }
+  ]
+}</code></div>
+      </div>
+
+      <div id="pane-git" class="tab-pane">
+        <div class="codeblock"><code>{
+  "hooks": [
+    {
+      "event": "Stop",
+      "command": "cd {workspace} && git add -A && git diff --cached --quiet || git commit -m 'polypus: auto-commit'"
+    },
+    {
+      "event": "PreToolUse",
+      "on": ["run_command"],
+      "command": "echo '{tool}' | grep -q 'rm -rf' && exit 1 || exit 0"
+    }
+  ]
+}</code></div>
+      </div>
+
+      <div class="note-box" style="margin-top:20px">
+        <p>🔒 <strong>Segurança:</strong> hooks só são carregados de <code>~/.polypus/hooks.json</code> ou <code>.poly/hooks.json</code> do workspace — nunca de subdiretórios do repositório. Isso evita que projetos de terceiros injetem comandos maliciosos.</p>
+      </div>
+
+      <!-- Visibilidade -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:36px 0 16px">Visibilidade no CLI e VSCode</h2>
+      <p style="color:var(--muted);margin-bottom:16px">Cada hook aparece na timeline de eventos em tempo real. Use <code>--compact</code> ou pressione <kbd>h</kbd> para colapsar.</p>
+
+      <div class="vis-panel">
+        <div class="vis-prompt">$ polypus run "refatorar auth para jwt"</div>
+        <div class="vis-row"><span style="color:var(--v1)">◆</span>&nbsp;<span style="color:#c4b5fd">Polypus pensando</span><span style="color:rgba(168,159,206,.4)"> ···</span></div>
+        <div style="margin-top:8px">
+          <div class="vis-row"><span style="color:rgba(168,159,206,.4)">▸</span>&nbsp;<span class="vis-tool">write_file</span>&nbsp;<span style="color:rgba(168,159,206,.5)">src/auth/jwt.ts</span><span class="vis-time">0.3s</span></div>
+          <div class="vis-row vis-hook"><span style="color:rgba(168,159,206,.4)">↪</span>&nbsp;<span style="color:#4ec9a8">PostToolUse</span>&nbsp;<span style="color:rgba(168,159,206,.5)">npm run typecheck</span><span class="vis-time">1.2s ✓</span></div>
+          <div class="vis-out">✓ No type errors found (3 files checked)</div>
+          <div class="vis-row"><span style="color:rgba(168,159,206,.4)">▸</span>&nbsp;<span class="vis-tool">edit_file</span>&nbsp;<span style="color:rgba(168,159,206,.5)">src/middleware/auth.ts</span><span class="vis-time">0.2s</span></div>
+          <div class="vis-row vis-hook err"><span style="color:rgba(168,159,206,.4)">↪</span>&nbsp;<span style="color:#f87171">PostToolUse</span>&nbsp;<span style="color:rgba(168,159,206,.5)">npm run lint</span><span class="vis-time">0.8s ✗</span></div>
+          <div class="vis-out" style="color:#f87171">✗ 2 errors: implicit any in line 14, 31</div>
+          <div class="vis-row" style="margin-top:4px"><span style="color:#4ec9a8">◆</span>&nbsp;<span style="color:#4ec9a8">Stop</span>&nbsp;<span style="color:rgba(168,159,206,.5)">git commit</span><span class="vis-time">1.4s ✓</span></div>
+          <div class="vis-out">[main 3a8f2c1] refactor: migrate auth to JWT</div>
+        </div>
+        <div style="margin-top:10px;color:#4ec9a8;font-family:var(--mono);font-size:.82rem">✓ Concluído · 6 steps · 1.2k tokens · $0.0031 · 9.2s</div>
+      </div>
+
+      <!-- Referência de campos -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:36px 0 16px">Referência de campos</h2>
+      <table class="ref-table">
+        <thead>
+          <tr><th>Campo</th><th>Tipo</th><th>Padrão</th><th style="color:var(--muted);font-weight:700">Descrição</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>event</td><td>string</td><td>—</td><td style="color:var(--muted)">PreToolUse · PostToolUse · Stop</td></tr>
+          <tr><td>on</td><td>string | string[]</td><td>"*"</td><td style="color:var(--muted)">Nome(s) da tool. Não usado em Stop.</td></tr>
+          <tr><td>command</td><td>string</td><td>—</td><td style="color:var(--muted)">Comando shell. Suporta {path} {tool} {workspace}</td></tr>
+          <tr><td>timeout</td><td>number (ms)</td><td>120 000</td><td style="color:var(--muted)">Tempo máximo de execução</td></tr>
+          <tr><td>maxOutputChars</td><td>number</td><td>1 000</td><td style="color:var(--muted)">Máx chars capturados. Limite absoluto: 8 000</td></tr>
+        </tbody>
+      </table>
+
+      <!-- Substituições -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:0 0 12px">Substituições de variáveis</h2>
+      <table class="subst-table">
+        <thead><tr><th>Placeholder</th><th>Valor</th><th>Disponível em</th></tr></thead>
+        <tbody>
+          <tr><td>{path}</td><td>Caminho do arquivo operado</td><td>PreToolUse, PostToolUse</td></tr>
+          <tr><td>{tool}</td><td>Nome da tool (ex.: write_file)</td><td>PreToolUse, PostToolUse</td></tr>
+          <tr><td>{workspace}</td><td>Diretório raiz do projeto</td><td>Todos</td></tr>
+        </tbody>
+      </table>
+
+      <!-- Migração -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:36px 0 12px">Migração do formato antigo</h2>
+      <p style="color:var(--muted);margin-bottom:14px">Os campos <code>afterWrite</code>, <code>afterEdit</code>, <code>afterTool</code> e <code>beforeCommand</code> ainda funcionam mas estão deprecated — uma mensagem de aviso é exibida no stderr ao carregar.</p>
+      <div class="note-box warn">
+        <p>⚠️ Formato deprecated ainda funciona mas não receberá novos recursos. Migre para o campo <code>hooks</code> para ter acesso a <code>PreToolUse</code>, <code>Stop</code>, matcher por tool e controle de timeout/output.</p>
+      </div>
+
+      <div class="codeblock" style="margin-top:16px"><code>// Antes (deprecated)
+{ "afterWrite": "npm run lint", "beforeCommand": { "deny": ["rm -rf"] } }
+
+// Depois
+{
+  "hooks": [
+    { "event": "PostToolUse", "on": ["write_file", "edit_file"], "command": "npm run lint" },
+    { "event": "PreToolUse",  "on": ["run_command"], "command": "echo '{tool}' | grep -q 'rm -rf' && exit 1 || exit 0" }
+  ]
+}</code></div>
+
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-octo">🐙</div>
+    <p class="footer-by">Feito com 💜 por <a href="https://github.com/GaberRB" target="_blank" rel="noopener">GaberRB</a></p>
+    <p class="footer-links"><a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a> · <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a></p>
+    <p class="footer-lic">MIT License</p>
+  </footer>
+
+  <script>
+    // Tab switcher
+    document.getElementById('exampTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-hook');
+      if (!btn) return;
+      document.querySelectorAll('.tab-hook').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('pane-' + btn.dataset.pane).classList.add('active');
+    });
+  </script>
+</body>
+</html>
