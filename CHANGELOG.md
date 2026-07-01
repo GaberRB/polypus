@@ -5,6 +5,21 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.10] — 2026-07-01
+
+### Added
+
+- **Checkpoints & rewind de arquivos (independente de git)** — antes de cada
+  edição (`write_file`, `edit_file`, `apply_patch`, `move_file`, `delete_file`) o
+  harness tira um snapshot content-addressed do estado anterior do arquivo em
+  `~/.polypus/checkpoints/<sessão>`, permitindo desfazer mudanças do agente mesmo
+  em diretório sem git ou com a árvore suja. Novo comando `polypus checkpoints
+  <id>` lista os pontos e `--restore <n>` volta o workspace ao estado antes do
+  checkpoint `n` (`--file` restaura um único arquivo; `--dir` escolhe a raiz).
+  Deletes e moves são reversíveis; dedupe por hash; GC automático após 7 dias.
+  Configurável via `checkpoints: "auto" | "off"`. (issue
+  [#201](https://github.com/GaberRB/polypus/issues/201))
+
 ## [0.6.9] — 2026-07-01
 
 ### Added
@@ -620,7 +635,8 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.9...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.10...HEAD
+[0.6.10]: https://github.com/GaberRB/polypus/compare/v0.6.9...v0.6.10
 [0.6.9]: https://github.com/GaberRB/polypus/compare/v0.6.8...v0.6.9
 [0.6.8]: https://github.com/GaberRB/polypus/compare/v0.6.7...v0.6.8
 [0.6.7]: https://github.com/GaberRB/polypus/compare/v0.6.6...v0.6.7

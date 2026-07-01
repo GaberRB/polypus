@@ -256,6 +256,13 @@ export const PolypusConfig = z.object({
    * the model; `on` forces it; `off` disables it.
    */
   diagnostics: z.enum(["auto", "on", "off"]).default("auto"),
+  /**
+   * File checkpoints. `auto` (default) snapshots each file before the agent edits
+   * it (independent of git) so changes can be undone with `/rewind`; `off`
+   * disables it. Snapshots live under `~/.polypus/checkpoints/<session>` and are
+   * garbage-collected after 7 days.
+   */
+  checkpoints: z.enum(["auto", "off"]).default("auto"),
 });
 export type PolypusConfig = z.infer<typeof PolypusConfig>;
 

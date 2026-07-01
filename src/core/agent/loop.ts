@@ -24,6 +24,7 @@ import {
   runDiagnostics,
   type DiagnosticProbe,
 } from "./diagnostics.js";
+import { captureCheckpoint } from "./checkpoints.js";
 
 export interface Usage {
   promptTokens: number;
@@ -60,6 +61,13 @@ export interface AgentEvents {
   onHook?(event: HookEvent, toolName: string | null, result: HookRunResult): void;
 }
 
+/** Checkpointing config: snapshot pre-edit file state for a rewindable session. */
+export interface CheckpointOptions {
+  enabled: boolean;
+  /** Session id the checkpoints are filed under (so `/rewind` can find them). */
+  sessionId: string;
+}
+
 /** Post-edit diagnostics config: surface type/lint errors right after each edit. */
 export interface DiagnosticsOptions {
   /** Master switch. When false, no diagnostics run. */
@@ -77,6 +85,19 @@ function writtenPath(call: ToolCall): string | undefined {
   const a = call.arguments;
   const p = call.name === "move_file" ? a.to : a.path;
   return typeof p === "string" && p.length > 0 ? p : undefined;
+}
+
+/** Tools whose pre-edit file state is worth snapshotting (delete included). */
+const CHECKPOINT_TOOLS = new Set([...WRITE_TOOLS, "delete_file"]);
+
+/** Paths a tool is about to change, for pre-edit checkpoint capture. */
+function checkpointPaths(call: ToolCall): string[] {
+  if (!CHECKPOINT_TOOLS.has(call.name)) return [];
+  const a = call.arguments;
+  if (call.name === "move_file") {
+    return [a.from, a.to].filter((x): x is string => typeof x === "string" && x.length > 0);
+  }
+  return typeof a.path === "string" && a.path.length > 0 ? [a.path] : [];
 }
 
 /** Closed-loop verification config: run project checks before accepting `finish`. */
@@ -112,6 +133,8 @@ export interface RunOptions {
   verify?: VerifyOptions;
   /** Post-edit diagnostics: after each edit, feed type/lint errors back to the model. */
   diagnostics?: DiagnosticsOptions;
+  /** Checkpointing: snapshot files before edits so changes can be rewound. */
+  checkpoints?: CheckpointOptions;
   /** Interactive choice prompt for the ask_user tool (undefined in headless mode). */
   ask?(req: import("../tools/types.js").AskRequest): Promise<string[] | null>;
   /** Abort the run (e.g. user pressed ESC). */
@@ -362,6 +385,13 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       if (preBlocked) {
         result = { ok: false, output: `Tool blocked by PreToolUse hook: ${preBlocked.output}` };
       } else if (tool) {
+        // Snapshot the pre-edit state so this change can be rewound later.
+        if (opts.checkpoints?.enabled) {
+          const paths = checkpointPaths(call);
+          if (paths.length > 0) {
+            await captureCheckpoint(opts.workspace, opts.checkpoints.sessionId, call.name, step, paths);
+          }
+        }
         result = await tool.run(call.arguments, ctx);
         // PostToolUse hooks: run after a successful tool call, inject output into result.
         if (result.ok) {
