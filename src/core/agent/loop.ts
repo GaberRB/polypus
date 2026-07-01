@@ -299,8 +299,10 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
         // Stop hooks: run after verification passes, before handing control back.
         const stopResults = await runStopHooks(opts.hooks, opts.workspace);
         for (const r of stopResults) events?.onHook?.("Stop", null, r);
+        const stopNotes = stopResults.map((r) => r.output).filter(Boolean).join("\n");
+        const finalSummary = stopNotes ? `${summary}\n\n--- stop hook output ---\n${stopNotes}` : summary;
 
-        return { finished: true, reason: "finished", summary, steps: step, messages, usage, verified };
+        return { finished: true, reason: "finished", summary: finalSummary, steps: step, messages, usage, verified };
       }
 
       const tool = resolveTool(call.name);
