@@ -1,6 +1,6 @@
 {
   "name": "@gaberrb/polypus",
-  "version": "0.6.10",
+  "version": "0.6.11",
   "description": "Agentic coding harness that makes any AI API (with or without native tool-calling) generate and apply code. OpenRouter, Ollama, and any OpenAI-compatible endpoint.",
   "type": "module",
   "workspaces": [

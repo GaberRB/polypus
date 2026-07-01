@@ -82,7 +82,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_120 módulos em `src/`._
+_121 módulos em `src/`._
 
 ### `src`
 - `lib.ts` — Public library surface for embedders of Polypus (e.g. the Cowork desktop app).
@@ -239,6 +239,7 @@ _120 módulos em `src/`._
 - `cancel.ts`
 - `file-picker.ts`
 - `line-reader.ts`
+- `markdown.ts`
 - `paste.ts` — Bracketed-paste handling for the REPL. When a terminal has bracketed paste
 - `repl.ts`
 - `slash-picker.ts`

@@ -5,6 +5,23 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.11] — 2026-07-01
+
+### Added
+
+- **Polimento de TUI (v1)** — a resposta final do agente agora é renderizada como
+  **markdown no terminal** (títulos, negrito/itálico, `código` inline, blocos de
+  código com moldura, listas), com degradação automática sob `NO_COLOR`/pipe. As
+  linhas de tool call ganham **duração** (`✓ … (0.4s)`), e o diff de confirmação
+  em modo `review` trunca hunks muito longos com `… +N linhas`. (issue
+  [#202](https://github.com/GaberRB/polypus/issues/202))
+
+### Notes
+
+- O diff colorido por hunk já existia; esta entrega adiciona o markdown, o timing
+  e o truncamento. A **statusline persistente** e o picker interativo ficam como
+  follow-up (itens de maior risco de redraw).
+
 ## [0.6.10] — 2026-07-01
 
 ### Added
@@ -635,7 +652,8 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.10...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.11...HEAD
+[0.6.11]: https://github.com/GaberRB/polypus/compare/v0.6.10...v0.6.11
 [0.6.10]: https://github.com/GaberRB/polypus/compare/v0.6.9...v0.6.10
 [0.6.9]: https://github.com/GaberRB/polypus/compare/v0.6.8...v0.6.9
 [0.6.8]: https://github.com/GaberRB/polypus/compare/v0.6.7...v0.6.8
