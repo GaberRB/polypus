@@ -5,6 +5,20 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.8] — 2026-07-01
+
+### Added
+
+- **Prompt caching + telemetria de custo** — o harness agora marca `cache_control`
+  em pontos estáveis do prompt (tools, system e histórico) para reaproveitar o
+  prefixo entre iterações do loop a ~0.1x do preço de input, em vez de reprocessar
+  tudo a cada passo. Cobre o provider **Anthropic nativo** e modelos **Claude via
+  OpenRouter** (injeção de `cache_control` nas mensagens); OpenAI/Gemini/DeepSeek
+  cacheiam automaticamente e têm os tokens cacheados lidos do usage. O custo passa a
+  re-precificar cache (read 0.1x, write 1.25x) e o `usage.jsonl` registra
+  `cacheReadTokens`/`cacheCreationTokens`. Configurável via `caching: "auto" | "off"`.
+  (issue [#200](https://github.com/GaberRB/polypus/issues/200))
+
 ## [0.6.7] — 2026-06-30
 
 ### Added
@@ -591,7 +605,9 @@ Expands the agent's toolset (8 → 14 tools) and hardens `run_python_script`.
 - Secret loading from `~/.polypus/.env` and `./.env`.
 - Bilingual interface (Portuguese pt-BR default, English).
 
-[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.6...HEAD
+[Unreleased]: https://github.com/GaberRB/polypus/compare/v0.6.8...HEAD
+[0.6.8]: https://github.com/GaberRB/polypus/compare/v0.6.7...v0.6.8
+[0.6.7]: https://github.com/GaberRB/polypus/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/GaberRB/polypus/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/GaberRB/polypus/compare/v0.6.4...v0.6.5
 [0.6.2]: https://github.com/GaberRB/polypus/compare/v0.6.1...v0.6.2
