@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { loadHooks, runAfterHook, screenCommandHook } from "../src/core/agent/hooks.js";
+import { loadHooks, runAfterHook, runPostToolUseHooks, runPreToolUseHooks, runStopHooks, screenCommandHook } from "../src/core/agent/hooks.js";
 import { loadCustomTools } from "../src/core/tools/custom.js";
 import { PermissionEngine } from "../src/core/permissions/modes.js";
 import type { ToolCall } from "../src/core/providers/types.js";
@@ -52,8 +52,76 @@ describe("screenCommandHook", () => {
   });
 });
 
-describe("runAfterHook", () => {
-  it("runs the afterWrite command with {path} substituted", async () => {
+describe("runPostToolUseHooks", () => {
+  it("runs a PostToolUse hook and returns output + blocked=false", async () => {
+    const ws = workspace();
+    const marker = join(ws, "ran.txt").replace(/\\/g, "/");
+    const results = await runPostToolUseHooks(
+      {
+        hooks: [{ event: "PostToolUse", on: "write_file", command: `node -e "require('fs').writeFileSync('${marker}','{path}')"`, timeout: 10000, maxOutputChars: 1000 }],
+      },
+      call("write_file", { path: "src/x.ts" }),
+      ws,
+    );
+    expect(results).toHaveLength(1);
+    expect(results[0]!.blocked).toBe(false);
+    expect(existsSync(join(ws, "ran.txt"))).toBe(true);
+  });
+
+  it("returns empty array when no hook matches", async () => {
+    const results = await runPostToolUseHooks(
+      { hooks: [{ event: "PostToolUse", on: "edit_file", command: "echo x", timeout: 10000, maxOutputChars: 1000 }] },
+      call("write_file", { path: "a" }),
+      workspace(),
+    );
+    expect(results).toHaveLength(0);
+  });
+
+  it("returns blocked=true when hook exits non-zero", async () => {
+    const results = await runPostToolUseHooks(
+      { hooks: [{ event: "PostToolUse", on: "*", command: "node -e \"process.exit(1)\"", timeout: 10000, maxOutputChars: 1000 }] },
+      call("write_file", { path: "a" }),
+      workspace(),
+    );
+    expect(results[0]!.blocked).toBe(true);
+  });
+});
+
+describe("runPreToolUseHooks", () => {
+  it("blocks on non-zero exit and returns blocked=true", async () => {
+    const results = await runPreToolUseHooks(
+      { hooks: [{ event: "PreToolUse", on: "run_command", command: "node -e \"process.exit(1)\"", timeout: 10000, maxOutputChars: 1000 }] },
+      call("run_command", { command: "echo hi" }),
+      workspace(),
+    );
+    expect(results[0]!.blocked).toBe(true);
+  });
+
+  it("blocks via legacy deny-list", async () => {
+    const results = await runPreToolUseHooks(
+      { hooks: [], beforeCommand: { deny: ["rm -rf"] } },
+      call("run_command", { command: "rm -rf /" }),
+      workspace(),
+    );
+    expect(results[0]!.blocked).toBe(true);
+  });
+});
+
+describe("runStopHooks", () => {
+  it("runs Stop hooks and returns output", async () => {
+    const ws = workspace();
+    const results = await runStopHooks(
+      { hooks: [{ event: "Stop", on: "*", command: "node -e \"console.log('done')\"", timeout: 10000, maxOutputChars: 1000 }] },
+      ws,
+    );
+    expect(results).toHaveLength(1);
+    expect(results[0]!.output).toContain("done");
+    expect(results[0]!.blocked).toBe(false);
+  });
+});
+
+describe("runAfterHook (deprecated shim)", () => {
+  it("still works via legacy afterWrite field", async () => {
     const ws = workspace();
     const marker = join(ws, "ran.txt").replace(/\\/g, "/");
     const note = await runAfterHook(
@@ -63,10 +131,6 @@ describe("runAfterHook", () => {
     );
     expect(note).toBeDefined();
     expect(existsSync(join(ws, "ran.txt"))).toBe(true);
-  });
-
-  it("returns undefined when no hook applies", async () => {
-    expect(await runAfterHook({ afterEdit: "echo x", hooks: [] }, call("write_file", { path: "a" }), workspace())).toBeUndefined();
   });
 });
 
