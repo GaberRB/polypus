@@ -157,6 +157,7 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     exec: execFromOpts(config.execution, opts),
     cache: config.caching !== "off",
     diagnostics: config.diagnostics !== "off",
+    checkpoints: config.checkpoints !== "off",
   };
 
   if (seeded && !opts.json) {
@@ -253,6 +254,8 @@ export interface SessionState {
   cache: boolean;
   /** Post-edit diagnostics enabled (from config.diagnostics). */
   diagnostics: boolean;
+  /** File checkpointing enabled (from config.checkpoints). */
+  checkpoints: boolean;
 }
 
 async function executeTask(
@@ -415,6 +418,7 @@ async function executeTask(
       // covers REPL/swarm — not just this command. Disabled in plan mode (no edits).
       verify: { enabled: session.exec.verify && session.mode !== "plan", maxFixes: session.exec.maxVerifyFixes },
       diagnostics: { enabled: session.diagnostics && session.mode !== "plan" },
+      checkpoints: { enabled: session.checkpoints && session.mode !== "plan", sessionId: session.id },
       ask,
       signal: controller.signal,
       events,

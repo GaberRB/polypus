@@ -9,7 +9,8 @@ import { init } from "./commands/init.js";
 import { swarm } from "./commands/swarm.js";
 import { models } from "./commands/models.js";
 import { usage } from "./commands/usage.js";
-import { sessions, rewind } from "./commands/sessions.js";
+import { sessions, rewind, checkpointsCmd } from "./commands/sessions.js";
+import { pruneCheckpoints } from "../core/agent/checkpoints.js";
 import { estimate } from "./commands/estimate.js";
 import { prd } from "./commands/prd.js";
 import { review } from "./commands/review.js";
@@ -170,6 +171,15 @@ function buildProgram(): Command {
     .action((id, opts) => rewind(id, opts));
 
   program
+    .command("checkpoints <id>")
+    .option("--restore <n>", t("cli.opt.ckptRestore"))
+    .option("--file <path>", t("cli.opt.ckptFile"))
+    .option("--dir <path>", t("cli.opt.ckptDir"))
+    .option("--json", t("cli.opt.json"))
+    .description(t("cli.cmd.checkpoints"))
+    .action((id, opts) => checkpointsCmd(id, opts));
+
+  program
     .command("prd")
     .argument("<issue>", t("cli.arg.prdIssue"))
     .option("--out <file>", t("cli.opt.out"))
@@ -220,6 +230,8 @@ async function main() {
     // Pick up secrets from ~/.polypus/.env and ./.env (does not override real env).
     loadDotenv([join(configDir(), ".env"), join(process.cwd(), ".env")]);
     await resolveLocale();
+    // Best-effort GC of old file checkpoints (never blocks the command).
+    void pruneCheckpoints().catch(() => {});
     await buildProgram().parseAsync(process.argv);
   } catch (err) {
     console.error(pc.red(`✗ ${(err as Error).message}`));
