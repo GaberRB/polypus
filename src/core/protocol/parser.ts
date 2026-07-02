@@ -110,9 +110,19 @@ function parseArgs(block: string): Record<string, unknown> {
     const current = matches[i]!;
     const next = matches[i + 1];
     const region = block.slice(current.valueStart, next ? next.valueStart : block.length);
-    args[current.name.trim()] = trimArgValue(stripLastCloseTag(region));
+    args[current.name.trim()] = stripCdata(trimArgValue(stripLastCloseTag(region)));
   }
   return args;
+}
+
+/**
+ * Unwrap a `<![CDATA[ ... ]]>` envelope some models (e.g. Gemini) add around
+ * arg values — otherwise the raw `<![CDATA[` leaks into the written file and
+ * breaks it. Only strips when the whole value is a single CDATA section.
+ */
+function stripCdata(value: string): string {
+  const m = /^<!\[CDATA\[([\s\S]*)\]\]>$/.exec(value.trim());
+  return m ? m[1]! : value;
 }
 
 /**

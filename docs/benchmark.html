@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polypus 🐙 — Benchmark honesto (vs OpenCode e Aider)</title>
+  <meta name="description" content="Benchmark diagnóstico do Polypus contra OpenCode e Aider: mesmo modelo, mesmas tarefas, custo medido por fonte neutra. Correção equivalente, com foco em eficiência de tokens e custo." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="app.js"></script>
+  <style>
+    .bm-hero { background: linear-gradient(135deg, rgba(124,92,255,.14), rgba(0,0,0,0)); border: 1px solid var(--line); border-radius: 16px; padding: 26px 28px; margin: 8px 0 30px; }
+    .bm-hero .tagline { font-size: 1.05rem; opacity: .92; margin: 0; line-height: 1.6; }
+    .en-summary { font-size: .9rem; opacity: .8; border: 1px dashed var(--line); border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 0 0 34px; }
+    .stat-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+    .stat-num { font-size: 1.7rem; font-weight: 800; color: var(--v0); font-family: var(--mono); }
+    .stat-lbl { font-size: .82rem; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+
+    .bm-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 0 0 14px; }
+    .bm-table th { text-align: left; color: var(--v1); font-weight: 700; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+    .bm-table td { padding: 8px 12px; border-bottom: 1px solid rgba(56,44,99,.5); }
+    .bm-table td:first-child { font-family: var(--mono); color: var(--v0); }
+    .bm-table .num { font-family: var(--mono); text-align: right; }
+    .bm-table .win { color: #4ec9a8; font-weight: 700; }
+    .bm-table tr:hover, .bm-table tbody tr:hover { background: rgba(124,92,255,.05); }
+    .pill-pass { display: inline-block; font-family: var(--mono); font-size: .78rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(78,201,168,.15); color: #4ec9a8; border: 1px solid rgba(78,201,168,.3); }
+    .tool-tag { display: inline-block; font-weight: 700; padding: 2px 9px; border-radius: 6px; font-size: .82rem; }
+    .t-poly { background: rgba(124,92,255,.18); color: var(--v0); border: 1px solid rgba(124,92,255,.4); }
+    .t-oc   { background: rgba(240,163,94,.15); color: #f0a35e; border: 1px solid rgba(240,163,94,.3); }
+    .t-aid  { background: rgba(78,201,168,.13); color: #4ec9a8; border: 1px solid rgba(78,201,168,.3); }
+
+    .find-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 0 0 34px; }
+    .find-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+    .find-card h3 { margin: 0 0 8px; font-size: 1rem; color: var(--v0); }
+    .find-card p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.55; }
+
+    .legend { padding: 14px 18px; margin: 0 0 28px; border: 1px solid var(--line); border-radius: 12px; background: rgba(124,92,255,.04); }
+    .legend .lead { color: var(--v1); font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 8px; }
+    .legend ul { list-style: none; padding: 0; margin: 0; }
+    .legend li { font-size: .88rem; color: var(--muted); line-height: 1.55; padding: 3px 0; }
+    .legend li code { color: var(--v0); font-weight: 700; }
+
+    .note-box { border-left: 3px solid #8b7bff; background: rgba(124,92,255,.08); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 18px 0; }
+    .note-box.warn { border-left-color: #f0a35e; background: rgba(240,163,94,.08); }
+    .note-box p { margin: 0; font-size: .92rem; line-height: 1.55; }
+
+    .bug-list { list-style: none; padding: 0; margin: 0 0 20px; }
+    .bug-list li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; font-size: .92rem; line-height: 1.55; }
+    .bug-list li strong { color: var(--v0); }
+    .bug-list .fixed { color: #4ec9a8; font-weight: 700; font-family: var(--mono); font-size: .8rem; }
+
+    .bar-wrap { margin: 0 0 34px; }
+    .bar-row { display: grid; grid-template-columns: 90px 1fr 90px; align-items: center; gap: 12px; margin-bottom: 10px; font-size: .88rem; }
+    .bar-track { background: rgba(56,44,99,.4); border-radius: 8px; height: 26px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; }
+    .bar-poly { background: linear-gradient(90deg, var(--v4), var(--v2)); }
+    .bar-oc   { background: linear-gradient(90deg, #b5702e, #f0a35e); }
+    .bar-aid  { background: linear-gradient(90deg, #2e7d64, #4ec9a8); }
+    .bar-val  { font-family: var(--mono); text-align: right; color: var(--v0); }
+    .bar-name { font-family: var(--mono); color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="index.html#top">
+      <span class="brand-octo">🐙</span>
+      <span class="brand-name">Polypus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Como funciona</a>
+      <a href="docs.html">Documentação</a>
+      <a href="benchmark.html" aria-current="page">Benchmark</a>
+      <a href="vscode.html">Extensão VSCode</a>
+      <a href="hooks.html">Hooks</a>
+      <a href="index.html#quickstart">Começar</a>
+      <a class="nav-ext" href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-ext" href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="deep">
+      <a class="back-link" href="index.html">← voltar</a>
+      <h1 class="deep-title">📊 Benchmark honesto</h1>
+
+      <div class="bm-hero">
+        <p class="tagline">
+          Comparação <strong>ferramenta contra ferramenta</strong> — Polypus, OpenCode e Aider —
+          rodando o <strong>mesmo modelo</strong> (<code>deepseek-v4-flash</code>), nas
+          <strong>mesmas tarefas</strong>, na mesma máquina. O veredito é objetivo (testes unitários
+          reais), e o <strong>custo é medido por fonte neutra</strong> (a API da OpenRouter, uma
+          chave dedicada por ferramenta) — nunca pelo que cada ferramenta se auto-reporta.
+          Filosofia: <strong>diagnóstico primeiro, marketing depois</strong>. O objetivo original
+          era achar onde o Polypus quebra — e ele achou (veja os bugs corrigidos abaixo).
+        </p>
+        <p class="en-summary">
+          🇬🇧 <strong>In short:</strong> a tool-vs-tool benchmark (Polypus, OpenCode, Aider) on the same
+          model, same tasks, same machine. Verdict is real unit tests; cost is measured from a neutral
+          source (OpenRouter API, one dedicated key per tool), never self-reported. Diagnostic-first:
+          the point was to find where Polypus breaks — and it did.
+        </p>
+      </div>
+
+      <!-- ===================== NÚMEROS ===================== -->
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num">18/18</div><div class="stat-lbl">sessões passaram (3 ferramentas × 6 tarefas), 100% dos subtests</div></div>
+        <div class="stat-card"><div class="stat-num">6</div><div class="stat-lbl">tarefas: algoritmos, edge cases, debugging e multi-arquivo</div></div>
+        <div class="stat-card"><div class="stat-num">6</div><div class="stat-lbl">bugs/gaps achados pelo benchmark — todos endereçados (5 corrigidos + 1 virou feature nova)</div></div>
+        <div class="stat-card"><div class="stat-num">~$0,04</div><div class="stat-lbl">custo total da rodada inteira (as 3 ferramentas)</div></div>
+      </div>
+
+      <!-- ===================== METODOLOGIA ===================== -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:10px 0 16px">Metodologia</h2>
+      <table class="bm-table">
+        <tbody>
+          <tr><td>Modelo</td><td><code>deepseek/deepseek-v4-flash</code> (via OpenRouter) — o mesmo para as três, provedor único (sem variância de roteamento).</td></tr>
+          <tr><td>Veredito</td><td><code>node --test</code> — testes unitários reais. Score parcial X/N (quantos subtests passaram), não só passa/falha.</td></tr>
+          <tr><td>Custo</td><td>Delta de gasto na API da OpenRouter, <strong>uma chave dedicada por ferramenta</strong>. Fonte neutra, imune ao auto-reporte.</td></tr>
+          <tr><td>Isolamento</td><td>Cada tarefa roda num workspace git descartável. Prompt idêntico para as três.</td></tr>
+          <tr><td>Anti-trapaça</td><td>Hash dos arquivos de teste antes/depois: se a ferramenta editar o teste para "passar", vira <em>desclassificado</em>.</td></tr>
+          <tr><td>Reprodutível</td><td>Scripts abertos em <code>bench/demo/</code> no repositório. Rode <code>./run-all.ps1</code>.</td></tr>
+        </tbody>
+      </table>
+      <div class="note-box">
+        <p>Uma tarefa é uma pasta com <code>PROMPT.md</code> (instrução idêntica), a(s) fonte(s) e
+        <code>*.test.mjs</code>. As ferramentas recebem só o prompt e o workspace — descobrem sozinhas
+        o que fazer. As tarefas vão de algoritmos simples (ano bissexto) a <strong>debugging</strong>
+        (código já vem quebrado) e <strong>multi-arquivo</strong> (o bug está num de dois arquivos e a
+        ferramenta precisa achar qual).</p>
+      </div>
+
+      <!-- ===================== RESULTADOS ===================== -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:10px 0 16px">Resultados por tarefa</h2>
+      <table class="bm-table">
+        <thead>
+          <tr>
+            <th>Tarefa</th><th>Tipo</th>
+            <th class="num"><span class="tool-tag t-poly">Polypus</span></th>
+            <th class="num"><span class="tool-tag t-oc">OpenCode</span></th>
+            <th class="num"><span class="tool-tag t-aid">Aider</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>leap</td><td>bissexto</td><td class="num"><span class="pill-pass">7/7</span></td><td class="num"><span class="pill-pass">7/7</span></td><td class="num"><span class="pill-pass">7/7</span></td></tr>
+          <tr><td>rle</td><td>encode/decode</td><td class="num"><span class="pill-pass">12/12</span></td><td class="num"><span class="pill-pass">12/12</span></td><td class="num"><span class="pill-pass">12/12</span></td></tr>
+          <tr><td>roman</td><td>edge cases</td><td class="num"><span class="pill-pass">14/14</span></td><td class="num"><span class="pill-pass">14/14</span></td><td class="num"><span class="pill-pass">14/14</span></td></tr>
+          <tr><td>anagram</td><td>case + traps</td><td class="num"><span class="pill-pass">8/8</span></td><td class="num"><span class="pill-pass">8/8</span></td><td class="num"><span class="pill-pass">8/8</span></td></tr>
+          <tr><td>fix-flatten</td><td>debugging</td><td class="num"><span class="pill-pass">8/8</span></td><td class="num"><span class="pill-pass">8/8</span></td><td class="num"><span class="pill-pass">8/8</span></td></tr>
+          <tr><td>stats-bug</td><td>multi-arquivo</td><td class="num"><span class="pill-pass">7/7</span></td><td class="num"><span class="pill-pass">7/7</span></td><td class="num"><span class="pill-pass">7/7</span></td></tr>
+        </tbody>
+      </table>
+      <p style="color:var(--muted);font-size:.9rem;margin:0 0 18px">
+        <strong>Correção: empate perfeito.</strong> Nessa dificuldade, com um modelo forte, as três
+        ferramentas resolvem tudo. Na tarefa multi-arquivo, as três acharam o arquivo certo e deixaram
+        o outro (o "chamariz") intacto. Onde elas se separam é em <strong>eficiência</strong>.
+      </p>
+
+      <div class="legend">
+        <span class="lead">O que é cada tarefa</span>
+        <ul>
+          <li><code>leap</code> — "é ano bissexto?", pelas regras do calendário gregoriano (÷4, exceto ÷100, exceto ÷400). Algoritmo curto.</li>
+          <li><code>rle</code> — <em>run-length encoding</em>: comprimir <code>"AAAB"</code> → <code>"3A1B"</code> e descomprimir de volta.</li>
+          <li><code>roman</code> — inteiro → algarismo romano (1–3999) com notação subtrativa (4=IV, 9=IX). Cheio de casos de borda.</li>
+          <li><code>anagram</code> — dada uma palavra e candidatas, achar os anagramas (ignorando maiúsculas, excluindo a própria palavra).</li>
+          <li><code>fix-flatten</code> — <em>debugging</em>: o código de achatar array aninhado já vem QUEBRADO; a ferramenta tem que achar e corrigir o bug.</li>
+          <li><code>stats-bug</code> — <em>multi-arquivo</em>: o bug está numa função que importa de outro arquivo; a ferramenta precisa descobrir em qual dos dois está.</li>
+        </ul>
+        <span class="lead" style="margin-top:12px">Como ler os números</span>
+        <ul>
+          <li><code>7/7</code> — subtests que passaram / total (score parcial, não só passou/falhou).</li>
+          <li>Na tabela de tokens: total de tokens processados na tarefa (menos = mais eficiente).</li>
+        </ul>
+      </div>
+
+      <!-- ===================== EFICIÊNCIA ===================== -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:10px 0 16px">Custo da rodada (6 tarefas)</h2>
+      <div class="bar-wrap">
+        <div class="bar-row"><span class="bar-name">Aider</span><div class="bar-track"><div class="bar-fill bar-aid" style="width:4%"></div></div><span class="bar-val">$0,0008</span></div>
+        <div class="bar-row"><span class="bar-name">Polypus</span><div class="bar-track"><div class="bar-fill bar-poly" style="width:100%"></div></div><span class="bar-val">$0,0204</span></div>
+        <div class="bar-row"><span class="bar-name">OpenCode</span><div class="bar-track"><div class="bar-fill bar-oc" style="width:100%"></div></div><span class="bar-val">$0,0204</span></div>
+      </div>
+
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:10px 0 16px">Tokens processados por tarefa</h2>
+      <table class="bm-table">
+        <thead><tr><th>Tarefa</th><th class="num">Polypus</th><th class="num">OpenCode</th><th class="num">Aider</th></tr></thead>
+        <tbody>
+          <tr><td>leap</td><td class="num">18.378</td><td class="num">27.095</td><td class="num win">1.067</td></tr>
+          <tr><td>rle</td><td class="num">26.902</td><td class="num">19.662</td><td class="num win">2.400</td></tr>
+          <tr><td>roman</td><td class="num">18.820</td><td class="num">21.058</td><td class="num win">1.474</td></tr>
+          <tr><td>anagram</td><td class="num">25.035</td><td class="num">28.152</td><td class="num win">1.622</td></tr>
+          <tr><td>fix-flatten</td><td class="num">26.958</td><td class="num">36.063</td><td class="num win">2.500</td></tr>
+          <tr><td>stats-bug (multi)</td><td class="num">63.496</td><td class="num">45.118</td><td class="num win">1.827</td></tr>
+        </tbody>
+      </table>
+
+      <div class="note-box warn">
+        <p><strong>A nuance honesta por trás dos números.</strong> O Aider é ~25× mais barato — mas
+        parte disso é porque ele exige que <em>você</em> diga quais arquivos editar; ele não navega,
+        recebe tudo mastigado e resolve em um tiro. Polypus e OpenCode são <strong>agentes de
+        verdade</strong>: leem o repositório, rodam os testes e iteram sozinhos — e pagam por isso em
+        tokens. Isso fica gritante na tarefa multi-arquivo (<code>stats-bug</code>): o Polypus gastou
+        63k tokens descobrindo qual arquivo tinha o bug; o Aider gastou 1,8k porque recebeu os dois
+        arquivos de bandeja. São categorias diferentes de ferramenta — a comparação de custo tem que
+        levar isso em conta.</p>
+      </div>
+
+      <!-- ===================== LEITURA ===================== -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:10px 0 16px">O que os dados dizem</h2>
+      <div class="find-grid">
+        <div class="find-card">
+          <h3>✅ Correção equivalente</h3>
+          <p>Polypus entrega a mesma taxa de acerto que ferramentas consagradas, no mesmo modelo. A
+          tese "qualidade equivalente" se sustenta nos dados — não é opinião.</p>
+        </div>
+        <div class="find-card">
+          <h3>💸 Mais barato que o agente concorrente</h3>
+          <p>Contra o OpenCode (o concorrente agêntico direto), o Polypus custa o mesmo ou menos — a
+          vantagem do prompt caching aparece quando a medição é honesta.</p>
+        </div>
+        <div class="find-card">
+          <h3>🧭 Navegação multi-arquivo correta</h3>
+          <p>Na tarefa com bug espalhado, o Polypus achou o arquivo certo e não tocou no chamariz —
+          navegação autônoma que o one-shot não faz sem ajuda humana.</p>
+        </div>
+        <div class="find-card">
+          <h3>🎯 Alvo claro de melhoria</h3>
+          <p>O flanco do Polypus é eficiência de tokens, sobretudo em multi-arquivo. É um gap
+          concreto e mensurável — virou item de roadmap, não desculpa.</p>
+        </div>
+      </div>
+
+      <!-- ===================== BUGS ===================== -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:10px 0 16px">O benchmark achou 4 bugs reais — e a gente corrigiu</h2>
+      <p style="color:var(--muted);font-size:.92rem;margin:0 0 16px">
+        O valor de um benchmark honesto não é o gráfico bonito — é o que ele quebra. Nas primeiras
+        rodadas o Polypus <em>falhou</em>, e cada falha virou uma correção:
+      </p>
+      <ul class="bug-list">
+        <li><strong>Fallback de tool-mode</strong> — o roteamento da OpenRouter às vezes parava de emitir <em>tool calls</em> nativas e o agente entregava prosa em vez de editar. <span class="fixed">→ modo emulado (imune) + issue aberta</span></li>
+        <li><strong>Vazamento de CDATA</strong> — o parser do modo emulado gravava <code>&lt;![CDATA[…]]&gt;</code> dentro do arquivo, quebrando o código. <span class="fixed">→ corrigido + teste de regressão</span></li>
+        <li><strong>Finish com teste vermelho</strong> — o agente rodava o teste, ele falhava, e mesmo assim ele declarava "concluído". <span class="fixed">→ finish-gate rejeita finish após comando com erro</span></li>
+        <li><strong>Atribuição de custo furada</strong> — descoberto que o Aider ignorava a chave dedicada (usava uma chave OAuth interna), invalidando a medição de custo dele. <span class="fixed">→ chave forçada por flag, medição neutra restaurada</span></li>
+      </ul>
+
+      <!-- ===================== STRESS: HOOKS + SWARM ===================== -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:10px 0 16px">Stress test das features (hooks + swarm)</h2>
+      <p style="color:var(--muted);font-size:.92rem;margin:0 0 16px">
+        Segunda trilha, focada nas features próprias do Polypus — não é comparação, é
+        <strong>diagnóstico interno</strong>. Cada cenário roda num workspace descartável com
+        timeout rígido (pega loop infinito) e verifica se a feature se comportou como especificado.
+        Achou <strong>2 gaps reais</strong>, ambos viraram issue.
+      </p>
+
+      <div class="legend">
+        <span class="lead">As features testadas</span>
+        <ul>
+          <li><code>hooks</code> — scripts que o Polypus roda em pontos do ciclo do agente:</li>
+          <li style="padding-left:18px"><code>PostToolUse</code> — roda <em>depois</em> de uma tool (ex.: rodar teste/lint); a saída volta pro modelo, que pode se corrigir sozinho.</li>
+          <li style="padding-left:18px"><code>PreToolUse</code> — roda <em>antes</em> de uma tool; se o script falhar, a tool é bloqueada.</li>
+          <li style="padding-left:18px"><code>Stop</code> — roda quando o agente termina (no <em>finish</em>).</li>
+          <li><code>swarm</code> — quebra a tarefa em subtarefas e roda vários "workers" em paralelo, cada um numa cópia git isolada, mesclando os resultados no fim.</li>
+        </ul>
+        <span class="lead" style="margin-top:12px">Os cenários</span>
+        <ul>
+          <li><code>hook-selfcorrect</code> — um PostToolUse exige uma correção; testa se o modelo obedece à saída injetada.</li>
+          <li><code>hook-stop</code> — testa se o Stop realmente roda no fim.</li>
+          <li><code>hook-block</code> — um PreToolUse tenta impedir a edição de um arquivo protegido.</li>
+          <li><code>swarm-fanout</code> — workers criando arquivos independentes (o caso feliz do merge).</li>
+          <li><code>swarm-conflict</code> — workers editando o MESMO arquivo (força conflito de merge).</li>
+        </ul>
+      </div>
+
+      <table class="bm-table">
+        <thead><tr><th>Cenário</th><th>Feature</th><th>Resultado</th><th class="num">Tempo</th><th class="num">Tokens</th><th>O que revelou</th></tr></thead>
+        <tbody>
+          <tr><td>hook-selfcorrect</td><td>PostToolUse</td><td><span class="pill-pass">OK</span></td><td class="num">20,7s</td><td class="num">27,7k</td><td>a saída do hook injetada dirige a auto-correção do modelo</td></tr>
+          <tr><td>hook-stop</td><td>Stop</td><td><span class="pill-pass">OK</span></td><td class="num">14,8s</td><td class="num">17k</td><td>Stop roda no finish (marcador criado)</td></tr>
+          <tr><td>swarm-fanout</td><td>swarm</td><td><span class="pill-pass">OK</span></td><td class="num">41,5s</td><td class="num">77k</td><td>3 arquivos independentes, workers paralelos, merge limpo no Windows</td></tr>
+          <tr><td>hook-block</td><td>PreToolUse</td><td><span style="color:#f0a35e;font-weight:700">GAP</span></td><td class="num">42,4s</td><td class="num">66k</td><td>bloqueio de arquivo contornado via <code>run_command</code> (#213)</td></tr>
+          <tr><td>swarm-conflict</td><td>swarm</td><td><span style="color:#f87171;font-weight:700">GAP</span></td><td class="num">33,3s</td><td class="num">100k</td><td>1 de 3 contribuições sobrevive, mas reporta "sem conflito" (#212)</td></tr>
+        </tbody>
+      </table>
+      <div class="note-box">
+        <p><strong>Gap 2 — swarm perdia trabalho silenciosamente (#212) — CORRIGIDO ✅.</strong> Com 3
+        workers editando o mesmo arquivo, o swarm reportava "mesclado sem conflito" — mas só 1 das 3
+        contribuições sobrevivia. Causa: um <code>git checkout -f HEAD</code> (workaround de Windows)
+        que descartava o merge conflitado sem deixar marcador. Corrigido em
+        <code>worktree.ts</code>: o resultado passa a ser decidido inspecionando o status do git, e o
+        conflito é reportado honestamente (branch mantido, recuperável) em vez de sumir. Retestado.
+        Para arquivos independentes o merge sempre funcionou.</p>
+      </div>
+      <div class="note-box warn">
+        <p><strong>Gap 1 — hook não protege arquivo de verdade (#213) — vira feature nova (#214).</strong>
+        Um hook PreToolUse que bloqueia edições funciona para as tools de escrita, mas o agente rota em
+        volta via shell: mesmo bloqueado 19×, alterou o arquivo com glob + variável (<code>sed -i $f</code>)
+        sem citar o nome. Lição: <strong>hook é observação/advisory, não fronteira de segurança</strong>.</p>
+      </div>
+      <div class="note-box">
+        <p><strong>A correção: proteção real de caminho (#214) — IMPLEMENTADA ✅.</strong> Nova flag
+        <code>--protect &lt;globs&gt;</code> (e <code>permissions.protect</code>) que torna os arquivos
+        <strong>read-only no nível do SO</strong> durante o run — o filesystem recusa a escrita de
+        <em>qualquer</em> tool (write_file, <code>sed</code>, <code>echo &gt;</code>, python), não só das
+        tools diretas. No retest da mesma task que furou o hook: <code>edit_file</code> negado com
+        mensagem clara e o arquivo sobreviveu intacto. Comandos que removem a proteção
+        (<code>attrib -r</code>, <code>chmod +w</code>) agora são bloqueados como destrutivos. É assim
+        que se protege um arquivo de verdade — enforcement no SO, não pattern-matching.</p>
+      </div>
+
+      <!-- ===================== CAVEATS ===================== -->
+      <h2 class="section-title" style="text-align:left;font-size:1.5rem;margin:10px 0 16px">Honestidade metodológica</h2>
+      <div class="note-box">
+        <p>Este é um benchmark <strong>pequeno e transparente</strong>, não um leaderboard definitivo.
+        Limites que assumimos de propósito: (1) <strong>um modelo só</strong> nesta rodada; (2)
+        <strong>6 tarefas</strong> auto-contidas — o suficiente para diagnóstico, não para ranking
+        universal; (3) o Aider recebe os arquivos explicitamente, o que abarata o custo dele em troca
+        de exigir um humano no loop; (4) tarefas nessa dificuldade não separam as ferramentas por
+        <em>correção</em> — para isso, o próximo passo é modelo mais fraco ou tarefas maiores. Tudo é
+        reprodutível: os scripts, as tarefas e o critério estão no repositório.</p>
+      </div>
+
+      <div class="note-box">
+        <p>Quer reproduzir? <code>cd bench/demo</code> e <code>./run-all.ps1</code>. Cada ferramenta
+        usa a própria chave OpenRouter; o placar sai em <code>runs/results.csv</code> e o custo neutro
+        em <code>./show-costs.ps1</code>. Código aberto:
+        <a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">github.com/GaberRB/polypus</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-octo">🐙</div>
+    <p class="footer-by">Feito com 💜 por <a href="https://github.com/GaberRB" target="_blank" rel="noopener">GaberRB</a></p>
+    <p class="footer-links"><a href="https://github.com/GaberRB/polypus" target="_blank" rel="noopener">GitHub</a> · <a href="https://www.npmjs.com/package/@gaberrb/polypus" target="_blank" rel="noopener">npm</a></p>
+    <p class="footer-lic">MIT License</p>
+  </footer>
+</body>
+</html>

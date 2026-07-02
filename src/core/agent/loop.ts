@@ -235,6 +235,10 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   let verifyFixes = 0;
   let finishNudges = 0;
   let verified: boolean | undefined;
+  // Tracks the most recent `run_command` outcome so `finish` can be rejected
+  // when the model declares success right after a command exited non-zero
+  // (common when it emits write+test+finish in one batched turn).
+  let lastCommandFail: { command: string; output: string } | null = null;
 
   for (let step = 1; step <= maxSteps; step++) {
     if (opts.signal?.aborted) return { finished: false, reason: "cancelled", steps: step - 1, messages, usage };
@@ -346,6 +350,23 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
           break;
         }
 
+        // Reject a finish that lands right after a failed command: the model
+        // ran e.g. `node --test`, it exited non-zero, and it declared success
+        // anyway. Hand the failure back once (within the nudge budget) so it
+        // reacts instead of ending on a red test.
+        if (lastCommandFail && finishNudges < maxReprompts) {
+          finishNudges++;
+          messages.push({
+            role: "user",
+            content:
+              `Do not finish yet: the last command you ran (\`${lastCommandFail.command}\`) ` +
+              `exited with a non-zero status. Review its output, fix the problem, and re-run ` +
+              `the command until it passes before calling finish.`,
+          });
+          pendingContinue = true;
+          break;
+        }
+
         // Closed-loop verification: don't accept "done" until the project's own
         // checks (typecheck/build/test/lint) pass. On failure, hand the output
         // back so the model fixes it — up to the retry budget, then give up.
@@ -405,6 +426,14 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       }
 
       events?.onToolResult?.(call, result);
+
+      // Track the latest command outcome for the finish-gate above: a passing
+      // run clears the flag, a failing one arms it.
+      if (call.name === "run_command") {
+        lastCommandFail = result.ok
+          ? null
+          : { command: String(call.arguments.command ?? ""), output: result.output };
+      }
 
       if (result.ok && diagnostics?.enabled) {
         const wp = writtenPath(call);

@@ -1,0 +1,14 @@
+{
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "on": ["write_file", "edit_file"],
+      "command": "node -e \"process.exit(String('{path}').includes('config')?1:0)\""
+    },
+    {
+      "event": "PreToolUse",
+      "on": ["run_command", "run_python_script"],
+      "command": "node -e \"process.exit((process.env.POLYPUS_ARGS||'').includes('config')?1:0)\""
+    }
+  ]
+}

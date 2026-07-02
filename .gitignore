@@ -10,3 +10,7 @@ claude_desktop.png
 
 # VSCode extension build artifacts
 *.vsix
+
+# bench demo runs (workspaces descartáveis + placar local)
+bench/demo/runs/
+bench/stress/runs/

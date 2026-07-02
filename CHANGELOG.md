@@ -5,6 +5,34 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.12] — 2026-07-02
+
+Correções e uma feature de segurança, todas descobertas por um benchmark diagnóstico
+interno (Polypus vs OpenCode vs Aider + stress de hooks/swarm).
+
+### Adicionado
+
+- **Proteção real de caminho** — `permissions.protect` (globs) + flag `--protect <globs>` no
+  `run`: torna os arquivos casados **read-only no nível do SO** durante a execução, bloqueando a
+  escrita de _qualquer_ tool (write_file, edit_file, shell, python), não só das tools diretas.
+  Comandos que removem a proteção (`attrib -r`, `chmod +w`, `icacls /grant`) passam a ser
+  bloqueados como destrutivos. (#214)
+- **Hooks: contexto da tool via variáveis de ambiente** (`POLYPUS_TOOL`, `POLYPUS_PATH`,
+  `POLYPUS_COMMAND`, `POLYPUS_ARGS`) — um hook `PreToolUse` em `run_command` agora consegue
+  inspecionar o comando; antes era cego a ele. (#213)
+
+### Corrigido
+
+- **Swarm perdia trabalho silenciosamente no merge** — merges de workers com edições sobrepostas
+  eram descartados por um `git checkout -f HEAD` (workaround de Windows) e reportados como
+  "mesclado sem conflito". Agora o resultado é decidido pelo status do git e o conflito é
+  reportado honestamente, mantendo o branch para inspeção. (#212)
+- **Parser do modo emulado vazava `<![CDATA[…]]>`** para o arquivo gravado com modelos que
+  envolvem o conteúdo em CDATA (ex.: Gemini), quebrando o código. (#210)
+- **finish-gate aceitava `finish` logo após um `run_command` falhar** — o agente declarava
+  "concluído" com teste vermelho; agora o finish é rejeitado uma vez e o erro é reinjetado para
+  o modelo corrigir. (#211)
+
 ## [0.6.11] — 2026-07-01
 
 ### Added
