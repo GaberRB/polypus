@@ -88,27 +88,34 @@ export async function mergeWorktreeBranch(
   git: SimpleGit,
   branch: string,
 ): Promise<MergeResult> {
+  const identity = await identityArgs(git);
+  // Run the merge. It may reject on conflict (simple-git) OR — observed on
+  // Windows — leave conflicts in the index without rejecting. Either way, we
+  // decide what happened by inspecting the status below, never by trusting the
+  // absence of a throw.
+  let mergeError: unknown;
   try {
-    const identity = await identityArgs(git);
-    // On Windows, `git merge` with just --no-edit can complete at the index
-    // level but leave the working tree stale. Using --no-ff avoids the
-    // fast-forward code path (where the staleness is known to happen), and
-    // forcing a checkout of HEAD afterwards refreshes the working tree.
     await git.raw([...identity, "merge", "--no-ff", "--no-edit", branch]);
-    // Force the working tree to match the new HEAD (required on Windows).
-    await git.raw(["checkout", "-f", "HEAD"]);
-    return { branch, ok: true, conflicts: [] };
   } catch (err) {
-    // simple-git throws on conflict; collect conflicted files and abort cleanly.
-    const status = await git.status().catch(() => undefined);
-    const conflicts = status?.conflicted ?? [];
+    mergeError = err;
+  }
+
+  const status = await git.status().catch(() => undefined);
+  const conflicts = status?.conflicted ?? [];
+  if (conflicts.length > 0) {
+    // Real conflict: abort so the branch is kept for inspection and reported.
+    // (Previously a `checkout -f HEAD` ran here and silently discarded the
+    // conflicted merge — losing the worker's work while reporting success.)
     await git.raw(["merge", "--abort"]).catch(() => undefined);
-    if (conflicts.length === 0) {
-      // Not a conflict — rethrow the original error.
-      throw err;
-    }
     return { branch, ok: false, conflicts };
   }
+  if (mergeError) throw mergeError; // merge failed for a non-conflict reason
+
+  // Clean merge only: HEAD now holds the merge commit with both sides' changes.
+  // On Windows the working tree can be left stale, so refresh it to match HEAD.
+  // Safe here because we've confirmed there is no unresolved merge to discard.
+  await git.raw(["checkout", "-f", "HEAD"]).catch(() => undefined);
+  return { branch, ok: true, conflicts: [] };
 }
 
 /** Remove a worktree and delete its branch. */

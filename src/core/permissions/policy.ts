@@ -19,6 +19,12 @@ const DANGEROUS_COMMANDS: { re: RegExp; reason: string }[] = [
   { re: />\s*\/dev\/(sd|nvme|hd|disk)/i, reason: "redirect to a raw disk device" },
   { re: /\bchmod\s+(-[a-z]*\s+)*-?R?\s*777\s+\//i, reason: "chmod 777 on /" },
   { re: /\b(curl|wget)\b[^\n|]*\|\s*(sudo\s+)?(sh|bash|zsh)\b/i, reason: "piping a downloaded script straight into a shell" },
+  // Un-protecting a read-only file — the obvious escalation against protected
+  // paths. Blocked in every mode so `permissions.protect` can't be lifted mid-run.
+  { re: /\battrib\b[^\n]*\s[-/]r\b/i, reason: "removing a file's read-only attribute (attrib)" },
+  { re: /\bchmod\b[^\n]*[ugoa]*\+w/i, reason: "adding write permission (chmod +w)" },
+  { re: /\bicacls\b[^\n]*\/grant/i, reason: "granting write access (icacls /grant)" },
+  { re: /IsReadOnly\s*=\s*\$?false/i, reason: "clearing the read-only attribute (IsReadOnly)" },
 ];
 
 /** A recursive+force `rm` aimed at root, home, or a bare glob — catastrophic. */

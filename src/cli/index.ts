@@ -106,6 +106,7 @@ function buildProgram(): Command {
     .option("--agent <name>", t("cli.opt.agent"))
     .option("--mode <mode>", t("cli.opt.mode"))
     .option("--max-steps <n>", t("cli.opt.maxSteps"))
+    .option("--protect <globs>", "comma-separated globs made read-only for this run")
     .option("--json", t("cli.opt.json"))
     .option("--stream", t("cli.opt.stream"))
     .option("--verify", t("cli.opt.verify"))

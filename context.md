@@ -82,7 +82,7 @@ npm run context        # regenera o mapa de módulos abaixo
 
 <!-- AUTO:BEGIN (gerado por `npm run context`; não editar à mão) -->
 
-_121 módulos em `src/`._
+_122 módulos em `src/`._
 
 ### `src`
 - `lib.ts` — Public library surface for embedders of Polypus (e.g. the Cowork desktop app).
@@ -169,6 +169,7 @@ _121 módulos em `src/`._
 - `diff.ts` — Minimal line-based diff (LCS) grouped into hunks, used to show the real change
 - `modes.ts`
 - `policy.ts` — Safety policy shared by the permission engine: a deny-list of obviously
+- `protect.ts`
 
 ### `src/core/protocol`
 - `curl-parser.ts` — Parse a cURL command string into its components.

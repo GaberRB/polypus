@@ -32,6 +32,28 @@ describe("parseEmulatedToolCalls", () => {
     expect(bare.toolCalls[0]!.arguments).toEqual({ path: "src" });
   });
 
+  it("unwraps a CDATA envelope around an arg value (Gemini)", () => {
+    const out = `<polypus:tool name="write_file">
+<arg name="path">solution.mjs</arg>
+<arg name="content"><![CDATA[export function isLeap(year) {
+  return year % 4 === 0;
+}]]></arg>
+</polypus:tool>`;
+    const { toolCalls } = parseEmulatedToolCalls(out);
+    expect(toolCalls[0]!.arguments.content).toBe(
+      'export function isLeap(year) {\n  return year % 4 === 0;\n}',
+    );
+  });
+
+  it("keeps a lone CDATA-looking substring that is not a full wrapper", () => {
+    const out = `<polypus:tool name="write_file">
+<arg name="path">a.js</arg>
+<arg name="content">const s = "<![CDATA[not a wrapper]]>";</arg>
+</polypus:tool>`;
+    const { toolCalls } = parseEmulatedToolCalls(out);
+    expect(toolCalls[0]!.arguments.content).toBe('const s = "<![CDATA[not a wrapper]]>";');
+  });
+
   it("preserves angle brackets inside code content", () => {
     const out = `<polypus:tool name="write_file">
 <arg name="path">a.tsx</arg>

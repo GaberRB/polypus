@@ -14,6 +14,7 @@ import { loadConfig, resolveAgent, findCustomProvider } from "../../core/config/
 import { gatherContext } from "../../core/context/auto-context.js";
 import { createProvider, createCustomProvider } from "../../core/providers/registry.js";
 import { PermissionEngine, type ConfirmRequest, type ConfirmResult } from "../../core/permissions/modes.js";
+import { protectPaths } from "../../core/permissions/protect.js";
 import { hunkLabel, type Hunk } from "../../core/permissions/diff.js";
 import { runAgent, type AgentEvents, type RunResult } from "../../core/agent/loop.js";
 import { resolveMentions } from "../../core/context/mentions.js";
@@ -85,6 +86,8 @@ export interface RunOptions {
   json?: boolean;
   /** With --json: emit NDJSON events live (one per line) instead of one object. */
   stream?: boolean;
+  /** Comma-separated globs made read-only at the OS level for this run. */
+  protect?: string;
   /** Force verification on (--verify) or off (--no-verify); undefined = profile/config. */
   verify?: boolean;
   /** Shortcut for the `fast` execution profile (verify/plan/auto-context off). */
@@ -149,6 +152,10 @@ export async function run(task: string | undefined, opts: RunOptions): Promise<v
     mode: (opts.mode as PermissionMode) ?? seeded?.mode ?? config.permissions.mode,
     allow: config.permissions.allow,
     deny: config.permissions.deny,
+    protect: [
+      ...config.permissions.protect,
+      ...(opts.protect ? opts.protect.split(",").map((s) => s.trim()).filter(Boolean) : []),
+    ],
     allowedCommands: config.permissions.allowedCommands,
     network: config.permissions.network,
     maxSteps: opts.maxSteps ? Number(opts.maxSteps) : undefined,
@@ -241,6 +248,8 @@ export interface SessionState {
   mode: PermissionMode;
   allow: string[];
   deny: string[];
+  /** Globs made read-only at the OS level for the run (from config + --protect). */
+  protect: string[];
   allowedCommands: string[];
   network: NetworkPolicy;
   maxSteps?: number;
@@ -342,6 +351,7 @@ async function executeTask(
   const permissions = new PermissionEngine({
     mode: session.mode,
     policy: { workspace, allow: session.allow, deny: session.deny },
+    protect: session.protect,
     allowedCommands: session.allowedCommands,
     network: session.network,
     confirm: streamConfirm
@@ -425,12 +435,20 @@ async function executeTask(
       events,
     });
 
+  // Make protected paths read-only at the OS level for the duration of the run
+  // (real backstop for shell writes); always restore original modes afterwards.
+  const protection = await protectPaths(workspace, session.protect);
+  if (!json && protection.files.length > 0) {
+    console.log(pc.dim(`🔒 ${protection.files.length} arquivo(s) protegido(s) (read-only durante o run)`));
+  }
+
   if (!json) spinner.start(t("ui.thinking"));
   let result: RunResult;
   try {
     result = await runOnce(task);
     session.history = result.messages;
   } finally {
+    await protection.restore();
     spinner.stop();
     cancel.dispose();
     streamAsk?.dispose(); // resolve any pending choice card so we don't hang

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { PermissionMode } from "../config/schema.js";
 import { checkPath, isCommandPreApproved, type PathPolicy } from "./allowlist.js";
+import { isProtected } from "./protect.js";
 import { scanSecrets, screenCommand, screenUrl, type UrlPolicy } from "./policy.js";
 import { computeHunks, type Hunk } from "./diff.js";
 import { applyHunks } from "./diff.js";
@@ -33,6 +34,8 @@ export interface Decision {
 export interface PermissionEngineOptions {
   mode: PermissionMode;
   policy: PathPolicy;
+  /** Glob patterns that are read-only for this run; writes are denied outright. */
+  protect?: string[];
   allowedCommands: string[];
   /** Domain/port rules for outbound network tools. SSRF/scheme guards apply regardless. */
   network?: UrlPolicy;
@@ -57,6 +60,13 @@ export class PermissionEngine {
   async authorizeWrite(target: string, preview?: string, content?: string): Promise<Decision> {
     const d = checkPath(this.opts.policy, target);
     if (!d.allowed) return { allowed: false, reason: d.reason };
+
+    // Protected paths are read-only for the whole run — deny writes in every
+    // mode (including bypass) with a clear reason. The OS read-only bit is the
+    // real backstop; this just gives a clean error for the direct write tools.
+    if (this.opts.protect && isProtected(this.opts.protect, d.rel)) {
+      return { allowed: false, reason: `protected path "${d.rel}" is read-only for this run` };
+    }
 
     // Read the current file (if any) so we can diff and scan only added lines.
     let oldContent = "";

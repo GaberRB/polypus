@@ -1,0 +1,8 @@
+{
+  "hooks": [
+    {
+      "event": "Stop",
+      "command": "node -e \"require('fs').writeFileSync('.poly/STOP_RAN','1');console.log('stop hook executed')\""
+    }
+  ]
+}

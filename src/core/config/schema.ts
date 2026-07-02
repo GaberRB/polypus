@@ -124,6 +124,12 @@ export const Permissions = z.object({
   allow: z.array(z.string()).default(["**/*"]),
   /** Glob patterns that are always denied, even if they match `allow`. */
   deny: z.array(z.string()).default([".git/**", ".polypus/**", "**/.env"]),
+  /**
+   * Glob patterns made READ-ONLY at the OS level for the duration of a run, so
+   * ANY tool (write_file, edit_file, shell redirects, python) fails to write —
+   * unlike `deny`, which only gates the direct write tools. Default empty.
+   */
+  protect: z.array(z.string()).default([]),
   /** Shell commands (matched by prefix) the agent may run without per-call escalation. */
   allowedCommands: z.array(z.string()).default([]),
   /** Domain/port rules for the network tools. SSRF/https guards apply regardless. */

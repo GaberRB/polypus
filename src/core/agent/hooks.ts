@@ -96,9 +96,15 @@ function getEntries(cfg: HooksConfig, event: HookEvent, toolName?: string): Hook
 function substitute(template: string, call: ToolCall | null, workspace: string): string {
   const path = call && typeof call.arguments.path === "string" ? call.arguments.path : "";
   const tool = call?.name ?? "";
+  // Expose the shell command so a PreToolUse hook on `run_command` can inspect
+  // (and block) it — e.g. deny writes to a protected path via `echo > file`.
+  // Without this, run_command was a blind spot: a hook could only see {path},
+  // which is empty for run_command, so shell writes bypassed path protection.
+  const command = call && typeof call.arguments.command === "string" ? call.arguments.command : "";
   return template
     .replace(/\{path\}/g, path)
     .replace(/\{tool\}/g, tool)
+    .replace(/\{command\}/g, command)
     .replace(/\{workspace\}/g, workspace);
 }
 
@@ -111,11 +117,25 @@ async function runEntry(entry: HookEntry, call: ToolCall | null, workspace: stri
   const command = substitute(entry.command, call, workspace);
   const max = entry.maxOutputChars;
   const start = Date.now();
+  // Also expose the tool context as env vars. Safer than {command} substitution
+  // for run_command, whose value contains quotes/redirects that would break a
+  // hook that inlined it — a hook reads $POLYPUS_COMMAND instead.
+  const hookEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    POLYPUS_TOOL: call?.name ?? "",
+    POLYPUS_PATH: call && typeof call.arguments.path === "string" ? call.arguments.path : "",
+    POLYPUS_COMMAND: call && typeof call.arguments.command === "string" ? call.arguments.command : "",
+    // Full argument object as JSON so a hook can screen ANY tool's inputs
+    // (e.g. run_python_script's `script`), not just the well-known fields.
+    POLYPUS_ARGS: call ? JSON.stringify(call.arguments) : "",
+    POLYPUS_WORKSPACE: workspace,
+  };
   try {
     const { stdout, stderr } = await execAsync(command, {
       cwd: workspace,
       timeout: entry.timeout,
       windowsHide: true,
+      env: hookEnv,
     });
     const raw = [stdout, stderr].filter(Boolean).join("\n").trim();
     return { command, durationMs: Date.now() - start, output: truncate(raw, max), blocked: false };
