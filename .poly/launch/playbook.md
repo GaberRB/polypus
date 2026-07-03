@@ -35,9 +35,10 @@ experiment (see `polypus eval` below) — that's the **follow-up** hook, not a b
 ## Pre-launch checklist (do before posting any link)
 
 - [x] README install → `npm install -g @gaberrb/polypus` (was: git clone + build).
-- [ ] **Demo GIF** at top of README — run `vhs docs/demo.tape`, commit `docs/demo.gif`,
-      uncomment the `<img>` in README. (Windows fallback if vhs is painful: record a real
-      run with ScreenToGif.) A dev-tool README without a GIF loses ~half its visitors.
+- [x] **Demo GIF** at top of README — `docs/demo.gif` (1 MB, 13s): the snake-game payoff
+      cut from the existing `assets/DemoPolypus.mp4` (prompt → code → running game), sped
+      ~3.3×. Already wired into the README. (The old `docs/demo.tape` was removed — the hero
+      now comes from real footage, not a scripted recording.)
 - [x] **English benchmark writeup.** Created `docs/benchmark-en.html` (mirrors the pt-BR
       page, honest framing) → https://gaberrb.github.io/polypus/benchmark-en.html once GitHub
       Pages redeploys. Cross-linked both ways with `benchmark.html`.

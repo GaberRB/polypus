@@ -11,8 +11,9 @@ even models **without** native tool-calling. Bring your own keys: OpenRouter,
 Ollama, Anthropic, or any OpenAI-compatible endpoint. Run one agent, or split a
 task across **several agents working in parallel** in isolated git worktrees.
 
-<!-- DEMO: run `vhs docs/demo.tape` to generate docs/demo.gif, then uncomment the line below and commit the gif -->
-<!-- <p align="center"><img src="docs/demo.gif" alt="Polypus turning a natural-language task into an applied, verified code change" width="820"></p> -->
+<p align="center">
+  <img src="docs/demo.gif" alt="Polypus turning the prompt 'create a snake game' into a working, playable game — it plans, writes the code, asks for approval, and runs it" width="480">
+</p>
 
 - 🔌 **Any provider.** OpenRouter and Ollama out of the box (both OpenAI-compatible), plus a generic endpoint and native Anthropic.
 - 🧩 **Tool-calling for everyone.** Models with function-calling use it natively; models without it get an XML tool protocol injected into the prompt and parsed back — so base/local models can code too.
