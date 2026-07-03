@@ -38,9 +38,12 @@ experiment (see `polypus eval` below) — that's the **follow-up** hook, not a b
 - [ ] **Demo GIF** at top of README — run `vhs docs/demo.tape`, commit `docs/demo.gif`,
       uncomment the `<img>` in README. (Windows fallback if vhs is painful: record a real
       run with ScreenToGif.) A dev-tool README without a GIF loses ~half its visitors.
-- [ ] **English benchmark writeup.** The `benchmark.html` page is pt-BR with a tiny EN
-      blurb. Add a solid English version (or a `bench/demo/README` in English) to link
-      from the posts — the global audience won't read a pt-BR wall of text.
+- [x] **English benchmark writeup.** Created `docs/benchmark-en.html` (mirrors the pt-BR
+      page, honest framing) → https://gaberrb.github.io/polypus/benchmark-en.html once GitHub
+      Pages redeploys. Cross-linked both ways with `benchmark.html`.
+      ⚠️ **Reconcile the model name before promoting:** `benchmark.html` / `benchmark-en.html`
+      say `deepseek-v4-flash`, but the stale `bench/demo/README.md` says
+      `deepseek/deepseek-chat-v3-0324`. Fix whichever is wrong so the posts match the page.
 - [ ] Move "Status: early MVP. Expect rough edges." *below* the demo/bullets, so the
       first thing a visitor sees is proof, not a disclaimer.
 - [ ] Tag 3–5 issues `good first issue` — converts lurkers into contributors (contributors
@@ -114,6 +117,7 @@ It's an early MVP by one person — bring your own keys (OpenRouter/Ollama/Anthr
 OpenAI-compatible endpoint), no telemetry. Would love feedback, especially on the
 tool-call emulation for local models.
 
+Benchmark writeup: https://gaberrb.github.io/polypus/benchmark-en.html
 Install: npm install -g @gaberrb/polypus
 ```
 
@@ -158,6 +162,7 @@ Everything is reproducible (scripts + tasks in the repo). Bugs and all — the b
 actually found 4 real bugs in Polypus, which is kind of the point.
 
 Repo: https://github.com/GaberRB/polypus
+Benchmark (methodology + numbers): https://gaberrb.github.io/polypus/benchmark-en.html
 Install: npm install -g @gaberrb/polypus
 
 Feedback very welcome — especially from anyone running base/instruct models locally that
