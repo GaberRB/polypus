@@ -1,40 +1,64 @@
-# Polypus 🐙
+<div align="center">
+
+# 🐙 Polypus
 
 [![CI](https://github.com/GaberRB/polypus/actions/workflows/ci.yml/badge.svg)](https://github.com/GaberRB/polypus/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@gaberrb/polypus?color=9266F5&logo=npm)](https://www.npmjs.com/package/@gaberrb/polypus)
 [![license](https://img.shields.io/badge/license-MIT-AB8EFA)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen?logo=node.js)](https://nodejs.org)
 
-**📖 Site:** https://gaberrb.github.io/polypus/ · **📦 npm:** [`@gaberrb/polypus`](https://www.npmjs.com/package/@gaberrb/polypus) · **📝 Changelog:** [CHANGELOG.md](https://github.com/GaberRB/polypus/blob/main/CHANGELOG.md)
+**An agentic coding harness that makes *any* AI API write and apply code — even models without native tool-calling.**
 
-An agentic coding harness that makes **any** AI API generate and apply code —
-even models **without** native tool-calling. Bring your own keys: OpenRouter,
-Ollama, Anthropic, or any OpenAI-compatible endpoint. Run one agent, or split a
-task across **several agents working in parallel** in isolated git worktrees.
+[📖 Docs](https://gaberrb.github.io/polypus/) · [📦 npm](https://www.npmjs.com/package/@gaberrb/polypus) · [📝 Changelog](CHANGELOG.md) · [🐛 Issues](https://github.com/GaberRB/polypus/issues)
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Polypus turning the prompt 'create a snake game' into a working, playable game — it plans, writes the code, asks for approval, and runs it" width="480">
+  <img src="docs/demo.gif" alt="Polypus turning the prompt 'create a snake game' into a working, playable game" width="600">
 </p>
 
-- 🔌 **Any provider.** OpenRouter and Ollama out of the box (both OpenAI-compatible), plus a generic endpoint and native Anthropic.
-- 🧩 **Tool-calling for everyone.** Models with function-calling use it natively; models without it get an XML tool protocol injected into the prompt and parsed back — so base/local models can code too.
-- 🔐 **Permission modes.** `plan` (read-only), `review` (confirm each action), `bypass` (auto-approve), with a path allow-list.
-- 🐝 **Parallel swarm.** A lead agent decomposes a task into subtasks; workers run concurrently in git worktrees and merge at the end.
-- 🪄 **Setup wizard.** Interactive onboarding for keys, models, and permissions.
-- 🌎 **Bilingual UI.** Portuguese (pt-BR, default) and English.
-- 🕵️ **No telemetry.** Nothing leaves your machine except calls to the providers you configure.
+</div>
 
-> Status: early MVP. Expect rough edges.
+---
 
-## Install
+## 🌐 Read in your language
+
+<div align="center">
+
+| | | | |
+|:---:|:---:|:---:|:---:|
+| [🇺🇸 English](#-english) | [🇧🇷 Português](#-português-brasil) | [🇨🇳 中文](#-中文简体) | [🇪🇸 Español](#-español) |
+| [🇯🇵 日本語](#-日本語) | [🇰🇷 한국어](#-한국어) | [🇩🇪 Deutsch](#-deutsch) | [🇫🇷 Français](#-français) |
+| [🇷🇺 Русский](#-русский) | [🇮🇳 हिन्दी](#-हिन्दी) | | |
+
+</div>
+
+---
+
+## 🇺🇸 English
+
+Polypus is a **terminal-first agentic coding harness**. It connects to any AI provider — OpenRouter, Ollama, Anthropic, or any OpenAI-compatible endpoint — and gives the model a full set of coding tools: read files, write files, run shell commands, search, and more. It works with **any model**, even those without native function-calling, by injecting an XML protocol and parsing it back.
+
+### ✨ Key Features
+
+- 🔌 **Any provider** — OpenRouter, Ollama, Anthropic, or any OpenAI-compatible endpoint
+- 🧩 **Tool-calling for every model** — native function-calling for hosted models; XML emulation for local/base models
+- 🔐 **Permission modes** — `plan` (read-only), `review` (confirm each action), `bypass` (auto-approve)
+- 🐝 **Parallel swarm** — split a task across multiple agents working concurrently in isolated git worktrees
+- 🪄 **Setup wizard** — interactive onboarding for keys, models and permissions
+- ✅ **Closed-loop verification** — runs your project's own checks (typecheck / build / test / lint) before declaring "done"
+- 🗂️ **Project memory** — `.poly/` workspace with a persistent `agents.md` and reusable skills
+- 🌎 **Bilingual UI** — Portuguese (pt-BR, default) and English
+- 🕵️ **No telemetry** — nothing leaves your machine except calls to the providers you configure
+
+### ⚡ Install
 
 ```bash
 npm install -g @gaberrb/polypus
 ```
 
-Requires Node.js 20+. Then run `polypus` to start — the first run opens the setup wizard.
+Requires **Node.js 20+**. After install, run `polypus` — the first run opens the setup wizard automatically.
 
 <details>
-<summary>Or install from source (for contributing)</summary>
+<summary>Install from source (for contributors)</summary>
 
 ```bash
 git clone https://github.com/GaberRB/polypus polypus && cd polypus
@@ -45,22 +69,35 @@ npm link        # makes `polypus` available globally
 
 </details>
 
-## Quickstart
+### 🚀 Getting Started
 
-### Option A — guided
+#### Step 1 — Get an OpenRouter API key
+
+OpenRouter gives you access to hundreds of models (including free ones) with a single key.
+
+<!-- GIF: How to create an OpenRouter API key -->
+> **📹 Watch:** Creating an OpenRouter key — go to [openrouter.ai/keys](https://openrouter.ai/keys), sign in, click **Create key**, and copy it.
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="Creating an OpenRouter API key — sign in, click Create key, copy the key" width="600">
+  <!-- TODO: replace placeholder with recorded GIF -->
+</p>
+
+#### Step 2 — Add the key to Polypus
+
+<!-- GIF: How to add your API key to Polypus -->
+> **📹 Watch:** Run `polypus setup` and paste your key when prompted.
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="Running polypus setup and pasting the OpenRouter API key into the wizard" width="600">
+  <!-- TODO: replace placeholder with recorded GIF -->
+</p>
 
 ```bash
+# Option A — interactive wizard (recommended)
 polypus setup
-```
 
-The wizard walks you through adding one or more agents, choosing how API keys are
-stored (env var recommended), and setting the default permission mode.
-
-### Option B — manual
-
-**OpenRouter** (hosted):
-
-```bash
+# Option B — one-liner
 export OPENROUTER_API_KEY=sk-or-...
 polypus add-agent or \
   --provider openrouter \
@@ -68,286 +105,688 @@ polypus add-agent or \
   --api-key '${OPENROUTER_API_KEY}'
 ```
 
-**Ollama** (local, no key, emulated tools by default):
-
-```bash
-# ollama serve && ollama pull llama3.1
-polypus add-agent local --provider ollama --model llama3.1
-```
-
-Then run a task in the current directory:
+#### Step 3 — Run a task
 
 ```bash
 polypus run "create a Fastify server in src/server.ts with a /health route"
 ```
 
-Or just launch the interactive experience (banner + REPL):
+Or open the interactive REPL with just `polypus`.
+
+### 🔍 Discovering Models
+
+Browse the OpenRouter catalog from the terminal:
 
 ```bash
-polypus            # bare command → interactive; first run opens the setup wizard
-polypus run        # same interactive session
-```
-
-> When you pick **Ollama** in the wizard, Polypus detects your running instance
-> and lists the models you already have installed — no need to remember exact
-> tags like `llama3.1:8b`. For **OpenRouter**, it pulls the live catalog so you
-> can filter by price, context and tool support and pick a model from a list.
-
-## Discovering models
-
-Browse the OpenRouter catalog from the terminal — price (USD per 1M tokens, in/out),
-context window, and whether the model supports native tool-calling:
-
-```bash
-polypus models --tools --max-price 1 --sort price   # cheap models that support tools
-polypus models --search claude --sort price-desc     # all Claude models, priciest first
+polypus models --tools --max-price 1 --sort price   # cheap models with tool support
+polypus models --search claude --sort price-desc     # all Claude models
 polypus models --free                                # free models only
 ```
 
-The setup wizard uses the same data: choosing OpenRouter opens an interactive
-browser with search, filters (tools-only, free-only) and sorting, then a picker
-showing each model's price, tool badge and context.
-
-## Project memory (`.poly/`)
-
-`.poly/` is a small, local workspace that teaches the agent how to work in your
-repository. Scaffold it with:
-
-```bash
-polypus init        # creates .poly/ if missing; --force overwrites
-```
-
-It writes a didactic starter set:
-
-- `agents.md` — role, golden rules and an index of skills. **Polypus loads this
-  file automatically** into the agent's system prompt on every run, so the agent
-  follows your conventions instead of guessing.
-- `skills/` — focused how-to guides the agent reads when relevant.
-- `templates/spec.md` — a lean Spec-Driven Development (SDD) template.
-- `README.md` — explains the workspace and how to extend it.
-
-Edit `agents.md` to encode your conventions and reference new skills from it.
-Gitignore `.poly/` to keep it personal, or commit it to standardize the workflow
-across your team.
-
-### Skills (project + global)
-
-Skills are focused how-to guides the agent pulls in **on demand**. Drop markdown
-files in either place — project skills win over global ones of the same name:
-
-- **Project:** `.poly/skills/*.md`
-- **Global (all projects):** `~/.polypus/skills/*.md`
-
-Each file may start with frontmatter so only its summary is advertised to the
-model (cheap); the full body is loaded only when the agent decides it's relevant:
-
-```markdown
----
-name: deploy
-description: how to cut and publish a release
----
-# Deploy
-1. …
-```
-
-Polypus injects the skills **index** (name + description) into the system prompt
-and exposes a `use_skill` tool. When the agent activates one, you'll see a line
-like `🎯 skill activated: deploy (global)`, and its full instructions are loaded
-into context. Frontmatter is optional — without it the name comes from the
-filename and the description from the first line.
-
-### Interactive questions
-
-When a decision is genuinely yours, the agent can call the `ask_user` tool and
-Polypus shows an **arrow-key picker** right in the terminal — single-choice, or
-multi-select when the agent allows it. In headless mode (`--json`) there's no one
-to answer, so the agent is told to proceed with a sensible default instead.
-
-## Commands
-
-| Command | Description |
-| --- | --- |
-| `polypus setup` | Interactive wizard (agents, keys, permissions). |
-| `polypus init [--force]` | Scaffold a `.poly/` workspace (agents.md, skills, SDD spec template, README). |
-| `polypus add-agent <name> --provider <p> --model <m> [--api-key ...] [--base-url ...] [--tool-mode auto\|native\|emulated] [--set-default]` | Register an agent. |
-| `polypus remove-agent <name>` | Remove an agent. |
-| `polypus list-agents` | List configured agents. |
-| `polypus run [task] [--agent <name>] [--mode plan\|review\|bypass] [--max-steps <n>] [--fast\|--quality] [--verify\|--no-verify]` | Run a task, or open a REPL if no task is given. |
-| `polypus swarm <task> [--agents a,b] [--max-subtasks <n>] [--fast\|--quality] [--verify\|--no-verify]` | Split a task across agents in parallel worktrees. |
-| `polypus models [--search x] [--tools] [--free] [--max-price <usd>] [--sort price\|price-desc\|context\|name] [--limit <n>]` | Browse the OpenRouter catalog (price, context, tool support). |
-
-### Interactive slash commands (in `polypus run`)
-
-```
-/agents          list configured agents
-/agent <name>    switch the active agent
-/add             add a new agent (wizard)
-/remove <name>   remove an agent
-/plan            read-only mode
-/review          confirm each write / command
-/bypass          auto-approve
-/quality         quality profile: verify + plan-first + auto-context ON (default)
-/fast            fast profile: that scaffolding OFF (cheapest, quickest)
-/verify on|off   toggle running project checks before "done"
-/planfirst on|off  toggle forcing a short plan before acting
-/allow <glob>    add a path to the allow-list
-/reset           clear the conversation
-/help            list commands
-/exit            quit
-```
-
-Pasting a large, multi-line block at the prompt is collapsed to a compact
-`[Pasted text #1 +16 lines]` marker so it doesn't flood the terminal — the full
-text is still sent to the agent. (Requires a terminal with bracketed paste, which
-most modern terminals support.)
-
-### Referencing files with `@`
-
-Type `@` at the prompt to open a **file picker**: it lists the files in the
-current directory and filters live as you keep typing (subsequence match, so
-`srvc` finds `src/service.ts`). Move with ↑/↓, press **Enter** to insert the
-chosen `@path`, or **Esc** to cancel. The referenced file's contents are then
-injected into the task as context (same as typing `@path` by hand).
-
-## How non-tool models "code"
-
-Models with native function-calling (most hosted models) use it directly. For
-models **without** it, Polypus injects a strict XML protocol into the system
-prompt and parses the model's text output:
-
-```xml
-<polypus:tool name="write_file">
-<arg name="path">src/index.ts</arg>
-<arg name="content">console.log("hello");</arg>
-</polypus:tool>
-```
-
-The parser tolerates angle brackets inside code. When the model stalls or claims
-it "can't create files", Polypus re-sends a reinforcement message ("yes, you ARE
-allowed to act now") up to a few times before giving up. When the work is done,
-the model calls the `finish` tool.
-
-Set the path per agent with `--tool-mode`: `auto` (native for hosted, emulated
-for Ollama), `native`, or `emulated`.
-
-## Language / Idioma
-
-The interface is bilingual: **pt-BR (default)** and **en**. Resolution order:
-`--lang` flag → `POLYPUS_LANG` env → `locale` in the config → pt-BR.
-
-```bash
-polypus --lang en run "create a CLI entrypoint"
-POLYPUS_LANG=en polypus list-agents
-```
-
-The setup wizard asks for the language first and saves it to the config. The
-agent is also instructed to talk back to you in the configured language.
-
-## Execution modes — making cheap/local models deliver
-
-The hard part of using a cheap or local model as a coding agent isn't that it
-errs more — it's that it errs **silently** (invents an API, edits the wrong
-file, declares "done" without doing it). Polypus closes that gap with
-engineering scaffolding that's **on by default**, so a weaker model produces
-output you can actually trust:
-
-- **Closed-loop verification.** When the agent calls `finish`, Polypus runs the
-  project's own checks (`typecheck`/`build`/`test`/`lint` for Node; `cargo`,
-  `go`, `pytest`/`ruff`/`mypy` for Rust/Go/Python) and hands any failure back to
-  the agent to fix — it doesn't accept "done" until the project is actually
-  green. In a **swarm**, a worker whose checks never pass is kept on its branch
-  but **not merged**, so broken code never lands.
-- **Plan-first.** The agent must write a short numbered plan and ground itself in
-  the real files (read before edit) before acting — and there's an `update_plan`
-  tool to keep that checklist current.
-- **Proactive context.** Task-relevant code is injected automatically: the
-  semantic index when embeddings are configured, otherwise a zero-setup keyword
-  scan — so the model starts grounded even on Ollama with no index.
-
-This costs some extra tokens and time. When you want the cheapest, fastest run
-instead, switch to the **fast** profile, which turns all of the above off.
-
-| Profile | Verification | Plan-first | Auto-context |
-| --- | --- | --- | --- |
-| `quality` (default) | on | on | on |
-| `fast` | off | off | off |
-
-```bash
-polypus run "…"                 # quality by default
-polypus run --fast "…"          # cheapest/quickest, scaffolding off
-polypus run --no-verify "…"     # keep plan-first/context, skip the checks only
-polypus swarm --fast "…"        # same switches apply to swarm
-```
-
-In the REPL, toggle live with `/quality`, `/fast`, `/verify on|off` and
-`/planfirst on|off` (see `/help`). You can also set the defaults in
-`~/.polypus/config.json`:
-
-```json
-{
-  "execution": {
-    "profile": "quality",
-    "verify": true,
-    "planFirst": true,
-    "autoContext": true,
-    "maxVerifyFixes": 3
-  }
-}
-```
-
-Precedence per setting: **CLI flag → config field → profile preset.** So
-`--no-verify` always wins, a config field overrides the profile, and the profile
-fills in the rest.
-
-### Roadmap: prove it with numbers (`polypus eval`)
-
-The claim "a cheap model delivers the equivalent" should be measurable, not a
-slogan. Planned: a `polypus eval <suite>` command that runs a fixed set of tasks
-through two agents (e.g. an expensive vs. a cheap model) on the **same** harness
-and scores each by whether the project's checks pass (compiles / tests green /
-correct diff), emitting a comparison table (success %, cost, time). It doubles as
-an internal regression guard for the scaffolding above. Tracked as a roadmap item
-(not yet implemented) — open an issue to pick it up.
-
-## Permissions
-
-| Mode | File writes | Commands |
-| --- | --- | --- |
-| `plan` | blocked | blocked |
-| `review` | confirm each | confirm (unless pre-approved) |
-| `bypass` | auto | auto |
-
-All file access is restricted to the workspace and the configured **allow-list**
-globs; the **deny-list** (e.g. `.git/**`, `**/.env`) always wins.
-
-### Timeout Configuration
-
-You can control the maximum duration of a swarm session using the environment variable `POLYPUS_SWARM_OVERALL_TIMEOUT_MS` (default: 1 hour). This prevents the session from hanging indefinitely if an agent stalls:
-
-```bash
-export POLYPUS_SWARM_OVERALL_TIMEOUT_MS=1800000  # 30 minutes
-polypus swarm "your task"
-```
-
-Similarly, `POLYPUS_SWARM_IDLE_TIMEOUT_MS` controls the idle timeout for individual workers (default: 5 minutes).
-
-The `run_python_script` tool has its own per-script timeout, configurable with `POLYPUS_PYTHON_TIMEOUT_MS` (default: 120000, i.e. 2 minutes). An absent or invalid value falls back to the default.
-
-## Swarm (parallel agents)
+### 🐝 Swarm (Parallel Agents)
 
 ```bash
 polypus swarm "add a REST API and a matching test suite"
 ```
 
-The lead agent splits the task into subtasks, each worker runs in its own git
-worktree (in `bypass` mode, since the worktree is throwaway), and the branches
-are merged back sequentially. Conflicting branches are kept for manual
-inspection rather than force-merged.
+A lead agent decomposes the task; workers run in isolated git worktrees in parallel and merge back automatically. Branches that fail verification are kept for manual review, never force-merged.
 
-## MCP (external tool servers)
+### 🗂️ Project Memory (`.poly/`)
 
-Connect [Model Context Protocol](https://modelcontextprotocol.io) servers to give
-the agent extra tools. Declare them in `.poly/mcp.json`:
+```bash
+polypus init        # scaffold a .poly/ workspace
+```
+
+Creates `agents.md` (auto-loaded into every agent's system prompt), `skills/` (focused how-to guides pulled on demand), and a lean SDD spec template.
+
+### 💻 Commands
+
+| Command | Description |
+|---|---|
+| `polypus setup` | Interactive wizard (agents, keys, permissions) |
+| `polypus init [--force]` | Scaffold `.poly/` workspace |
+| `polypus run [task]` | Run a task or open a REPL |
+| `polypus swarm <task>` | Split task across parallel agents |
+| `polypus models [--tools] [--free] [--max-price N]` | Browse OpenRouter catalog |
+| `polypus add-agent <name> --provider <p> --model <m>` | Register an agent |
+| `polypus list-agents` | List configured agents |
+
+### 🔐 Permission Modes
+
+| Mode | File writes | Commands |
+|---|---|---|
+| `plan` | blocked | blocked |
+| `review` | confirm each | confirm (unless pre-approved) |
+| `bypass` | auto | auto |
+
+### ⚙️ Execution Profiles
+
+| Profile | Verification | Plan-first | Auto-context |
+|---|---|---|---|
+| `quality` (default) | ✅ | ✅ | ✅ |
+| `fast` | ❌ | ❌ | ❌ |
+
+```bash
+polypus run "..."          # quality by default
+polypus run --fast "..."   # cheapest/quickest
+```
+
+---
+
+## 🇧🇷 Português (Brasil)
+
+Polypus é um **harness de codificação agêntica orientado ao terminal**. Conecta-se a qualquer provedor de IA — OpenRouter, Ollama, Anthropic, ou qualquer endpoint compatível com OpenAI — e entrega ao modelo um conjunto completo de ferramentas de programação: ler arquivos, escrever arquivos, executar comandos no shell, buscar código e muito mais. Funciona com **qualquer modelo**, até os sem function-calling nativo, injetando um protocolo XML e parseando a resposta.
+
+### ✨ Funcionalidades
+
+- 🔌 **Qualquer provedor** — OpenRouter, Ollama, Anthropic ou endpoint OpenAI-compatível
+- 🧩 **Tool-calling para todo modelo** — nativo para modelos hospedados; emulação XML para modelos locais/base
+- 🔐 **Modos de permissão** — `plan` (só leitura), `review` (confirmar cada ação), `bypass` (auto-aprovação)
+- 🐝 **Swarm paralelo** — divida uma tarefa entre vários agentes em worktrees git isolados
+- 🪄 **Wizard de configuração** — onboarding interativo para chaves, modelos e permissões
+- ✅ **Verificação em loop fechado** — executa as próprias verificações do projeto (typecheck/build/test/lint) antes de declarar "pronto"
+- 🗂️ **Memória do projeto** — workspace `.poly/` com `agents.md` persistente e skills reutilizáveis
+- 🌎 **UI bilíngue** — Português (pt-BR, padrão) e Inglês
+- 🕵️ **Sem telemetria** — nada sai da sua máquina exceto chamadas aos provedores configurados
+
+### ⚡ Instalação
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+Requer **Node.js 20+**. Após instalar, execute `polypus` — o primeiro uso abre o wizard automaticamente.
+
+### 🚀 Primeiros Passos
+
+#### Passo 1 — Crie uma chave no OpenRouter
+
+O OpenRouter dá acesso a centenas de modelos (incluindo gratuitos) com uma única chave.
+
+<!-- GIF: Como criar uma chave de API no OpenRouter -->
+> **📹 Assista:** Acesse [openrouter.ai/keys](https://openrouter.ai/keys), faça login, clique em **Create key** e copie a chave.
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="Criando uma chave de API no OpenRouter" width="600">
+  <!-- TODO: substituir pelo GIF gravado -->
+</p>
+
+#### Passo 2 — Adicione a chave ao Polypus
+
+<!-- GIF: Como adicionar sua chave ao Polypus -->
+> **📹 Assista:** Execute `polypus setup` e cole sua chave quando solicitado.
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="Executando polypus setup e colando a chave do OpenRouter" width="600">
+  <!-- TODO: substituir pelo GIF gravado -->
+</p>
+
+```bash
+# Opção A — wizard interativo (recomendado)
+polypus setup
+
+# Opção B — linha de comando
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+#### Passo 3 — Execute uma tarefa
+
+```bash
+polypus run "crie um servidor Fastify em src/server.ts com uma rota /health"
+```
+
+Ou abra o REPL interativo digitando apenas `polypus`.
+
+### 🐝 Swarm (Agentes em Paralelo)
+
+```bash
+polypus swarm "adicione uma API REST e uma suíte de testes correspondente"
+```
+
+### 🗂️ Memória do Projeto (`.poly/`)
+
+```bash
+polypus init        # cria o workspace .poly/
+```
+
+### 💻 Comandos
+
+| Comando | Descrição |
+|---|---|
+| `polypus setup` | Wizard interativo (agentes, chaves, permissões) |
+| `polypus init [--force]` | Cria o workspace `.poly/` |
+| `polypus run [tarefa]` | Executa uma tarefa ou abre o REPL |
+| `polypus swarm <tarefa>` | Divide a tarefa entre agentes paralelos |
+| `polypus models [--tools] [--free] [--max-price N]` | Navega no catálogo do OpenRouter |
+| `polypus add-agent <nome> --provider <p> --model <m>` | Registra um agente |
+| `polypus list-agents` | Lista agentes configurados |
+
+---
+
+## 🇨🇳 中文（简体）
+
+Polypus 是一个**以终端为核心的智能编程框架**。它可连接任何 AI 提供商——OpenRouter、Ollama、Anthropic 或任何兼容 OpenAI 的接口——并为模型提供完整的编程工具集：读写文件、执行 Shell 命令、搜索代码等。它适用于**任何模型**，即使是没有原生 function-calling 的模型，也可通过注入 XML 协议并解析返回值来实现。
+
+### ✨ 核心功能
+
+- 🔌 **支持任意提供商** — OpenRouter、Ollama、Anthropic 或 OpenAI 兼容接口
+- 🧩 **为所有模型赋予工具调用能力** — 托管模型原生支持；本地/基础模型通过 XML 仿真
+- 🔐 **权限模式** — `plan`（只读）、`review`（逐步确认）、`bypass`（自动审批）
+- 🐝 **并行 Swarm** — 将任务拆分给多个 Agent，在隔离的 git worktree 中并发执行
+- 🪄 **配置向导** — 交互式引导设置密钥、模型和权限
+- ✅ **闭环验证** — 完成任务前自动运行项目自身的检查（typecheck/build/test/lint）
+- 🗂️ **项目记忆** — `.poly/` 工作区，含持久化 `agents.md` 和可复用技能库
+- 🌎 **双语 UI** — 葡萄牙语（pt-BR，默认）和英语
+- 🕵️ **零遥测** — 除调用您配置的提供商外，任何数据都不离开您的机器
+
+### ⚡ 安装
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+需要 **Node.js 20+**。安装后运行 `polypus`，首次使用将自动打开配置向导。
+
+### 🚀 快速开始
+
+#### 第一步 — 获取 OpenRouter API 密钥
+
+OpenRouter 提供对数百个模型（包括免费模型）的访问，只需一个密钥。
+
+<!-- GIF: 如何创建 OpenRouter API 密钥 -->
+> **📹 演示：** 访问 [openrouter.ai/keys](https://openrouter.ai/keys)，登录后点击 **Create key**，复制密钥。
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="创建 OpenRouter API 密钥" width="600">
+  <!-- TODO: 替换为录制的 GIF -->
+</p>
+
+#### 第二步 — 将密钥添加到 Polypus
+
+<!-- GIF: 如何向 Polypus 添加密钥 -->
+> **📹 演示：** 运行 `polypus setup`，在提示时粘贴您的密钥。
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="运行 polypus setup 并粘贴 OpenRouter 密钥" width="600">
+  <!-- TODO: 替换为录制的 GIF -->
+</p>
+
+```bash
+# 方式 A — 交互向导（推荐）
+polypus setup
+
+# 方式 B — 命令行
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+#### 第三步 — 执行任务
+
+```bash
+polypus run "在 src/server.ts 中创建一个带 /health 路由的 Fastify 服务器"
+```
+
+或直接运行 `polypus` 打开交互式 REPL。
+
+### 💻 命令参考
+
+| 命令 | 说明 |
+|---|---|
+| `polypus setup` | 交互式向导（代理、密钥、权限） |
+| `polypus init [--force]` | 初始化 `.poly/` 工作区 |
+| `polypus run [任务]` | 执行任务或打开 REPL |
+| `polypus swarm <任务>` | 将任务拆分给多个并行代理 |
+| `polypus models [--tools] [--free] [--max-price N]` | 浏览 OpenRouter 模型目录 |
+| `polypus add-agent <名称> --provider <p> --model <m>` | 注册代理 |
+| `polypus list-agents` | 列出已配置的代理 |
+
+---
+
+## 🇪🇸 Español
+
+Polypus es un **harness de codificación agéntica centrado en la terminal**. Se conecta a cualquier proveedor de IA — OpenRouter, Ollama, Anthropic, o cualquier endpoint compatible con OpenAI — y proporciona al modelo un conjunto completo de herramientas: leer y escribir archivos, ejecutar comandos de shell, buscar código, y más. Funciona con **cualquier modelo**, incluso los que no tienen function-calling nativo, mediante un protocolo XML inyectado en el prompt.
+
+### ✨ Características principales
+
+- 🔌 **Cualquier proveedor** — OpenRouter, Ollama, Anthropic o endpoint compatible con OpenAI
+- 🧩 **Tool-calling para todos los modelos** — nativo para modelos alojados; emulación XML para modelos locales
+- 🔐 **Modos de permiso** — `plan` (solo lectura), `review` (confirmar cada acción), `bypass` (auto-aprobación)
+- 🐝 **Swarm paralelo** — divide una tarea entre varios agentes en worktrees git aislados
+- 🪄 **Asistente de configuración** — onboarding interactivo para claves, modelos y permisos
+- ✅ **Verificación en bucle cerrado** — ejecuta las propias verificaciones del proyecto antes de declarar "listo"
+- 🗂️ **Memoria del proyecto** — workspace `.poly/` con `agents.md` persistente y habilidades reutilizables
+- 🕵️ **Sin telemetría** — nada sale de tu máquina excepto llamadas a los proveedores configurados
+
+### ⚡ Instalación
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+Requiere **Node.js 20+**. Luego ejecuta `polypus` — la primera vez se abre el asistente de configuración automáticamente.
+
+### 🚀 Inicio rápido
+
+#### Paso 1 — Crea una clave de API en OpenRouter
+
+OpenRouter te da acceso a cientos de modelos (incluyendo gratuitos) con una sola clave.
+
+<!-- GIF: Cómo crear una clave de API en OpenRouter -->
+> **📹 Mira:** Accede a [openrouter.ai/keys](https://openrouter.ai/keys), inicia sesión, haz clic en **Create key** y cópiala.
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="Crear una clave de API en OpenRouter" width="600">
+  <!-- TODO: reemplazar con GIF grabado -->
+</p>
+
+#### Paso 2 — Agrega la clave a Polypus
+
+<!-- GIF: Cómo agregar tu clave a Polypus -->
+> **📹 Mira:** Ejecuta `polypus setup` y pega tu clave cuando se te solicite.
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="Ejecutar polypus setup y pegar la clave de OpenRouter" width="600">
+  <!-- TODO: reemplazar con GIF grabado -->
+</p>
+
+```bash
+# Opción A — asistente interactivo (recomendado)
+polypus setup
+
+# Opción B — línea de comandos
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+#### Paso 3 — Ejecuta una tarea
+
+```bash
+polypus run "crea un servidor Fastify en src/server.ts con una ruta /health"
+```
+
+---
+
+## 🇯🇵 日本語
+
+Polypus は**ターミナルファーストのエージェント型コーディングハーネス**です。OpenRouter・Ollama・Anthropic・OpenAI 互換エンドポイントなど、どんな AI プロバイダーにも接続でき、モデルにファイルの読み書き・シェルコマンドの実行・コード検索などの完全なツールセットを提供します。ネイティブの function-calling がないモデルでも、XML プロトコルの注入と解析により**あらゆるモデル**で動作します。
+
+### ✨ 主な機能
+
+- 🔌 **任意のプロバイダー** — OpenRouter・Ollama・Anthropic・OpenAI 互換エンドポイント
+- 🧩 **全モデルにツール呼び出し** — ホスト型モデルはネイティブ、ローカル/ベースモデルは XML エミュレーション
+- 🔐 **パーミッションモード** — `plan`（読み取り専用）、`review`（各操作を確認）、`bypass`（自動承認）
+- 🐝 **並列スウォーム** — 複数エージェントが隔離された git worktree で並行実行
+- 🪄 **セットアップウィザード** — キー・モデル・パーミッションのインタラクティブ設定
+- ✅ **クローズドループ検証** — 「完了」を宣言する前にプロジェクト独自のチェックを実行
+- 🗂️ **プロジェクトメモリ** — `.poly/` ワークスペースと再利用可能なスキル
+- 🕵️ **テレメトリなし** — 設定したプロバイダーへの呼び出し以外、データは機外に出ません
+
+### ⚡ インストール
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+**Node.js 20+** が必要です。インストール後に `polypus` を実行すると、初回はセットアップウィザードが自動で起動します。
+
+### 🚀 クイックスタート
+
+#### ステップ 1 — OpenRouter の API キーを取得する
+
+OpenRouter は1つのキーで数百のモデル（無料モデルを含む）にアクセスできます。
+
+<!-- GIF: OpenRouter API キーの作成方法 -->
+> **📹 デモ：** [openrouter.ai/keys](https://openrouter.ai/keys) にアクセスし、ログイン後に **Create key** をクリックしてキーをコピーします。
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="OpenRouter API キーの作成" width="600">
+  <!-- TODO: 録画した GIF に差し替え -->
+</p>
+
+#### ステップ 2 — Polypus にキーを追加する
+
+<!-- GIF: Polypus にキーを追加する方法 -->
+> **📹 デモ：** `polypus setup` を実行し、プロンプトが表示されたらキーを貼り付けます。
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="polypus setup でキーを追加" width="600">
+  <!-- TODO: 録画した GIF に差し替え -->
+</p>
+
+```bash
+# 方法 A — インタラクティブウィザード（推奨）
+polypus setup
+
+# 方法 B — コマンドライン
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+#### ステップ 3 — タスクを実行する
+
+```bash
+polypus run "/health ルートを持つ Fastify サーバーを src/server.ts に作成して"
+```
+
+---
+
+## 🇰🇷 한국어
+
+Polypus는 **터미널 중심의 에이전트형 코딩 하니스**입니다. OpenRouter, Ollama, Anthropic, 또는 OpenAI 호환 엔드포인트 등 어떤 AI 공급자에도 연결할 수 있으며, 파일 읽기/쓰기, 셸 명령 실행, 코드 검색 등 완전한 도구 세트를 모델에 제공합니다. 네이티브 function-calling이 없는 모델도 XML 프로토콜 주입과 파싱을 통해 동작합니다.
+
+### ✨ 주요 기능
+
+- 🔌 **모든 공급자 지원** — OpenRouter, Ollama, Anthropic, OpenAI 호환 엔드포인트
+- 🧩 **모든 모델에 도구 호출** — 호스팅 모델은 네이티브, 로컬/베이스 모델은 XML 에뮬레이션
+- 🔐 **권한 모드** — `plan` (읽기 전용), `review` (각 작업 확인), `bypass` (자동 승인)
+- 🐝 **병렬 스웜** — 격리된 git worktree에서 여러 에이전트가 동시 실행
+- 🪄 **설정 마법사** — 키, 모델, 권한의 인터랙티브 온보딩
+- ✅ **폐쇄 루프 검증** — 완료 선언 전 프로젝트 자체 검사(typecheck/build/test/lint) 실행
+- 🕵️ **텔레메트리 없음** — 설정한 공급자 호출 외에는 데이터가 머신을 벗어나지 않음
+
+### ⚡ 설치
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+**Node.js 20+** 필요. 설치 후 `polypus` 실행 — 첫 실행 시 설정 마법사가 자동으로 열립니다.
+
+### 🚀 시작하기
+
+#### 1단계 — OpenRouter API 키 발급
+
+<!-- GIF: OpenRouter API 키 생성 방법 -->
+> **📹 시연:** [openrouter.ai/keys](https://openrouter.ai/keys)에 접속, 로그인 후 **Create key** 클릭, 키를 복사합니다.
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="OpenRouter API 키 생성" width="600">
+  <!-- TODO: 녹화한 GIF로 교체 -->
+</p>
+
+#### 2단계 — Polypus에 키 추가
+
+<!-- GIF: Polypus에 키 추가하는 방법 -->
+> **📹 시연:** `polypus setup` 실행 후 키를 붙여넣습니다.
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="polypus setup에서 키 추가" width="600">
+  <!-- TODO: 녹화한 GIF로 교체 -->
+</p>
+
+```bash
+# 방법 A — 인터랙티브 마법사 (권장)
+polypus setup
+
+# 방법 B — 커맨드라인
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+#### 3단계 — 작업 실행
+
+```bash
+polypus run "src/server.ts에 /health 라우트를 가진 Fastify 서버를 만들어줘"
+```
+
+---
+
+## 🇩🇪 Deutsch
+
+Polypus ist ein **terminal-zentriertes agentisches Coding-Harness**. Es verbindet sich mit jedem KI-Anbieter — OpenRouter, Ollama, Anthropic oder einem OpenAI-kompatiblen Endpunkt — und gibt dem Modell ein vollständiges Werkzeugset: Dateien lesen/schreiben, Shell-Befehle ausführen, Code suchen und mehr. Es funktioniert mit **jedem Modell**, auch ohne natives Function-Calling, durch ein injiziertes XML-Protokoll.
+
+### ✨ Hauptfunktionen
+
+- 🔌 **Beliebiger Anbieter** — OpenRouter, Ollama, Anthropic oder OpenAI-kompatibler Endpunkt
+- 🧩 **Tool-Calling für alle Modelle** — nativ für gehostete Modelle; XML-Emulation für lokale Modelle
+- 🔐 **Berechtigungsmodi** — `plan` (nur lesen), `review` (jede Aktion bestätigen), `bypass` (auto-genehmigen)
+- 🐝 **Paralleler Schwarm** — Aufgabe auf mehrere Agenten in isolierten git-Worktrees aufteilen
+- ✅ **Geschlossener Überprüfungskreis** — führt Projektprüfungen aus, bevor „fertig" deklariert wird
+- 🕵️ **Keine Telemetrie** — nichts verlässt Ihren Rechner außer Aufrufen an die konfigurierten Anbieter
+
+### ⚡ Installation
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+Erfordert **Node.js 20+**. Nach der Installation `polypus` ausführen — beim ersten Start öffnet sich automatisch der Setup-Wizard.
+
+### 🚀 Schnellstart
+
+#### Schritt 1 — OpenRouter API-Schlüssel erstellen
+
+<!-- GIF: OpenRouter API-Schlüssel erstellen -->
+> **📹 Demo:** Besuchen Sie [openrouter.ai/keys](https://openrouter.ai/keys), melden Sie sich an, klicken Sie auf **Create key** und kopieren Sie den Schlüssel.
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="OpenRouter API-Schlüssel erstellen" width="600">
+  <!-- TODO: durch aufgezeichnetes GIF ersetzen -->
+</p>
+
+#### Schritt 2 — Schlüssel zu Polypus hinzufügen
+
+<!-- GIF: Schlüssel zu Polypus hinzufügen -->
+> **📹 Demo:** Führen Sie `polypus setup` aus und fügen Sie Ihren Schlüssel ein, wenn Sie dazu aufgefordert werden.
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="polypus setup ausführen und Schlüssel einfügen" width="600">
+  <!-- TODO: durch aufgezeichnetes GIF ersetzen -->
+</p>
+
+```bash
+# Option A — interaktiver Wizard (empfohlen)
+polypus setup
+
+# Option B — Befehlszeile
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+---
+
+## 🇫🇷 Français
+
+Polypus est un **harness de codage agentique centré sur le terminal**. Il se connecte à n'importe quel fournisseur d'IA — OpenRouter, Ollama, Anthropic ou tout endpoint compatible OpenAI — et fournit au modèle un jeu d'outils complet : lire/écrire des fichiers, exécuter des commandes shell, rechercher du code, etc. Il fonctionne avec **n'importe quel modèle**, même sans function-calling natif, grâce à un protocole XML injecté dans le prompt.
+
+### ✨ Fonctionnalités clés
+
+- 🔌 **N'importe quel fournisseur** — OpenRouter, Ollama, Anthropic ou endpoint compatible OpenAI
+- 🧩 **Tool-calling pour tous les modèles** — natif pour les modèles hébergés ; émulation XML pour les modèles locaux
+- 🔐 **Modes de permission** — `plan` (lecture seule), `review` (confirmer chaque action), `bypass` (auto-approbation)
+- 🐝 **Swarm parallèle** — répartir une tâche entre plusieurs agents dans des worktrees git isolés
+- ✅ **Vérification en boucle fermée** — exécute les vérifications du projet avant de déclarer « terminé »
+- 🕵️ **Sans télémétrie** — rien ne quitte votre machine sauf les appels aux fournisseurs configurés
+
+### ⚡ Installation
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+Nécessite **Node.js 20+**. Après l'installation, exécutez `polypus` — le premier lancement ouvre automatiquement l'assistant de configuration.
+
+### 🚀 Démarrage rapide
+
+#### Étape 1 — Créer une clé API OpenRouter
+
+<!-- GIF : Comment créer une clé API OpenRouter -->
+> **📹 Démo :** Rendez-vous sur [openrouter.ai/keys](https://openrouter.ai/keys), connectez-vous, cliquez sur **Create key** et copiez la clé.
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="Créer une clé API OpenRouter" width="600">
+  <!-- TODO : remplacer par le GIF enregistré -->
+</p>
+
+#### Étape 2 — Ajouter la clé à Polypus
+
+<!-- GIF : Comment ajouter votre clé à Polypus -->
+> **📹 Démo :** Exécutez `polypus setup` et collez votre clé lorsque demandé.
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="Exécuter polypus setup et coller la clé OpenRouter" width="600">
+  <!-- TODO : remplacer par le GIF enregistré -->
+</p>
+
+```bash
+# Option A — assistant interactif (recommandé)
+polypus setup
+
+# Option B — ligne de commande
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+---
+
+## 🇷🇺 Русский
+
+Polypus — это **агентный хarness для написания кода, ориентированный на терминал**. Он подключается к любому провайдеру ИИ — OpenRouter, Ollama, Anthropic или любому OpenAI-совместимому эндпоинту — и предоставляет модели полный набор инструментов: чтение/запись файлов, выполнение команд в shell, поиск кода и многое другое. Работает с **любой моделью**, даже без нативного function-calling, с помощью инъекции XML-протокола.
+
+### ✨ Ключевые возможности
+
+- 🔌 **Любой провайдер** — OpenRouter, Ollama, Anthropic или OpenAI-совместимый эндпоинт
+- 🧩 **Tool-calling для всех моделей** — нативно для хостинговых; XML-эмуляция для локальных
+- 🔐 **Режимы разрешений** — `plan` (только чтение), `review` (подтверждать каждое действие), `bypass` (авто-одобрение)
+- 🐝 **Параллельный swarm** — разбить задачу между несколькими агентами в изолированных git-worktrees
+- ✅ **Верификация в замкнутом цикле** — выполняет проверки проекта перед объявлением «готово»
+- 🕵️ **Без телеметрии** — данные не покидают вашу машину кроме вызовов настроенных провайдеров
+
+### ⚡ Установка
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+Требует **Node.js 20+**. После установки запустите `polypus` — при первом запуске откроется мастер настройки.
+
+### 🚀 Быстрый старт
+
+#### Шаг 1 — Создать API-ключ в OpenRouter
+
+<!-- GIF: Как создать API-ключ OpenRouter -->
+> **📹 Демо:** Перейдите на [openrouter.ai/keys](https://openrouter.ai/keys), войдите в аккаунт, нажмите **Create key** и скопируйте ключ.
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="Создание API-ключа OpenRouter" width="600">
+  <!-- TODO: заменить записанным GIF -->
+</p>
+
+#### Шаг 2 — Добавить ключ в Polypus
+
+<!-- GIF: Как добавить ключ в Polypus -->
+> **📹 Демо:** Запустите `polypus setup` и вставьте ключ при запросе.
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="Запуск polypus setup и вставка ключа OpenRouter" width="600">
+  <!-- TODO: заменить записанным GIF -->
+</p>
+
+```bash
+# Вариант A — интерактивный мастер (рекомендуется)
+polypus setup
+
+# Вариант B — командная строка
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+---
+
+## 🇮🇳 हिन्दी
+
+Polypus एक **टर्मिनल-फर्स्ट एजेंटिक कोडिंग हार्नेस** है। यह किसी भी AI प्रोवाइडर — OpenRouter, Ollama, Anthropic, या किसी OpenAI-compatible एंडपॉइंट — से जुड़ता है और मॉडल को एक पूरा टूल सेट देता है: फाइलें पढ़ना/लिखना, shell कमांड चलाना, कोड खोजना और बहुत कुछ। यह **किसी भी मॉडल** के साथ काम करता है, यहाँ तक कि बिना native function-calling वाले मॉडल के साथ भी।
+
+### ✨ मुख्य विशेषताएँ
+
+- 🔌 **कोई भी प्रोवाइडर** — OpenRouter, Ollama, Anthropic या OpenAI-compatible एंडपॉइंट
+- 🧩 **सभी मॉडल के लिए tool-calling** — hosted मॉडल के लिए native; local मॉडल के लिए XML emulation
+- 🔐 **Permission modes** — `plan` (read-only), `review` (हर action confirm करें), `bypass` (auto-approve)
+- 🐝 **Parallel Swarm** — एक task को कई agents में बाँटें, अलग-अलग git worktrees में
+- ✅ **Closed-loop verification** — "done" declare करने से पहले project के खुद के checks चलाता है
+- 🕵️ **कोई telemetry नहीं** — configured providers को calls के अलावा कोई data आपकी machine नहीं छोड़ता
+
+### ⚡ इंस्टॉल करें
+
+```bash
+npm install -g @gaberrb/polypus
+```
+
+**Node.js 20+** जरूरी है। इंस्टॉल के बाद `polypus` चलाएँ — पहली बार में setup wizard खुद खुल जाएगा।
+
+### 🚀 शुरुआत कैसे करें
+
+#### Step 1 — OpenRouter API key बनाएँ
+
+<!-- GIF: OpenRouter API key कैसे बनाएँ -->
+> **📹 देखें:** [openrouter.ai/keys](https://openrouter.ai/keys) पर जाएँ, login करें, **Create key** पर click करें और key copy करें।
+
+<p align="center">
+  <img src="docs/gifs/openrouter-key.gif" alt="OpenRouter API key बनाना" width="600">
+  <!-- TODO: recorded GIF से replace करें -->
+</p>
+
+#### Step 2 — Polypus में key add करें
+
+<!-- GIF: Polypus में key कैसे add करें -->
+> **📹 देखें:** `polypus setup` चलाएँ और prompt पर key paste करें।
+
+<p align="center">
+  <img src="docs/gifs/polypus-add-key.gif" alt="polypus setup में key paste करना" width="600">
+  <!-- TODO: recorded GIF से replace करें -->
+</p>
+
+```bash
+# Option A — interactive wizard (recommended)
+polypus setup
+
+# Option B — command line
+export OPENROUTER_API_KEY=sk-or-...
+polypus add-agent or \
+  --provider openrouter \
+  --model "anthropic/claude-3.5-sonnet" \
+  --api-key '${OPENROUTER_API_KEY}'
+```
+
+#### Step 3 — Task run करें
+
+```bash
+polypus run "src/server.ts में /health route के साथ एक Fastify server बनाओ"
+```
+
+---
+
+## 🔧 Advanced Topics (All Languages)
+
+<details>
+<summary><strong>MCP (Model Context Protocol)</strong></summary>
+
+Connect external tool servers to give the agent extra capabilities. Declare them in `.poly/mcp.json`:
 
 ```json
 {
@@ -360,83 +799,54 @@ the agent extra tools. Declare them in `.poly/mcp.json`:
 }
 ```
 
-On each run Polypus spawns the servers (stdio transport), lists their tools and
-exposes them to the agent as `mcp__<server>__<tool>` — for both native and
-emulated models. Servers that fail to start are skipped, the processes are shut
-down when the run ends, and external MCP tools are disabled in `plan` mode.
+</details>
 
-## Autonomous agent — the tool self-improving 🤖
+<details>
+<summary><strong>Autonomous Agent (CI self-improvement)</strong></summary>
 
-Polypus can run **itself** in CI to implement its own issues. Label an issue
-`polypus-go` and the `agent.yml` workflow first **estimates** the effort/cost and
-posts it as an issue comment. Nothing is implemented until the repo **owner**
-comments `/polypus approve` on the issue — only the owner can approve. After that
-it implements headlessly, gates on the local CI, patch-bumps the version +
-CHANGELOG, and opens a release-ready PR; when you merge it, `auto-release.yml`
-cuts the GitHub Release and `release.yml` publishes to npm.
+Label a GitHub issue `polypus-go` → Polypus estimates cost and posts a comment. Comment `/polypus approve` on the issue → Polypus implements headlessly, gates on CI, bumps the version, and opens a PR.
 
 ```
 issue + label `polypus-go`
-  → agent.yml (estimate): posts the cost estimate as a comment
-  → you (owner) comment `/polypus approve`
-  → agent.yml (implement): cheap model → secret scan → CI gate → bump + CHANGELOG → open PR
-  → you merge the PR
-  → auto-release.yml → release.yml → npm publish
+  → estimates cost → you comment `/polypus approve`
+  → implements → CI gate → version bump → opens PR
+  → you merge → auto-release → npm publish
 ```
 
-**Setup (one-time):**
+📖 [Full autonomous agent guide](https://gaberrb.github.io/polypus/agent.html)
 
-```bash
-# 1) the trigger label
-gh label create polypus-go --color 5be4b1
+</details>
 
-# 2) the model key
-gh secret set OPENROUTER_API_KEY --body "sk-or-v1-..."
+<details>
+<summary><strong>How non-tool models "code" (XML emulation)</strong></summary>
 
-# 3) a PAT (repo scope) so the agent can open the PR AND the release can publish
-#    (a Release made with the default GITHUB_TOKEN does NOT trigger release.yml)
-gh secret set POLYPUS_PR_TOKEN --body "github_pat_..."
+For models without native function-calling, Polypus injects a strict XML protocol into the system prompt:
 
-# 4) optional: cheap model + per-run budget
-gh variable set POLYPUS_AGENT_MODEL --body "deepseek/deepseek-chat-v3-0324"
-gh variable set POLYPUS_BUDGET_USD  --body "0.50"
+```xml
+<polypus:tool name="write_file">
+<arg name="path">src/index.ts</arg>
+<arg name="content">console.log("hello");</arg>
+</polypus:tool>
 ```
 
-Guard-rails: own-repo only, secret scan on the diff, mandatory CI gate, a spend
-budget, and your merge as the final gate. Without `POLYPUS_PR_TOKEN` nothing
-breaks — the agent still implements and pushes a branch, and comments the branch
-link on the issue instead of failing.
+Set the mode per agent with `--tool-mode`: `auto` (native for hosted, emulated for Ollama), `native`, or `emulated`.
 
-📖 **Full guide with a diagram, examples and the `POLYPUS_PR_TOKEN` walkthrough:**
-[the autonomous-agent page](https://gaberrb.github.io/polypus/agent.html)
-(`docs/agent.html`).
+</details>
 
-## Configuration
+<details>
+<summary><strong>Configuration reference</strong></summary>
 
-Stored at `~/.polypus/config.json` (override the directory with `POLYPUS_HOME`).
-API keys may be inline or, preferably, an env reference.
-
-Polypus also loads a `.env` file from `~/.polypus/.env` (and the current
-directory) at startup, so you can keep secrets there without relying on the OS
-to propagate environment variables to your shell:
-
-```dotenv
-# ~/.polypus/.env
-OPENROUTER_API_KEY=sk-or-...
-```
-
-Real environment variables always win over `.env` values. Example config:
+Config stored at `~/.polypus/config.json` (override directory with `POLYPUS_HOME`).
 
 ```json
 {
   "version": 1,
-  "locale": "pt-BR",
+  "locale": "en",
   "defaultAgent": "or",
   "agents": [
     {
       "name": "or",
       "provider": "openrouter",
-      "baseUrl": "https://openrouter.ai/api/v1",
       "model": "anthropic/claude-3.5-sonnet",
       "apiKey": "${OPENROUTER_API_KEY}",
       "toolMode": "auto"
@@ -445,43 +855,57 @@ Real environment variables always win over `.env` values. Example config:
   "permissions": {
     "mode": "review",
     "allow": ["**/*"],
-    "deny": [".git/**", ".polypus/**", "**/.env"],
-    "allowedCommands": []
+    "deny": [".git/**", ".polypus/**", "**/.env"]
+  },
+  "execution": {
+    "profile": "quality",
+    "verify": true,
+    "planFirst": true,
+    "autoContext": true
   }
 }
 ```
 
-## Development
+Polypus also loads `~/.polypus/.env` at startup — keep your secrets there:
 
-```bash
-npm run dev        # build in watch mode
-npm run typecheck
-npm test           # vitest
+```dotenv
+OPENROUTER_API_KEY=sk-or-...
 ```
 
-## Contributing
+</details>
 
-Contributions are welcome — but **open an issue first**. Issues are triaged and labeled
-`accepted` before any PR; PRs without a linked accepted issue don't pass CI. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for the full flow (issue → `accepted` → branch → PR → review).
+<details>
+<summary><strong>Timeout configuration</strong></summary>
 
-## Apoie o projeto
+| Env variable | Default | Description |
+|---|---|---|
+| `POLYPUS_SWARM_OVERALL_TIMEOUT_MS` | 3600000 (1h) | Max duration of a swarm session |
+| `POLYPUS_SWARM_IDLE_TIMEOUT_MS` | 300000 (5m) | Idle timeout for individual workers |
+| `POLYPUS_PYTHON_TIMEOUT_MS` | 120000 (2m) | Per-script timeout for `run_python_script` |
 
-Se o Polypus te ajudou, você pode apoiar o desenvolvimento via **PIX** 💜
+</details>
 
-> **Chave PIX (e-mail):** `gabrielriosbelmiro@gmail.com`
+---
 
-Qualquer valor é muito bem-vindo e ajuda a manter o projeto vivo. Obrigado!
+## 🤝 Contributing
 
-## Author
+Contributions are welcome — but **open an issue first**. Issues need the `accepted` label before any PR; PRs without a linked accepted issue don't pass CI. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full flow.
+
+## ❤️ Support the project
+
+If Polypus helped you, consider supporting development via **PIX** 💜
+
+> **PIX key (e-mail):** `gabrielriosbelmiro@gmail.com`
+
+Any amount is very welcome and helps keep the project alive. Thank you!
+
+## 👤 Author
 
 **Gabriel Rios**
 
 [![GitHub](https://img.shields.io/badge/GitHub-GaberRB-181717?logo=github)](https://github.com/GaberRB)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-gabriel--riosb-0A66C2?logo=linkedin)](https://www.linkedin.com/in/gabriel-riosb/)
 
-Contributions, issues and feedback are welcome — open an issue or a PR.
-
-## License
+## 📄 License
 
 [MIT](LICENSE) © Gabriel Rios
