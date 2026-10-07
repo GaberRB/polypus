@@ -14,8 +14,20 @@
   "engines": {
     "vscode": "^1.90.0"
   },
-  "categories": ["AI", "Chat", "Machine Learning", "Programming Languages"],
-  "keywords": ["ai", "agent", "openrouter", "chat", "coding assistant", "copilot alternative"],
+  "categories": [
+    "AI",
+    "Chat",
+    "Machine Learning",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "ai",
+    "agent",
+    "openrouter",
+    "chat",
+    "coding assistant",
+    "copilot alternative"
+  ],
   "icon": "media/icon.png",
   "main": "./dist/extension.js",
   "activationEvents": [],
@@ -78,7 +90,11 @@
         },
         "polypus.mode": {
           "type": "string",
-          "enum": ["review", "plan", "bypass"],
+          "enum": [
+            "review",
+            "plan",
+            "bypass"
+          ],
           "default": "review",
           "description": "Modo de permissão das execuções."
         }
@@ -93,16 +109,16 @@
   },
   "dependencies": {
     "@gaberrb/polypus-chat-ui": "*",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@types/node": "^22.7.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@types/vscode": "^1.90.0",
-    "@vscode/vsce": "^3.0.0",
-    "esbuild": "^0.24.0",
-    "typescript": "^5.6.3"
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/vscode": "^1.140.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
   }
 }
